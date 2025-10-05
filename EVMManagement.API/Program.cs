@@ -1,22 +1,46 @@
+using EVMManagement.API.Setup;
 
 namespace EVMManagement.API
 {
     public class Program
     {
-        public static void Main(string[] args)
+        public static async Task Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            // Add services to the container.
-
+            // Add services to the container
             builder.Services.AddControllers();
-            // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+            
+            // Add Swagger/OpenAPI
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
 
+            // Add Database Configuration
+            builder.Services.AddDatabaseConfiguration(builder.Configuration);
+
+            // Add Cache Configuration (Redis)
+            builder.Services.AddCacheConfiguration(builder.Configuration);
+
+            // Add Dependency Injection (UnitOfWork, Services, JWT)
+            builder.Services.AddDependencyInjection(builder.Configuration);
+
+            // Add CORS
+            builder.Services.AddCors(options =>
+            {
+                options.AddPolicy("AllowAll", policy =>
+                {
+                    policy.AllowAnyOrigin()
+                          .AllowAnyMethod()
+                          .AllowAnyHeader();
+                });
+            });
+
             var app = builder.Build();
 
-            // Configure the HTTP request pipeline.
+            // Apply migrations
+            await app.ApplyMigrationsAsync();
+
+            // Configure the HTTP request pipeline
             if (app.Environment.IsDevelopment())
             {
                 app.UseSwagger();
@@ -25,12 +49,14 @@ namespace EVMManagement.API
 
             app.UseHttpsRedirection();
 
-            app.UseAuthorization();
+            app.UseCors("AllowAll");
 
+            app.UseAuthentication();
+            app.UseAuthorization();
 
             app.MapControllers();
 
-            app.Run();
+            await app.RunAsync();
         }
     }
 }

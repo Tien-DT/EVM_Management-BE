@@ -1,0 +1,64 @@
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
+using EVMManagement.DAL.UnitOfWork;
+using EVMManagement.BLL.Services;
+
+namespace EVMManagement.API.Setup
+{
+    public static class DependencyInjection
+    {
+        public static IServiceCollection AddDependencyInjection(
+            this IServiceCollection services,
+            IConfiguration configuration)
+        {
+            // Register UnitOfWork
+            services.AddScoped<IUnitOfWork, UnitOfWork>();
+
+            // Register BLL Services
+            services.AddBLLServices();
+
+            // Add JWT Authentication
+            AddJwtAuthentication(services, configuration);
+
+            return services;
+        }
+
+        private static void AddJwtAuthentication(IServiceCollection services, IConfiguration configuration)
+        {
+            var secretKey = configuration["JwtSettings:SecretKey"];
+            var issuer = configuration["JwtSettings:Issuer"];
+            var audience = configuration["JwtSettings:Audience"];
+
+            if (string.IsNullOrEmpty(secretKey))
+            {
+                throw new InvalidOperationException("JWT SecretKey is not configured properly.");
+            }
+
+            var key = Encoding.UTF8.GetBytes(secretKey);
+
+            services.AddAuthentication(options =>
+            {
+                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+            })
+            .AddJwtBearer(options =>
+            {
+                options.SaveToken = true;
+                options.RequireHttpsMetadata = false; // Set to true in production
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuer = true,
+                    ValidateAudience = true,
+                    ValidateLifetime = true,
+                    ValidateIssuerSigningKey = true,
+                    ValidIssuer = issuer,
+                    ValidAudience = audience,
+                    IssuerSigningKey = new SymmetricSecurityKey(key),
+                    ClockSkew = TimeSpan.Zero
+                };
+            });
+        }
+    }
+}
