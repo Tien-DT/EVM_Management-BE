@@ -1,0 +1,103 @@
+# Docker Compose for Local Development (Optional)
+version: '3.8'
+
+services:
+  # API Service
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: evmmanagement-api
+    ports:
+      - "8080:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8080
+      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=EVMManagementDB;Username=postgres;Password=postgres123
+      - RedisSettings__ConnectionString=redis:6379
+      - JwtSettings__SecretKey=96a970f6de25fdab946261c89d9cacbe43820c5537a6c115a03a7477f5793e91
+      - JwtSettings__Issuer=EVMManagement
+      - JwtSettings__Audience=EVMManagementUsers
+      - JwtSettings__ExpiryMinutes=60
+      - JwtSettings__RefreshTokenExpiryDays=7
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - evmmanagement-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: evmmanagement-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres123
+      - POSTGRES_DB=EVMManagementDB
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - evmmanagement-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: evmmanagement-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - evmmanagement-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # pgAdmin (Optional - for database management)
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: evmmanagement-pgadmin
+    ports:
+      - "5050:80"
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=admin@evmmanagement.com
+      - PGADMIN_DEFAULT_PASSWORD=admin123
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+    networks:
+      - evmmanagement-network
+    restart: unless-stopped
+    depends_on:
+      - postgres
+
+volumes:
+  postgres-data:
+    driver: local
+  redis-data:
+    driver: local
+  pgadmin-data:
+    driver: local
+
+networks:
+  evmmanagement-network:
+    driver: bridge

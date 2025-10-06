@@ -54,6 +54,14 @@ namespace EVMManagement.API
             app.UseAuthentication();
             app.UseAuthorization();
 
+            // Health check endpoint for monitoring
+            app.MapGet("/health", () => Results.Ok(new
+            {
+                status = "healthy",
+                timestamp = DateTime.UtcNow,
+                environment = app.Environment.EnvironmentName
+            }));
+
             app.MapControllers();
 
             await app.RunAsync();

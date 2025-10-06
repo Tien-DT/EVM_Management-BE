@@ -1,0 +1,92 @@
+services:
+  - type: web
+    name: evmmanagement-api
+    runtime: docker
+    region: singapore # Change to your preferred region: oregon, frankfurt, singapore, etc.
+    plan: starter # Change to: starter, standard, pro, or free
+    branch: master
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    
+    # Auto-deploy when pushing to master
+    autoDeploy: true
+    
+    # Health check configuration
+    healthCheckPath: /health
+    
+    # Environment variables (add your actual values in Render dashboard)
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      
+      - key: ASPNETCORE_URLS
+        value: http://+:8080
+      
+      # Database Connection
+      - key: ConnectionStrings__DefaultConnection
+        sync: false # Set this in Render dashboard
+      
+      # JWT Settings
+      - key: JwtSettings__SecretKey
+        sync: false # Set this in Render dashboard
+      
+      - key: JwtSettings__Issuer
+        value: EVMManagement
+      
+      - key: JwtSettings__Audience
+        value: EVMManagementUsers
+      
+      - key: JwtSettings__ExpiryMinutes
+        value: "60"
+      
+      - key: JwtSettings__RefreshTokenExpiryDays
+        value: "7"
+      
+      # Redis Settings
+      - key: RedisSettings__ConnectionString
+        sync: false # Set this in Render dashboard or use Render Redis
+      
+      - key: RedisSettings__InstanceName
+        value: "EVMManagement:"
+      
+      - key: RedisSettings__DefaultCacheExpirationMinutes
+        value: "30"
+      
+      # SMTP Settings
+      - key: SmtpSettings__Host
+        value: smtp.gmail.com
+      
+      - key: SmtpSettings__Port
+        value: "587"
+      
+      - key: SmtpSettings__Username
+        sync: false # Set this in Render dashboard
+      
+      - key: SmtpSettings__Password
+        sync: false # Set this in Render dashboard
+      
+      - key: SmtpSettings__FromEmail
+        sync: false # Set this in Render dashboard
+      
+      - key: SmtpSettings__FromName
+        value: EVM Management
+      
+      - key: SmtpSettings__EnableSsl
+        value: "true"
+      
+      # Supabase Settings
+      - key: SupabaseSettings__Url
+        sync: false # Set this in Render dashboard
+      
+      - key: SupabaseSettings__Key
+        sync: false # Set this in Render dashboard
+      
+      - key: SupabaseSettings__BucketName
+        value: evmmanagement-files
+
+# Optional: Add a Redis instance
+# databases:
+#   - name: evmmanagement-redis
+#     plan: starter
+#     region: singapore
+#     ipAllowList: []
