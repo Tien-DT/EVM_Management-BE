@@ -31,12 +31,8 @@ WORKDIR /app
 # Install curl for healthcheck
 RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 
-# Copy published files
+# Copy published files (includes appsettings files automatically)
 COPY --from=publish /app/publish .
-
-# Copy appsettings files explicitly (ensuring they are included)
-COPY EVMManagement.API/appsettings.json .
-COPY EVMManagement.API/appsettings.Development.json .
 
 # Set environment variables
 ENV ASPNETCORE_URLS=http://+:8080
