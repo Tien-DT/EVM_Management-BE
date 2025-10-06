@@ -47,20 +47,33 @@ namespace EVMManagement.API
                 app.UseSwaggerUI();
             }
 
-            app.UseHttpsRedirection();
+            // Enable Swagger in Production for Render.com
+            if (app.Environment.IsProduction())
+            {
+                app.UseSwagger();
+                app.UseSwaggerUI();
+            }
 
             app.UseCors("AllowAll");
 
             app.UseAuthentication();
             app.UseAuthorization();
 
-            // Health check endpoint for monitoring
+            app.MapGet("/", () => Results.Ok(new
+            {
+                service = "EVM Management API",
+                status = "healthy",
+                timestamp = DateTime.UtcNow,
+                environment = app.Environment.EnvironmentName,
+                version = "1.0.0"
+            })).AllowAnonymous();
+
             app.MapGet("/health", () => Results.Ok(new
             {
                 status = "healthy",
                 timestamp = DateTime.UtcNow,
                 environment = app.Environment.EnvironmentName
-            }));
+            })).AllowAnonymous();
 
             app.MapControllers();
 

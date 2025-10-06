@@ -11,8 +11,8 @@ services:
     # Auto-deploy when pushing to master
     autoDeploy: true
     
-    # Health check configuration
-    healthCheckPath: /health
+    # Health check configuration (Render will check root path /)
+    healthCheckPath: /
     
     # Environment variables (add your actual values in Render dashboard)
     envVars:
