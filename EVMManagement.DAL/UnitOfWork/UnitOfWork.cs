@@ -13,22 +13,9 @@ namespace EVMManagement.DAL.UnitOfWork
         private readonly AppDbContext _context;
         private IDbContextTransaction? _transaction;
 
-        // Repository instances
-        private IUserRepository? _userRepository;
-
         public UnitOfWork(AppDbContext context)
         {
             _context = context;
-        }
-
-        // Lazy loading repositories
-        public IUserRepository Users
-        {
-            get
-            {
-                _userRepository ??= new UserRepository(_context);
-                return _userRepository;
-            }
         }
 
         public async Task<int> SaveChangesAsync()
