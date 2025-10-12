@@ -3,6 +3,10 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using EVMManagement.DAL.UnitOfWork;
 using EVMManagement.BLL.Services;
+using EVMManagement.DAL.Repositories.Interface;
+using EVMManagement.DAL.Repositories.Class;
+using EVMManagement.BLL.Services.Interface;
+using EVMManagement.BLL.Services.Class;
 
 namespace EVMManagement.API.Setup
 {
@@ -15,8 +19,14 @@ namespace EVMManagement.API.Setup
             // Register UnitOfWork
             services.AddScoped<IUnitOfWork, UnitOfWork>();
 
+            // Register Repositories
+            services.AddScoped<IUserProfileRepository, UserProfileRepository>();
+
             // Register BLL Services
             services.AddBLLServices();
+
+            // Register domain services
+            services.AddScoped<IUserProfileService, UserProfileService>();
 
             // Add JWT Authentication
             AddJwtAuthentication(services, configuration);
