@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using EVMManagement.BLL.Services.Interface;
 using EVMManagement.API.DTOs.Request;
-using EVMManagement.API.DTOs.Response;
+using EVMManagement.BLL.DTOs.Response;
 using EVMManagement.DAL.Models.Entities;
 
 namespace EVMManagement.API.Controllers
