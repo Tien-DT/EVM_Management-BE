@@ -68,7 +68,7 @@ namespace EVMManagement.API.Controllers
 
             var toUpdate = new UserProfile
             {
-                // Do not set AccountId here to avoid changing it in service
+                AccountId = dto.AccountId,
                 DealerId = dto.DealerId,
                 FullName = dto.FullName,
                 Phone = dto.Phone,
