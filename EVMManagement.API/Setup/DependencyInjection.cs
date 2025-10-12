@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using EVMManagement.DAL.UnitOfWork;
+using EVMManagement.BLL.Options;
 using EVMManagement.BLL.Services;
 
 namespace EVMManagement.API.Setup
@@ -12,13 +13,12 @@ namespace EVMManagement.API.Setup
             this IServiceCollection services,
             IConfiguration configuration)
         {
-            // Register UnitOfWork
             services.AddScoped<IUnitOfWork, UnitOfWork>();
 
-            // Register BLL Services
+            services.Configure<JwtSettings>(configuration.GetSection(JwtSettings.SectionName));
+
             services.AddBLLServices();
 
-            // Add JWT Authentication
             AddJwtAuthentication(services, configuration);
 
             return services;
@@ -46,7 +46,7 @@ namespace EVMManagement.API.Setup
             .AddJwtBearer(options =>
             {
                 options.SaveToken = true;
-                options.RequireHttpsMetadata = false; // Set to true in production
+                options.RequireHttpsMetadata = false;
                 options.TokenValidationParameters = new TokenValidationParameters
                 {
                     ValidateIssuer = true,

@@ -8,9 +8,9 @@ namespace EVMManagement.BLL.Services
     {
         public static IServiceCollection AddBLLServices(this IServiceCollection services)
         {
-            // Register Services
             services.AddScoped<IEmailService, EmailService>();
             services.AddScoped<IStorageService, SupabaseStorageService>();
+            services.AddScoped<IAuthService, AuthService>();
             return services;
         }
     }

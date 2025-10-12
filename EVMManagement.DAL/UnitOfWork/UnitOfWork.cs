@@ -12,11 +12,14 @@ namespace EVMManagement.DAL.UnitOfWork
     {
         private readonly AppDbContext _context;
         private IDbContextTransaction? _transaction;
+        private IAccountRepository? _accounts;
 
         public UnitOfWork(AppDbContext context)
         {
             _context = context;
         }
+
+        public IAccountRepository Accounts => _accounts ??= new AccountRepository(_context);
 
         public async Task<int> SaveChangesAsync()
         {

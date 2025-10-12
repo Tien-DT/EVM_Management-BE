@@ -6,6 +6,7 @@ namespace EVMManagement.DAL.UnitOfWork
 {
     public interface IUnitOfWork : IDisposable
     {
+        IAccountRepository Accounts { get; }
 
         // Transaction methods
         Task<int> SaveChangesAsync();
