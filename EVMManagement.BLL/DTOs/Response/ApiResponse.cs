@@ -1,6 +1,10 @@
+﻿using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
-namespace EVMManagement.API.DTOs.Response
+namespace EVMManagement.BLL.DTOs.Response
 {
     public class ApiResponse<T>
     {
@@ -19,7 +23,7 @@ namespace EVMManagement.API.DTOs.Response
         {
             if (errorCode == null)
             {
-                errorCode = 400; 
+                errorCode = 400;
             }
             return new ApiResponse<T> { Success = false, Message = message, Errors = errors ?? new List<string>(), ErrorCode = errorCode };
         }
