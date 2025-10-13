@@ -224,5 +224,66 @@ namespace EVMManagement.BLL.Services.Class
             }
             return new string(chars);
         }
+
+        public async Task<ApiResponse<string>> CreateAccountAsync(CreateAccountRequestDto request, CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                if (request == null)
+                {
+                    return ApiResponse<string>.CreateFail("Yêu cầu không hợp lệ.");
+                }
+
+                if (string.IsNullOrWhiteSpace(request.Email))
+                {
+                    return ApiResponse<string>.CreateFail("Email là bắt buộc.");
+                }
+
+                if (string.IsNullOrWhiteSpace(request.Password))
+                {
+                    return ApiResponse<string>.CreateFail("Mật khẩu là bắt buộc.");
+                }
+
+                if (string.IsNullOrWhiteSpace(request.FullName))
+                {
+                    return ApiResponse<string>.CreateFail("Họ tên là bắt buộc.");
+                }
+
+                var existed = await _unitOfWork.Accounts.GetByEmailAsync(request.Email);
+                if (existed != null)
+                {
+                    return ApiResponse<string>.CreateFail("Email đã được sử dụng.", errorCode: 409);
+                }
+
+                var account = new Account
+                {
+                    Email = request.Email.Trim(),
+                    IsActive = true,
+                    Role = request.Role
+                };
+                account.PasswordHash = _passwordHasher.HashPassword(account, request.Password);
+
+                await _unitOfWork.Accounts.AddAsync(account);
+
+                var profile = new UserProfile
+                {
+                    AccountId = account.Id,
+                    DealerId = null,
+                    FullName = request.FullName.Trim(),
+                    Phone = request.Phone,
+                    CardId = request.CardId
+                };
+                await _unitOfWork.UserProfiles.AddAsync(profile);
+
+                await _unitOfWork.SaveChangesAsync();
+
+                return ApiResponse<string>.CreateSuccess(account.Id.ToString(), "Tạo tài khoản thành công.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi tạo tài khoản");
+                return ApiResponse<string>.CreateFail(ex);
+            }
+        }
     }
 }

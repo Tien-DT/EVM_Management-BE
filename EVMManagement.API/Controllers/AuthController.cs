@@ -62,5 +62,24 @@ namespace EVMManagement.API.Controllers
 
             return StatusCode(statusCode, result);
         }
+
+        [HttpPost("accounts")]
+        [AllowAnonymous]
+        public async Task<IActionResult> CreateAccount([FromBody] CreateAccountRequestDto request, CancellationToken cancellationToken)
+        {
+            var result = await _authService.CreateAccountAsync(request, cancellationToken);
+            if (result.Success)
+            {
+                return Ok(result);
+            }
+
+            var statusCode = result.ErrorCode ?? StatusCodes.Status400BadRequest;
+            if (statusCode == StatusCodes.Status409Conflict)
+            {
+                return Conflict(result);
+            }
+
+            return StatusCode(statusCode, result);
+        }
     }
 }
