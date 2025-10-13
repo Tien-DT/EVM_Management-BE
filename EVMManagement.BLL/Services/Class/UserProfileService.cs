@@ -67,6 +67,18 @@ namespace EVMManagement.BLL.Services.Class
             return MapToResponse(existing);
         }
 
+        public async Task<UserProfileResponse?> UpdateIsDeletedAsync(Guid id, bool isDeleted)
+        {
+            var existing = await _userProfileRepository.GetByIdAsync(id);
+            if (existing == null) return null;
+
+            existing.IsDeleted = isDeleted;
+            existing.DeletedDate = isDeleted ? DateTime.UtcNow : null;
+            _userProfileRepository.Update(existing);
+            await _unitOfWork.SaveChangesAsync();
+            return MapToResponse(existing);
+        }
+
         public async Task<bool> DeleteAsync(Guid id)
         {
             var existing = await _userProfileRepository.GetByIdAsync(id);

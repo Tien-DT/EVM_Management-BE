@@ -1,6 +1,4 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using System.Linq;
-using System.Collections.Generic;
 using EVMManagement.BLL.Services.Interface;
 using EVMManagement.BLL.DTOs.Request.User;
 using EVMManagement.BLL.DTOs.Response;
@@ -21,6 +19,7 @@ namespace EVMManagement.API.Controllers
             _service = service;
         }
 
+       
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
@@ -104,6 +103,14 @@ namespace EVMManagement.API.Controllers
             var deleted = await _service.DeleteAsync(id);
             if (!deleted) return NotFound(ApiResponse<string>.CreateFail("UserProfile not found", null, 404));
             return Ok(ApiResponse<string>.CreateSuccess("Deleted"));
+        }
+
+        [HttpPatch("{id}")]
+        public async Task<IActionResult> UpdateIsDeleted(Guid id, [FromQuery] bool isDeleted)
+        {
+            var updated = await _service.UpdateIsDeletedAsync(id, isDeleted);
+            if (updated == null) return NotFound(ApiResponse<UserProfileResponse>.CreateFail("UserProfile not found", null, 404));
+            return Ok(ApiResponse<UserProfileResponse>.CreateSuccess(updated));
         }
 
         
