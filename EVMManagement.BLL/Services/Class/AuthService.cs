@@ -285,5 +285,57 @@ namespace EVMManagement.BLL.Services.Class
                 return ApiResponse<string>.CreateFail(ex);
             }
         }
+
+        public async Task<ApiResponse<LoginTokenDto>> RefreshTokenAsync(RefreshTokenRequestDto request, CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                if (request == null || string.IsNullOrWhiteSpace(request.RefreshToken))
+                {
+                    return ApiResponse<LoginTokenDto>.CreateFail("Refresh token là bắt buộc.", errorCode: 401);
+                }
+
+                var cacheKey = $"auth:refresh:{request.RefreshToken}";
+                var accountIdStr = await _cache.GetStringAsync(cacheKey, cancellationToken);
+
+                if (string.IsNullOrWhiteSpace(accountIdStr))
+                {
+                    return ApiResponse<LoginTokenDto>.CreateFail("Refresh token không hợp lệ hoặc đã hết hạn.", errorCode: 401);
+                }
+
+                if (!Guid.TryParse(accountIdStr, out var accountId))
+                {
+                    return ApiResponse<LoginTokenDto>.CreateFail("Refresh token không hợp lệ.", errorCode: 401);
+                }
+
+                var account = await _unitOfWork.Accounts.GetByIdAsync(accountId);
+                if (account == null)
+                {
+                    return ApiResponse<LoginTokenDto>.CreateFail("Tài khoản không tồn tại.", errorCode: 401);
+                }
+
+                if (account.IsDeleted)
+                {
+                    return ApiResponse<LoginTokenDto>.CreateFail("Tài khoản đã bị vô hiệu.", errorCode: 403);
+                }
+
+                if (!account.IsActive)
+                {
+                    return ApiResponse<LoginTokenDto>.CreateFail("Tài khoản chưa được kích hoạt.", errorCode: 403);
+                }
+
+                await _cache.RemoveAsync(cacheKey, cancellationToken);
+
+                var tokens = BuildLoginTokens(account);
+                await StoreRefreshTokenAsync(account, tokens.RefreshToken, cancellationToken);
+
+                return ApiResponse<LoginTokenDto>.CreateSuccess(tokens, "Làm mới token thành công.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi làm mới token");
+                return ApiResponse<LoginTokenDto>.CreateFail(ex);
+            }
+        }
     }
 }
