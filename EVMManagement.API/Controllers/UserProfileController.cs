@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using EVMManagement.BLL.Services.Interface;
-using EVMManagement.API.DTOs.Request;
+using EVMManagement.BLL.DTOs.Request.User;
 using EVMManagement.BLL.DTOs.Response;
 using EVMManagement.DAL.Models.Entities;
 
