@@ -1,12 +1,12 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using EVMManagement.BLL.Services.Interface;
-using EVMManagement.API.DTOs.Request;
+using EVMManagement.BLL.DTOs.Request.User;
 using EVMManagement.BLL.DTOs.Response;
 using EVMManagement.DAL.Models.Entities;
 
 namespace EVMManagement.API.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/v1/[controller]")]
     [ApiController]
     public class UserProfileController : ControllerBase
     {

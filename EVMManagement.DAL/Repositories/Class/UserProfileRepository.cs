@@ -14,10 +14,8 @@ namespace EVMManagement.DAL.Repositories.Class
         {
         }
 
-        // Add specialized methods when required (e.g., include navigation properties)
         public override async Task<UserProfile?> GetByIdAsync(Guid id)
         {
-            // Project the Dealer to only include Id and Name to reduce payload
             return await _dbSet
                 .Where(u => u.Id == id)
                 .Select(u => new UserProfile

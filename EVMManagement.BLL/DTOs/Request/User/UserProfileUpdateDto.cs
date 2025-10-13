@@ -1,6 +1,6 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 
-namespace EVMManagement.API.DTOs.Request
+namespace EVMManagement.BLL.DTOs.Request.User
 {
     public class UserProfileUpdateDto
     {
