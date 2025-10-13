@@ -25,12 +25,11 @@ namespace EVMManagement.API.Setup
 
             // Register Repositories
             services.AddScoped<IUserProfileRepository, UserProfileRepository>();
-
-            // Register BLL Services
-            services.AddBLLServices();
+            services.AddScoped<IVehicleVariantRepository, VehicleVariantRepository>();
 
             // Register domain services
             services.AddScoped<IUserProfileService, UserProfileService>();
+            services.AddScoped<IVehicleVariantService, VehicleVariantService>();
 
             // Add JWT Authentication
             AddJwtAuthentication(services, configuration);

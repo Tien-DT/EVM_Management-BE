@@ -13,6 +13,8 @@ namespace EVMManagement.DAL.UnitOfWork
         private readonly AppDbContext _context;
         private IDbContextTransaction? _transaction;
         private IAccountRepository? _accounts;
+        private IUserProfileRepository? _userProfiles;
+        private IVehicleVariantRepository? _vehicleVariants;
 
         public UnitOfWork(AppDbContext context)
         {
@@ -20,6 +22,8 @@ namespace EVMManagement.DAL.UnitOfWork
         }
 
         public IAccountRepository Accounts => _accounts ??= new AccountRepository(_context);
+        public IUserProfileRepository UserProfiles => _userProfiles ??= new UserProfileRepository(_context);
+        public IVehicleVariantRepository VehicleVariants => _vehicleVariants ??= new VehicleVariantRepository(_context);
 
         public async Task<int> SaveChangesAsync()
         {
