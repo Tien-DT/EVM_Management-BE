@@ -1,3 +1,4 @@
+using EVMManagement.DAL.Models.Enums;
 using System;
 using System.ComponentModel.DataAnnotations;
 
@@ -19,5 +20,6 @@ namespace EVMManagement.BLL.DTOs.Request.Vehicle
         public string? Description { get; set; }
 
         public bool Status { get; set; } = true;
+        public VehicleModelRanking? Ranking { get; set; }
     }
 }

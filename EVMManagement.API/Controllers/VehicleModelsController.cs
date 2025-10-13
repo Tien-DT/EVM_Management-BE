@@ -2,6 +2,8 @@ using Microsoft.AspNetCore.Mvc;
 using EVMManagement.BLL.Services.Interface;
 using EVMManagement.BLL.DTOs.Request.Vehicle;
 using EVMManagement.BLL.DTOs.Response;
+using EVMManagement.BLL.DTOs.Response.Vehicle;
+using EVMManagement.DAL.Models.Enums;
 
 
 namespace EVMManagement.API.Controllers
@@ -23,40 +25,40 @@ namespace EVMManagement.API.Controllers
             if (!ModelState.IsValid)
             {
                 var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
-                return BadRequest(ApiResponse<EVMManagement.BLL.DTOs.Response.Vehicle.VehicleModelResponseDto>.CreateFail("Validation failed", errors, 400));
+                return BadRequest(ApiResponse<VehicleModelResponseDto>.CreateFail("Validation failed", errors, 400));
             }
 
             var created = await _service.CreateVehicleModelAsync(dto);
-            return Ok(ApiResponse<EVMManagement.BLL.DTOs.Response.Vehicle.VehicleModelResponseDto>.CreateSuccess(created));
+            return Ok(ApiResponse<VehicleModelResponseDto>.CreateSuccess(created));
         }
 
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
             var models = await _service.GetAllAsync();
-            return Ok(ApiResponse<IEnumerable<EVMManagement.BLL.DTOs.Response.Vehicle.VehicleModelResponseDto>>.CreateSuccess(models));
+            return Ok(ApiResponse<IEnumerable<VehicleModelResponseDto>>.CreateSuccess(models));
         }
 
         [HttpGet("by-ranking")]
-        public async Task<IActionResult> GetByRanking([FromQuery] EVMManagement.DAL.Models.Enums.VehicleModelRanking ranking)
+        public async Task<IActionResult> GetByRanking([FromQuery] VehicleModelRanking ranking)
         {
             var models = await _service.GetByRankingAsync(ranking);
-            return Ok(ApiResponse<IEnumerable<EVMManagement.BLL.DTOs.Response.Vehicle.VehicleModelResponseDto>>.CreateSuccess(models));
+            return Ok(ApiResponse<IEnumerable<VehicleModelResponseDto>>.CreateSuccess(models));
         }
 
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> Update([FromRoute] Guid id, [FromBody] EVMManagement.BLL.DTOs.Request.Vehicle.VehicleModelUpdateDto dto)
+        public async Task<IActionResult> Update([FromRoute] Guid id, [FromBody] VehicleModelUpdateDto dto)
         {
             if (!ModelState.IsValid)
             {
                 var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
-                return BadRequest(ApiResponse<EVMManagement.BLL.DTOs.Response.Vehicle.VehicleModelResponseDto>.CreateFail("Validation failed", errors, 400));
+                return BadRequest(ApiResponse<VehicleModelResponseDto>.CreateFail("Validation failed", errors, 400));
             }
 
             var updated = await _service.UpdateVehicleModelAsync(id, dto);
-            if (updated == null) return NotFound(ApiResponse<EVMManagement.BLL.DTOs.Response.Vehicle.VehicleModelResponseDto>.CreateFail("VehicleModel not found", null, 404));
-            return Ok(ApiResponse<EVMManagement.BLL.DTOs.Response.Vehicle.VehicleModelResponseDto>.CreateSuccess(updated));
+            if (updated == null) return NotFound(ApiResponse<VehicleModelResponseDto>.CreateFail("VehicleModel not found", null, 404));
+            return Ok(ApiResponse<VehicleModelResponseDto>.CreateSuccess(updated));
         }
     }
 }
