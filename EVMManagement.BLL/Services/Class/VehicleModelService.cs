@@ -66,6 +66,25 @@ namespace EVMManagement.BLL.Services.Class
             return MapToDto(updated);
         }
 
+        public async Task<VehicleModelResponseDto?> UpdateIsDeletedAsync(Guid id, bool isDeleted)
+        {
+            var updated = await _unitOfWork.VehicleModels.UpdateIsDeletedAsync(id, isDeleted);
+            if (updated == null) return null;
+            return MapToDto(updated);
+        }
+
+
+        public async Task<IEnumerable<VehicleModelResponseDto>> SearchByQueryAsync(string? q)
+        {
+            if (string.IsNullOrWhiteSpace(q))
+            {
+                var all = await _unitOfWork.VehicleModels.GetAllOrderedByCreatedDateDescAsync();
+                return all.Select(MapToDto);
+            }
+            var results = await _unitOfWork.VehicleModels.SearchByQueryAsync(q!);
+            return results.Select(MapToDto);
+        }
+
         private VehicleModelResponseDto MapToDto(VehicleModel model)
         {
             return new VehicleModelResponseDto
@@ -78,7 +97,9 @@ namespace EVMManagement.BLL.Services.Class
                 Status = model.Status,
                 Ranking = model.Ranking,
                 CreatedDate = model.CreatedDate,
-                ModifiedDate = model.ModifiedDate
+                ModifiedDate = model.ModifiedDate,
+                DeletedDate = model.DeletedDate,
+                IsDeleted = model.IsDeleted
             };
         }
     }

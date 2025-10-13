@@ -60,5 +60,21 @@ namespace EVMManagement.API.Controllers
             if (updated == null) return NotFound(ApiResponse<VehicleModelResponseDto>.CreateFail("VehicleModel not found", null, 404));
             return Ok(ApiResponse<VehicleModelResponseDto>.CreateSuccess(updated));
         }
+
+        [HttpPatch("{id}/is-deleted")]
+        public async Task<IActionResult> UpdateIsDeleted([FromRoute] Guid id, [FromQuery] bool isDeleted)
+        {
+            var updated = await _service.UpdateIsDeletedAsync(id, isDeleted);
+            if (updated == null) return NotFound(ApiResponse<VehicleModelResponseDto>.CreateFail("VehicleModel not found", null, 404));
+            return Ok(ApiResponse<VehicleModelResponseDto>.CreateSuccess(updated));
+        }
+
+        [HttpGet("search")]
+        public async Task<IActionResult> Search([FromQuery] string? q)
+        {
+            var results = await _service.SearchByQueryAsync(q);
+            return Ok(ApiResponse<IEnumerable<VehicleModelResponseDto>>.CreateSuccess(results));
+           
+        }
     }
 }

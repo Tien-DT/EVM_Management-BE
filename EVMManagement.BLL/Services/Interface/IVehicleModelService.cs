@@ -10,5 +10,7 @@ namespace EVMManagement.BLL.Services.Interface
         Task<IEnumerable<VehicleModelResponseDto>> GetAllAsync();
         Task<IEnumerable<VehicleModelResponseDto>> GetByRankingAsync(VehicleModelRanking ranking);
         Task<VehicleModelResponseDto?> UpdateVehicleModelAsync(Guid id, VehicleModelUpdateDto dto);
+        Task<VehicleModelResponseDto?> UpdateIsDeletedAsync(Guid id, bool isDeleted);
+        Task<IEnumerable<VehicleModelResponseDto>> SearchByQueryAsync(string? q);
     }
 }
