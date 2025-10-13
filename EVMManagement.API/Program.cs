@@ -8,15 +8,19 @@ namespace EVMManagement.API
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            // Add services to the container and configure JSON to serialize enums as strings
-            builder.Services.AddControllers().AddJsonOptions(options =>
+            // Add services to the container
+            builder.Services.AddControllers().AddJsonOptions(opts =>
             {
-                options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
+                opts.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
             });
-            
+
             // Add Swagger/OpenAPI
             builder.Services.AddEndpointsApiExplorer();
-            builder.Services.AddSwaggerGen();
+            builder.Services.AddSwaggerGen(options =>
+            {
+                // represent enums as strings in schema (for Swagger UI dropdowns)
+                options.SchemaFilter<EVMManagement.API.Setup.Swagger.EnumSchemaFilter>();
+            });
 
             // Add Database Configuration
             builder.Services.AddDatabaseConfiguration(builder.Configuration);

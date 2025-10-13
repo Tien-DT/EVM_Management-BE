@@ -17,6 +17,7 @@ using EVMManagement.BLL.Options;
 using EVMManagement.BLL.Services.Interface;
 using EVMManagement.DAL.Models.Entities;
 using EVMManagement.DAL.UnitOfWork;
+using EVMManagement.DAL.Models.Enums;
 
 namespace EVMManagement.BLL.Services.Class
 {
@@ -145,6 +146,83 @@ namespace EVMManagement.BLL.Services.Class
             };
 
             await _cache.SetStringAsync(cacheKey, payload, options, cancellationToken);
+        }
+
+        public async Task<ApiResponse<string>> RegisterDealerAsync(RegisterDealerRequestDto request, CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                if (request == null)
+                {
+                    return ApiResponse<string>.CreateFail("Yêu cầu không hợp lệ.");
+                }
+
+                if (string.IsNullOrWhiteSpace(request.Email))
+                {
+                    return ApiResponse<string>.CreateFail("Email là bắt buộc.");
+                }
+
+                if (string.IsNullOrWhiteSpace(request.FullName))
+                {
+                    return ApiResponse<string>.CreateFail("Họ tên là bắt buộc.");
+                }
+
+                // Chỉ cho phép role đại lý
+                if (request.Role != AccountRole.DEALER_MANAGER && request.Role != AccountRole.DEALER_STAFF)
+                {
+                    return ApiResponse<string>.CreateFail("Role không hợp lệ cho đại lý.");
+                }
+
+                var existed = await _unitOfWork.Accounts.GetByEmailAsync(request.Email);
+                if (existed != null)
+                {
+                    return ApiResponse<string>.CreateFail("Email đã được sử dụng.", errorCode: 409);
+                }
+
+                var plainPassword = GenerateRandomPassword();
+
+                var account = new Account
+                {
+                    Email = request.Email.Trim(),
+                    IsActive = true,
+                    Role = request.Role
+                };
+                account.PasswordHash = _passwordHasher.HashPassword(account, plainPassword);
+
+                await _unitOfWork.Accounts.AddAsync(account);
+
+                var profile = new UserProfile
+                {
+                    AccountId = account.Id,
+                    DealerId = request.DealerId,
+                    FullName = request.FullName.Trim(),
+                    Phone = request.Phone,
+                    CardId = request.CardId
+                };
+                await _unitOfWork.UserProfiles.AddAsync(profile);
+
+                await _unitOfWork.SaveChangesAsync();
+
+                return ApiResponse<string>.CreateSuccess(plainPassword, "Tạo tài khoản đại lý thành công.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi đăng ký tài khoản đại lý");
+                return ApiResponse<string>.CreateFail(ex);
+            }
+        }
+
+        private static string GenerateRandomPassword(int length = 12)
+        {
+            const string allowed = "ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$%^&*()_-+";
+            Span<char> chars = stackalloc char[length];
+            Span<byte> bytes = stackalloc byte[length];
+            RandomNumberGenerator.Fill(bytes);
+            for (int i = 0; i < length; i++)
+            {
+                chars[i] = allowed[bytes[i] % allowed.Length];
+            }
+            return new string(chars);
         }
     }
 }
