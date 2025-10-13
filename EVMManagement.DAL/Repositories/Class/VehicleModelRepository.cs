@@ -17,5 +17,13 @@ namespace EVMManagement.DAL.Repositories.Class
         {
             return await _dbSet.OrderByDescending(m => m.CreatedDate).ToListAsync();
         }
+
+        public async Task<IEnumerable<VehicleModel>> GetByRankingAsync(EVMManagement.DAL.Models.Enums.VehicleModelRanking ranking)
+        {
+            return await _dbSet.Where(m => m.Ranking == ranking).ToListAsync();
+        }
+
+
+        
     }
 }
