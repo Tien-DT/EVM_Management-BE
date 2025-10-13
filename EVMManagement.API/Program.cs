@@ -18,7 +18,7 @@ namespace EVMManagement.API
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen(options =>
             {
-                // represent enums as strings in schema (for Swagger UI dropdowns)
+              
                 options.SchemaFilter<EVMManagement.API.Setup.Swagger.EnumSchemaFilter>();
             });
 

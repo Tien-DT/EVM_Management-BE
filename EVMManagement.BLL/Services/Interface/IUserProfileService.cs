@@ -9,10 +9,11 @@ namespace EVMManagement.BLL.Services.Interface
     {
         Task<IEnumerable<UserProfileResponse>> GetAllAsync();
         Task<IEnumerable<UserProfileResponse>> GetByRoleAndStatusAsync(EVMManagement.DAL.Models.Enums.AccountRole role, bool? isActive);
-    Task<IEnumerable<UserProfileResponse>> GetByDealerIdAsync(Guid dealerId);
+        Task<IEnumerable<UserProfileResponse>> GetByDealerIdAsync(Guid dealerId);
         Task<UserProfileResponse?> GetByIdAsync(Guid id);
         Task<UserProfileResponse> CreateAsync(EVMManagement.DAL.Models.Entities.UserProfile entity);
         Task<UserProfileResponse?> UpdateAsync(Guid id, EVMManagement.DAL.Models.Entities.UserProfile entity);
+        Task<UserProfileResponse?> UpdateIsDeletedAsync(Guid id, bool isDeleted);
         Task<bool> DeleteAsync(Guid id);
     }
 }
