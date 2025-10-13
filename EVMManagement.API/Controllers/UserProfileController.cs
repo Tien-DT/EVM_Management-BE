@@ -35,6 +35,13 @@ namespace EVMManagement.API.Controllers
             return Ok(ApiResponse<IEnumerable<UserProfileResponse>>.CreateSuccess(list));
         }
 
+        [HttpGet("by-dealer/{dealerId}")]
+        public async Task<IActionResult> GetByDealer(Guid dealerId)
+        {
+            var list = await _service.GetByDealerIdAsync(dealerId);
+            return Ok(ApiResponse<IEnumerable<UserProfileResponse>>.CreateSuccess(list));
+        }
+
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(Guid id)
         {

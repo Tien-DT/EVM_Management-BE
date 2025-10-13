@@ -89,5 +89,28 @@ namespace EVMManagement.DAL.Repositories.Class
                 })
                 .ToListAsync();
         }
+
+        public async Task<System.Collections.Generic.IEnumerable<UserProfile>> GetByDealerIdAsync(Guid dealerId)
+        {
+            return await _dbSet
+                .Include(u => u.Account)
+                .Where(u => u.DealerId == dealerId)
+                .Select(u => new UserProfile
+                {
+                    Id = u.Id,
+                    AccountId = u.AccountId,
+                    DealerId = u.DealerId,
+                    FullName = u.FullName,
+                    Phone = u.Phone,
+                    CardId = u.CardId,
+                    CreatedDate = u.CreatedDate,
+                    ModifiedDate = u.ModifiedDate,
+                    DeletedDate = u.DeletedDate,
+                    IsDeleted = u.IsDeleted,
+                    Account = new Account { Id = u.Account.Id, Role = u.Account.Role, IsActive = u.Account.IsActive },
+                    Dealer = u.DealerId == null ? null : new Dealer { Id = u.Dealer!.Id, Name = u.Dealer!.Name }
+                })
+                .ToListAsync();
+        }
     }
 }

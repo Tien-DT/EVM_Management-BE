@@ -39,6 +39,12 @@ namespace EVMManagement.BLL.Services.Class
             return list.Select(MapToResponse);
         }
 
+        public async Task<IEnumerable<UserProfileResponse>> GetByDealerIdAsync(Guid dealerId)
+        {
+            var list = await _userProfileRepository.GetByDealerIdAsync(dealerId);
+            return list.Select(MapToResponse);
+        }
+
         public async Task<UserProfileResponse> CreateAsync(UserProfile entity)
         {
             await _userProfileRepository.AddAsync(entity);
