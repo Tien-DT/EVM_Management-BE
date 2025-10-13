@@ -14,10 +14,10 @@ namespace EVMManagement.DAL.Repositories.Class
         {
         }
 
-        // Add specialized methods when required (e.g., include navigation properties)
+       
         public override async Task<UserProfile?> GetByIdAsync(Guid id)
         {
-            // Project the Dealer to only include Id and Name to reduce payload
+           
             return await _dbSet
                 .Where(u => u.Id == id)
                 .Select(u => new UserProfile
@@ -32,16 +32,16 @@ namespace EVMManagement.DAL.Repositories.Class
                     ModifiedDate = u.ModifiedDate,
                     DeletedDate = u.DeletedDate,
                     IsDeleted = u.IsDeleted,
-                    // Keep Account as null to avoid loading unnecessary data
-                    Account = null!,
+                    Account = new Account { Id = u.Account.Id, Role = u.Account.Role, IsActive = u.Account.IsActive },
                     Dealer = u.DealerId == null ? null : new Dealer { Id = u.Dealer!.Id, Name = u.Dealer!.Name }
                 })
                 .FirstOrDefaultAsync();
         }
 
-        public override async Task<System.Collections.Generic.IEnumerable<UserProfile>> GetAllAsync()
+        public override async Task<IEnumerable<UserProfile>> GetAllAsync()
         {
             return await _dbSet
+                .Include(u => u.Account)
                 .Select(u => new UserProfile
                 {
                     Id = u.Id,
@@ -54,7 +54,37 @@ namespace EVMManagement.DAL.Repositories.Class
                     ModifiedDate = u.ModifiedDate,
                     DeletedDate = u.DeletedDate,
                     IsDeleted = u.IsDeleted,
-                    Account = null!,
+                    Account = new Account { Id = u.Account.Id, Role = u.Account.Role, IsActive = u.Account.IsActive },
+                    Dealer = u.DealerId == null ? null : new Dealer { Id = u.Dealer!.Id, Name = u.Dealer!.Name }
+                })
+                .ToListAsync();
+        }
+
+        public async Task<System.Collections.Generic.IEnumerable<UserProfile>> GetByRoleAndStatusAsync(EVMManagement.DAL.Models.Enums.AccountRole role, bool? isActive)
+        {
+            var query = _dbSet
+                .Include(u => u.Account)
+                .Where(u => u.Account.Role == role);
+
+            if (isActive.HasValue)
+            {
+                query = query.Where(u => u.Account.IsActive == isActive.Value);
+            }
+
+            return await query
+                .Select(u => new UserProfile
+                {
+                    Id = u.Id,
+                    AccountId = u.AccountId,
+                    DealerId = u.DealerId,
+                    FullName = u.FullName,
+                    Phone = u.Phone,
+                    CardId = u.CardId,
+                    CreatedDate = u.CreatedDate,
+                    ModifiedDate = u.ModifiedDate,
+                    DeletedDate = u.DeletedDate,
+                    IsDeleted = u.IsDeleted,
+                    Account = new Account { Id = u.Account.Id, Role = u.Account.Role, IsActive = u.Account.IsActive },
                     Dealer = u.DealerId == null ? null : new Dealer { Id = u.Dealer!.Id, Name = u.Dealer!.Name }
                 })
                 .ToListAsync();

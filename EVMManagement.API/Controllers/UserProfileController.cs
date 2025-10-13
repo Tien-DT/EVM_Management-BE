@@ -1,12 +1,16 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using System.Linq;
+using System.Collections.Generic;
 using EVMManagement.BLL.Services.Interface;
 using EVMManagement.BLL.DTOs.Request.User;
 using EVMManagement.BLL.DTOs.Response;
 using EVMManagement.DAL.Models.Entities;
+using EVMManagement.DAL.Models.Enums;
+using EVMManagement.BLL.DTOs.Response.User;
 
 namespace EVMManagement.API.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/v1/[controller]")]
     [ApiController]
     public class UserProfileController : ControllerBase
     {
@@ -21,15 +25,22 @@ namespace EVMManagement.API.Controllers
         public async Task<IActionResult> GetAll()
         {
             var list = await _service.GetAllAsync();
-            return Ok(ApiResponse<IEnumerable<UserProfile>>.CreateSuccess(list));
+            return Ok(ApiResponse<IEnumerable<UserProfileResponse>>.CreateSuccess(list));
+        }
+
+        [HttpGet("by-role")]
+        public async Task<IActionResult> GetByRole([FromQuery] AccountRole role, [FromQuery] bool? isActive)
+        {
+            var list = await _service.GetByRoleAndStatusAsync(role, isActive);
+            return Ok(ApiResponse<IEnumerable<UserProfileResponse>>.CreateSuccess(list));
         }
 
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(Guid id)
         {
             var item = await _service.GetByIdAsync(id);
-            if (item == null) return NotFound(ApiResponse<UserProfile>.CreateFail("UserProfile not found", null, 404));
-            return Ok(ApiResponse<UserProfile>.CreateSuccess(item));
+            if (item == null) return NotFound(ApiResponse<UserProfileResponse>.CreateFail("UserProfile not found", null, 404));
+            return Ok(ApiResponse<UserProfileResponse>.CreateSuccess(item));
         }
 
         [HttpPost]
@@ -38,7 +49,7 @@ namespace EVMManagement.API.Controllers
             if (!ModelState.IsValid)
             {
                 var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
-                return BadRequest(ApiResponse<UserProfile>.CreateFail("Validation failed", errors, 400));
+                return BadRequest(ApiResponse<UserProfileResponse>.CreateFail("Validation failed", errors, 400));
             }
 
             var toCreate = new UserProfile
@@ -51,7 +62,7 @@ namespace EVMManagement.API.Controllers
             };
 
             var created = await _service.CreateAsync(toCreate);
-            return CreatedAtAction(nameof(GetById), new { id = created.Id }, ApiResponse<UserProfile>.CreateSuccess(created));
+            return CreatedAtAction(nameof(GetById), new { id = created.Id }, ApiResponse<UserProfileResponse>.CreateSuccess(created));
         }
 
         [HttpPut("{id}")]
@@ -60,10 +71,10 @@ namespace EVMManagement.API.Controllers
             if (!ModelState.IsValid)
             {
                 var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
-                return BadRequest(ApiResponse<UserProfile>.CreateFail("Validation failed", errors, 400));
+                return BadRequest(ApiResponse<UserProfileResponse>.CreateFail("Validation failed", errors, 400));
             }
             var existing = await _service.GetByIdAsync(id);
-            if (existing == null) return NotFound(ApiResponse<UserProfile>.CreateFail("UserProfile not found", null, 404));
+            if (existing == null) return NotFound(ApiResponse<UserProfileResponse>.CreateFail("UserProfile not found", null, 404));
 
 
             var toUpdate = new UserProfile
@@ -76,8 +87,8 @@ namespace EVMManagement.API.Controllers
             };
 
             var updated = await _service.UpdateAsync(id, toUpdate);
-            if (updated == null) return NotFound(ApiResponse<UserProfile>.CreateFail("UserProfile not found", null, 404));
-            return Ok(ApiResponse<UserProfile>.CreateSuccess(updated));
+            if (updated == null) return NotFound(ApiResponse<UserProfileResponse>.CreateFail("UserProfile not found", null, 404));
+            return Ok(ApiResponse<UserProfileResponse>.CreateSuccess(updated));
         }
 
         [HttpDelete("{id}")]
@@ -87,5 +98,7 @@ namespace EVMManagement.API.Controllers
             if (!deleted) return NotFound(ApiResponse<string>.CreateFail("UserProfile not found", null, 404));
             return Ok(ApiResponse<string>.CreateSuccess("Deleted"));
         }
+
+        
     }
 }
