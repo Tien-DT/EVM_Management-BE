@@ -14,10 +14,8 @@ namespace EVMManagement.DAL.Repositories.Class
         {
         }
 
-       
         public override async Task<UserProfile?> GetByIdAsync(Guid id)
         {
-           
             return await _dbSet
                 .Where(u => u.Id == id)
                 .Select(u => new UserProfile

@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using EVMManagement.BLL.DTOs.Request.Auth;
 using EVMManagement.BLL.Services.Interface;
+using EVMManagement.BLL.DTOs.Response;
 
 namespace EVMManagement.API.Controllers
 {
@@ -38,6 +39,25 @@ namespace EVMManagement.API.Controllers
             if (statusCode == StatusCodes.Status403Forbidden)
             {
                 return StatusCode(StatusCodes.Status403Forbidden, result);
+            }
+
+            return StatusCode(statusCode, result);
+        }
+
+        [HttpPost("register-dealer")]
+        [AllowAnonymous]
+        public async Task<IActionResult> RegisterDealer([FromBody] RegisterDealerRequestDto request, CancellationToken cancellationToken)
+        {
+            var result = await _authService.RegisterDealerAsync(request, cancellationToken);
+            if (result.Success)
+            {
+                return Ok(result);
+            }
+
+            var statusCode = result.ErrorCode ?? StatusCodes.Status400BadRequest;
+            if (statusCode == StatusCodes.Status409Conflict)
+            {
+                return Conflict(result);
             }
 
             return StatusCode(statusCode, result);
