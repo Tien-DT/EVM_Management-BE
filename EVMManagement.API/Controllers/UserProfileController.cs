@@ -21,24 +21,39 @@ namespace EVMManagement.API.Controllers
 
        
         [HttpGet]
-        public async Task<IActionResult> GetAll()
+        public async Task<IActionResult> GetAll([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
         {
-            var list = await _service.GetAllAsync();
-            return Ok(ApiResponse<IEnumerable<UserProfileResponse>>.CreateSuccess(list));
+            if (pageNumber < 1 || pageSize < 1)
+            {
+                return BadRequest(ApiResponse<string>.CreateFail("PageNumber and PageSize must be greater than 0", null, 400));
+            }
+
+            var result = await _service.GetAllAsync(pageNumber, pageSize);
+            return Ok(ApiResponse<PagedResult<UserProfileResponse>>.CreateSuccess(result));
         }
 
         [HttpGet("by-role")]
-        public async Task<IActionResult> GetByRole([FromQuery] AccountRole role, [FromQuery] bool? isActive)
+        public async Task<IActionResult> GetByRole([FromQuery] AccountRole role, [FromQuery] bool? isActive, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
         {
-            var list = await _service.GetByRoleAndStatusAsync(role, isActive);
-            return Ok(ApiResponse<IEnumerable<UserProfileResponse>>.CreateSuccess(list));
+            if (pageNumber < 1 || pageSize < 1)
+            {
+                return BadRequest(ApiResponse<string>.CreateFail("PageNumber and PageSize must be greater than 0", null, 400));
+            }
+
+            var result = await _service.GetByRoleAndStatusAsync(role, isActive, pageNumber, pageSize);
+            return Ok(ApiResponse<PagedResult<UserProfileResponse>>.CreateSuccess(result));
         }
 
         [HttpGet("by-dealer/{dealerId}")]
-        public async Task<IActionResult> GetByDealer(Guid dealerId)
+        public async Task<IActionResult> GetByDealer(Guid dealerId, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
         {
-            var list = await _service.GetByDealerIdAsync(dealerId);
-            return Ok(ApiResponse<IEnumerable<UserProfileResponse>>.CreateSuccess(list));
+            if (pageNumber < 1 || pageSize < 1)
+            {
+                return BadRequest(ApiResponse<string>.CreateFail("PageNumber and PageSize must be greater than 0", null, 400));
+            }
+
+            var result = await _service.GetByDealerIdAsync(dealerId, pageNumber, pageSize);
+            return Ok(ApiResponse<PagedResult<UserProfileResponse>>.CreateSuccess(result));
         }
 
         [HttpGet("by-account/{accId}")]

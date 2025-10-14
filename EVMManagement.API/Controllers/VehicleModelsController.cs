@@ -33,17 +33,27 @@ namespace EVMManagement.API.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetAll()
+        public async Task<IActionResult> GetAll([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
         {
-            var models = await _service.GetAllAsync();
-            return Ok(ApiResponse<IEnumerable<VehicleModelResponseDto>>.CreateSuccess(models));
+            if (pageNumber < 1 || pageSize < 1)
+            {
+                return BadRequest(ApiResponse<string>.CreateFail("PageNumber and PageSize must be greater than 0", null, 400));
+            }
+
+            var result = await _service.GetAllAsync(pageNumber, pageSize);
+            return Ok(ApiResponse<PagedResult<VehicleModelResponseDto>>.CreateSuccess(result));
         }
 
         [HttpGet("by-ranking")]
-        public async Task<IActionResult> GetByRanking([FromQuery] VehicleModelRanking ranking)
+        public async Task<IActionResult> GetByRanking([FromQuery] VehicleModelRanking ranking, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
         {
-            var models = await _service.GetByRankingAsync(ranking);
-            return Ok(ApiResponse<IEnumerable<VehicleModelResponseDto>>.CreateSuccess(models));
+            if (pageNumber < 1 || pageSize < 1)
+            {
+                return BadRequest(ApiResponse<string>.CreateFail("PageNumber and PageSize must be greater than 0", null, 400));
+            }
+
+            var result = await _service.GetByRankingAsync(ranking, pageNumber, pageSize);
+            return Ok(ApiResponse<PagedResult<VehicleModelResponseDto>>.CreateSuccess(result));
         }
 
 

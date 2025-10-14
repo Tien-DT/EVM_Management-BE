@@ -1,8 +1,10 @@
 using EVMManagement.BLL.DTOs.Request.Vehicle;
+using EVMManagement.BLL.DTOs.Response;
 using EVMManagement.BLL.Services.Interface;
 using EVMManagement.DAL.Models.Entities;
 using EVMManagement.DAL.UnitOfWork;
 using EVMManagement.DAL.Models.Enums;
+using Microsoft.EntityFrameworkCore;
 
 namespace EVMManagement.BLL.Services.Class
 {
@@ -35,16 +37,39 @@ namespace EVMManagement.BLL.Services.Class
             return MapToDto(model);
         }
 
-        public async Task<IEnumerable<VehicleModelResponseDto>> GetAllAsync()
+        public async Task<PagedResult<VehicleModelResponseDto>> GetAllAsync(int pageNumber = 1, int pageSize = 10)
         {
-            var models = await _unitOfWork.VehicleModels.GetAllOrderedByCreatedDateDescAsync();
-            return models.Select(MapToDto);
+            var query = _unitOfWork.VehicleModels.GetQueryable()
+                .OrderByDescending(m => m.CreatedDate);
+
+            var totalCount = await _unitOfWork.VehicleModels.CountAsync();
+
+            var items = await query
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            var responses = items.Select(MapToDto).ToList();
+
+            return PagedResult<VehicleModelResponseDto>.Create(responses, totalCount, pageNumber, pageSize);
         }
 
-        public async Task<IEnumerable<VehicleModelResponseDto>> GetByRankingAsync(VehicleModelRanking ranking)
+        public async Task<PagedResult<VehicleModelResponseDto>> GetByRankingAsync(VehicleModelRanking ranking, int pageNumber = 1, int pageSize = 10)
         {
-            var models = await _unitOfWork.VehicleModels.GetByRankingAsync(ranking);
-            return models.Select(MapToDto);
+            var query = _unitOfWork.VehicleModels.GetQueryable()
+                .Where(m => m.Ranking == ranking)
+                .OrderByDescending(m => m.CreatedDate);
+
+            var totalCount = await query.CountAsync();
+
+            var items = await query
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            var responses = items.Select(MapToDto).ToList();
+
+            return PagedResult<VehicleModelResponseDto>.Create(responses, totalCount, pageNumber, pageSize);
         }
 
         
