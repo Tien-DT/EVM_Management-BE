@@ -25,10 +25,10 @@ namespace EVMManagement.API
                     Title = "EVM Management API",
                     Description = "API for Event and Venue Management System"
                 });
-              
-                options.SchemaFilter<EVMManagement.API.Setup.Swagger.EnumSchemaFilter>();
-            });
 
+                
+            });
+           
             // Add Database Configuration
             builder.Services.AddDatabaseConfiguration(builder.Configuration);
 
@@ -62,6 +62,7 @@ namespace EVMManagement.API
                 {
                     c.SwaggerEndpoint("/swagger/v1/swagger.json", "EVM Management API v1");
                 });
+                app.UseHttpsRedirection();
             }
 
             // Enable Swagger in Production for Render.com
@@ -73,6 +74,7 @@ namespace EVMManagement.API
                     c.SwaggerEndpoint("/swagger/v1/swagger.json", "EVM Management API v1");
                 });
             }
+
 
             app.UseCors("AllowAll");
 
