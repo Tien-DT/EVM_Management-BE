@@ -1,11 +1,10 @@
-using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
 using EVMManagement.DAL.Models.Enums;
+using System;
+using System.ComponentModel.DataAnnotations;
 
-namespace EVMManagement.DAL.Models.Entities
+namespace EVMManagement.BLL.DTOs.Request.Vehicle
 {
-    public class VehicleModel : BaseEntity
+    public class VehicleModelUpdateDto
     {
         [Required]
         [MaxLength(50)]
@@ -17,12 +16,10 @@ namespace EVMManagement.DAL.Models.Entities
 
         public DateTime? LaunchDate { get; set; }
 
+        [MaxLength(1000)]
         public string? Description { get; set; }
 
         public bool Status { get; set; } = true;
-
         public VehicleModelRanking? Ranking { get; set; }
-        
-        public virtual ICollection<VehicleVariant> VehicleVariants { get; set; } = new HashSet<VehicleVariant>();
     }
 }
