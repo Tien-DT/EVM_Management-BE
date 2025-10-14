@@ -8,8 +8,9 @@ namespace EVMManagement.DAL.UnitOfWork
     {
         IAccountRepository Accounts { get; }
         IUserProfileRepository UserProfiles { get; }
-    IVehicleVariantRepository VehicleVariants { get; }
-    IVehicleModelRepository VehicleModels { get; }
+        IVehicleVariantRepository VehicleVariants { get; }
+        IVehicleModelRepository VehicleModels { get; }
+        IWarehouseRepository Warehouses { get; }
 
         // Transaction methods
         Task<int> SaveChangesAsync();

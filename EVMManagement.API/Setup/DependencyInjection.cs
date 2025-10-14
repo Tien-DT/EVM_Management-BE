@@ -27,11 +27,13 @@ namespace EVMManagement.API.Setup
             services.AddScoped<IUserProfileRepository, UserProfileRepository>();
             services.AddScoped<IVehicleVariantRepository, VehicleVariantRepository>();
             services.AddScoped<IVehicleModelRepository, VehicleModelRepository>();
+            services.AddScoped<IWarehouseRepository, WarehouseRepository>();
 
             // Register domain services
             services.AddScoped<IUserProfileService, UserProfileService>();
             services.AddScoped<IVehicleVariantService, VehicleVariantService>();
             services.AddScoped<IVehicleModelService, VehicleModelService>();
+            services.AddScoped<IWarehouseService, WarehouseService>();
 
             // Add JWT Authentication
             AddJwtAuthentication(services, configuration);
