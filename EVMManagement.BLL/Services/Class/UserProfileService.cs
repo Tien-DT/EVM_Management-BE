@@ -27,12 +27,18 @@ namespace EVMManagement.BLL.Services.Class
             return list.Select(MapToResponse);
         }
 
+        public async Task<UserProfileResponse?> GetByAccountIdAsync(Guid accId)
+        {
+            // Changed to fetch by AccountId (id parameter is treated as AccountId)
+            var entity = await _userProfileRepository.GetByAccountIdAsync(accId);
+            return entity == null ? null : MapToResponse(entity);
+        }
         public async Task<UserProfileResponse?> GetByIdAsync(Guid id)
         {
+            // Changed to fetch by AccountId (id parameter is treated as AccountId)
             var entity = await _userProfileRepository.GetByIdAsync(id);
             return entity == null ? null : MapToResponse(entity);
         }
-
         public async Task<IEnumerable<UserProfileResponse>> GetByRoleAndStatusAsync(EVMManagement.DAL.Models.Enums.AccountRole role, bool? isActive)
         {
             var list = await _userProfileRepository.GetByRoleAndStatusAsync(role, isActive);
