@@ -10,5 +10,7 @@ namespace EVMManagement.DAL.Repositories.Interface
     {
         Task<System.Collections.Generic.IEnumerable<UserProfile>> GetByRoleAndStatusAsync(AccountRole role, bool? isActive);
         Task<System.Collections.Generic.IEnumerable<UserProfile>> GetByDealerIdAsync(Guid dealerId);
+        Task<UserProfile?> GetByAccountIdAsync(Guid accountId);
+
     }
 }

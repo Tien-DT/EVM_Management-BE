@@ -1,4 +1,5 @@
 using EVMManagement.API.Setup;
+using Microsoft.OpenApi.Models;
 
 namespace EVMManagement.API
 {
@@ -18,10 +19,16 @@ namespace EVMManagement.API
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen(options =>
             {
-              
+                options.SwaggerDoc("v1", new OpenApiInfo
+                {
+                    Version = "v1",
+                    Title = "EVM Management API",
+                    Description = "API for Event and Venue Management System"
+                });
+
                 options.SchemaFilter<EVMManagement.API.Setup.Swagger.EnumSchemaFilter>();
             });
-
+           
             // Add Database Configuration
             builder.Services.AddDatabaseConfiguration(builder.Configuration);
 

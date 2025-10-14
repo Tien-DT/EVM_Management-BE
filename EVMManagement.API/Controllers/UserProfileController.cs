@@ -41,6 +41,13 @@ namespace EVMManagement.API.Controllers
             return Ok(ApiResponse<IEnumerable<UserProfileResponse>>.CreateSuccess(list));
         }
 
+        [HttpGet("by-account/{accId}")]
+        public async Task<IActionResult> GetByAccountId(Guid accId)
+        {
+            var item = await _service.GetByAccountIdAsync(accId);
+            if (item == null) return NotFound(ApiResponse<UserProfileResponse>.CreateFail("UserProfile not found", null, 404));
+            return Ok(ApiResponse<UserProfileResponse>.CreateSuccess(item));
+        }
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(Guid id)
         {
@@ -48,7 +55,6 @@ namespace EVMManagement.API.Controllers
             if (item == null) return NotFound(ApiResponse<UserProfileResponse>.CreateFail("UserProfile not found", null, 404));
             return Ok(ApiResponse<UserProfileResponse>.CreateSuccess(item));
         }
-
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] UserProfileCreateDto dto)
         {
