@@ -25,10 +25,10 @@ namespace EVMManagement.API
                     Title = "EVM Management API",
                     Description = "API for Event and Venue Management System"
                 });
-              
-                options.SchemaFilter<EVMManagement.API.Setup.Swagger.EnumSchemaFilter>();
-            });
 
+                
+            });
+           
             // Add Database Configuration
             builder.Services.AddDatabaseConfiguration(builder.Configuration);
 
