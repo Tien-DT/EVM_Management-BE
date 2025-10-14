@@ -13,7 +13,7 @@ namespace EVMManagement.API.Setup
             services.AddDbContext<AppDbContext>(options =>
             {
                 options.UseNpgsql(
-                    configuration.GetConnectionString("DefaultConnection_Local"),
+                    configuration.GetConnectionString("DefaultConnection"),
                     npgsqlOptions =>
                     {
                         npgsqlOptions.EnableRetryOnFailure(
