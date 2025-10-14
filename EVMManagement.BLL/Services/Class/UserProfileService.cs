@@ -6,7 +6,9 @@ using EVMManagement.BLL.Services.Interface;
 using EVMManagement.DAL.Repositories.Interface;
 using EVMManagement.DAL.UnitOfWork;
 using EVMManagement.DAL.Models.Entities;
+using EVMManagement.BLL.DTOs.Response;
 using EVMManagement.BLL.DTOs.Response.User;
+using Microsoft.EntityFrameworkCore;
 
 namespace EVMManagement.BLL.Services.Class
 {
@@ -21,10 +23,38 @@ namespace EVMManagement.BLL.Services.Class
             _unitOfWork = unitOfWork;
         }
 
-        public async Task<IEnumerable<UserProfileResponse>> GetAllAsync()
+        public async Task<PagedResult<UserProfileResponse>> GetAllAsync(int pageNumber = 1, int pageSize = 10)
         {
-            var list = await _userProfileRepository.GetAllAsync();
-            return list.Select(MapToResponse);
+            var query = _userProfileRepository.GetQueryable()
+                .Include(u => u.Account)
+                .Include(u => u.Dealer);
+
+            var totalCount = await query.CountAsync();
+
+            var items = await query
+                .OrderByDescending(u => u.CreatedDate)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .Select(u => new UserProfile
+                {
+                    Id = u.Id,
+                    AccountId = u.AccountId,
+                    DealerId = u.DealerId,
+                    FullName = u.FullName,
+                    Phone = u.Phone,
+                    CardId = u.CardId,
+                    CreatedDate = u.CreatedDate,
+                    ModifiedDate = u.ModifiedDate,
+                    DeletedDate = u.DeletedDate,
+                    IsDeleted = u.IsDeleted,
+                    Account = new Account { Id = u.Account.Id, Role = u.Account.Role, IsActive = u.Account.IsActive },
+                    Dealer = u.DealerId == null ? null : new Dealer { Id = u.Dealer!.Id, Name = u.Dealer!.Name }
+                })
+                .ToListAsync();
+
+            var responses = items.Select(MapToResponse).ToList();
+
+            return PagedResult<UserProfileResponse>.Create(responses, totalCount, pageNumber, pageSize);
         }
 
         public async Task<UserProfileResponse?> GetByAccountIdAsync(Guid accId)
@@ -39,16 +69,79 @@ namespace EVMManagement.BLL.Services.Class
             var entity = await _userProfileRepository.GetByIdAsync(id);
             return entity == null ? null : MapToResponse(entity);
         }
-        public async Task<IEnumerable<UserProfileResponse>> GetByRoleAndStatusAsync(EVMManagement.DAL.Models.Enums.AccountRole role, bool? isActive)
+        public async Task<PagedResult<UserProfileResponse>> GetByRoleAndStatusAsync(EVMManagement.DAL.Models.Enums.AccountRole role, bool? isActive, int pageNumber = 1, int pageSize = 10)
         {
-            var list = await _userProfileRepository.GetByRoleAndStatusAsync(role, isActive);
-            return list.Select(MapToResponse);
+            var query = _userProfileRepository.GetQueryable()
+                .Include(u => u.Account)
+                .Include(u => u.Dealer)
+                .Where(u => u.Account.Role == role);
+
+            if (isActive.HasValue)
+            {
+                query = query.Where(u => u.Account.IsActive == isActive.Value);
+            }
+
+            var totalCount = await query.CountAsync();
+
+            var items = await query
+                .OrderByDescending(u => u.CreatedDate)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .Select(u => new UserProfile
+                {
+                    Id = u.Id,
+                    AccountId = u.AccountId,
+                    DealerId = u.DealerId,
+                    FullName = u.FullName,
+                    Phone = u.Phone,
+                    CardId = u.CardId,
+                    CreatedDate = u.CreatedDate,
+                    ModifiedDate = u.ModifiedDate,
+                    DeletedDate = u.DeletedDate,
+                    IsDeleted = u.IsDeleted,
+                    Account = new Account { Id = u.Account.Id, Role = u.Account.Role, IsActive = u.Account.IsActive },
+                    Dealer = u.DealerId == null ? null : new Dealer { Id = u.Dealer!.Id, Name = u.Dealer!.Name }
+                })
+                .ToListAsync();
+
+            var responses = items.Select(MapToResponse).ToList();
+
+            return PagedResult<UserProfileResponse>.Create(responses, totalCount, pageNumber, pageSize);
         }
 
-        public async Task<IEnumerable<UserProfileResponse>> GetByDealerIdAsync(Guid dealerId)
+        public async Task<PagedResult<UserProfileResponse>> GetByDealerIdAsync(Guid dealerId, int pageNumber = 1, int pageSize = 10)
         {
-            var list = await _userProfileRepository.GetByDealerIdAsync(dealerId);
-            return list.Select(MapToResponse);
+            var query = _userProfileRepository.GetQueryable()
+                .Include(u => u.Account)
+                .Include(u => u.Dealer)
+                .Where(u => u.DealerId == dealerId);
+
+            var totalCount = await query.CountAsync();
+
+            var items = await query
+                .OrderByDescending(u => u.CreatedDate)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .Select(u => new UserProfile
+                {
+                    Id = u.Id,
+                    AccountId = u.AccountId,
+                    DealerId = u.DealerId,
+                    FullName = u.FullName,
+                    Phone = u.Phone,
+                    CardId = u.CardId,
+                    CreatedDate = u.CreatedDate,
+                    ModifiedDate = u.ModifiedDate,
+                    DeletedDate = u.DeletedDate,
+                    IsDeleted = u.IsDeleted,
+                    Account = new Account { Id = u.Account.Id, Role = u.Account.Role, IsActive = u.Account.IsActive },
+                    Dealer = u.DealerId == null ? null : new Dealer { Id = u.Dealer!.Id, Name = u.Dealer!.Name }
+                })
+                .ToListAsync();
+
+            var responses = items.Select(MapToResponse).ToList();
+
+            return PagedResult<UserProfileResponse>.Create(responses, totalCount, pageNumber, pageSize);
         }
 
         public async Task<UserProfileResponse> CreateAsync(UserProfile entity)
