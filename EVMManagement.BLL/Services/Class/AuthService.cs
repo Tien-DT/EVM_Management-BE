@@ -224,5 +224,118 @@ namespace EVMManagement.BLL.Services.Class
             }
             return new string(chars);
         }
+
+        public async Task<ApiResponse<string>> CreateAccountAsync(CreateAccountRequestDto request, CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                if (request == null)
+                {
+                    return ApiResponse<string>.CreateFail("Yêu cầu không hợp lệ.");
+                }
+
+                if (string.IsNullOrWhiteSpace(request.Email))
+                {
+                    return ApiResponse<string>.CreateFail("Email là bắt buộc.");
+                }
+
+                if (string.IsNullOrWhiteSpace(request.Password))
+                {
+                    return ApiResponse<string>.CreateFail("Mật khẩu là bắt buộc.");
+                }
+
+                if (string.IsNullOrWhiteSpace(request.FullName))
+                {
+                    return ApiResponse<string>.CreateFail("Họ tên là bắt buộc.");
+                }
+
+                var existed = await _unitOfWork.Accounts.GetByEmailAsync(request.Email);
+                if (existed != null)
+                {
+                    return ApiResponse<string>.CreateFail("Email đã được sử dụng.", errorCode: 409);
+                }
+
+                var account = new Account
+                {
+                    Email = request.Email.Trim(),
+                    IsActive = true,
+                    Role = request.Role
+                };
+                account.PasswordHash = _passwordHasher.HashPassword(account, request.Password);
+
+                await _unitOfWork.Accounts.AddAsync(account);
+
+                var profile = new UserProfile
+                {
+                    AccountId = account.Id,
+                    DealerId = null,
+                    FullName = request.FullName.Trim(),
+                    Phone = request.Phone,
+                    CardId = request.CardId
+                };
+                await _unitOfWork.UserProfiles.AddAsync(profile);
+
+                await _unitOfWork.SaveChangesAsync();
+
+                return ApiResponse<string>.CreateSuccess(account.Id.ToString(), "Tạo tài khoản thành công.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi tạo tài khoản");
+                return ApiResponse<string>.CreateFail(ex);
+            }
+        }
+
+        public async Task<ApiResponse<LoginTokenDto>> RefreshTokenAsync(RefreshTokenRequestDto request, CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                if (request == null || string.IsNullOrWhiteSpace(request.RefreshToken))
+                {
+                    return ApiResponse<LoginTokenDto>.CreateFail("Refresh token là bắt buộc.", errorCode: 401);
+                }
+
+                var cacheKey = $"auth:refresh:{request.RefreshToken}";
+                var accountIdStr = await _cache.GetStringAsync(cacheKey, cancellationToken);
+
+                if (string.IsNullOrWhiteSpace(accountIdStr))
+                {
+                    return ApiResponse<LoginTokenDto>.CreateFail("Refresh token không hợp lệ hoặc đã hết hạn.", errorCode: 401);
+                }
+
+                if (!Guid.TryParse(accountIdStr, out var accountId))
+                {
+                    return ApiResponse<LoginTokenDto>.CreateFail("Refresh token không hợp lệ.", errorCode: 401);
+                }
+
+                var account = await _unitOfWork.Accounts.GetByIdAsync(accountId);
+                if (account == null)
+                {
+                    return ApiResponse<LoginTokenDto>.CreateFail("Tài khoản không tồn tại.", errorCode: 401);
+                }
+
+                if (account.IsDeleted)
+                {
+                    return ApiResponse<LoginTokenDto>.CreateFail("Tài khoản đã bị vô hiệu.", errorCode: 403);
+                }
+
+                if (!account.IsActive)
+                {
+                    return ApiResponse<LoginTokenDto>.CreateFail("Tài khoản chưa được kích hoạt.", errorCode: 403);
+                }
+
+                await _cache.RemoveAsync(cacheKey, cancellationToken);
+
+                var tokens = BuildLoginTokens(account);
+                await StoreRefreshTokenAsync(account, tokens.RefreshToken, cancellationToken);
+
+                return ApiResponse<LoginTokenDto>.CreateSuccess(tokens, "Làm mới token thành công.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi làm mới token");
+                return ApiResponse<LoginTokenDto>.CreateFail(ex);
+            }
+        }
     }
 }
