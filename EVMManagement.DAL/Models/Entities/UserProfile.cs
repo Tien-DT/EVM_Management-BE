@@ -20,7 +20,7 @@ namespace EVMManagement.DAL.Models.Entities
 
         [MaxLength(50)]
         public string? CardId { get; set; }
-        public virtual Account Account { get; set; } = null!;
+        public virtual Account Account { get; set; } 
         public virtual Dealer? Dealer { get; set; }
         public virtual ICollection<Quotation> CreatedQuotations { get; set; } = new HashSet<Quotation>();
         public virtual ICollection<Order> CreatedOrders { get; set; } = new HashSet<Order>();

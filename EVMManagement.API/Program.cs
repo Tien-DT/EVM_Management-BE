@@ -1,4 +1,5 @@
 using EVMManagement.API.Setup;
+using Microsoft.OpenApi.Models;
 
 namespace EVMManagement.API
 {
@@ -9,11 +10,24 @@ namespace EVMManagement.API
             var builder = WebApplication.CreateBuilder(args);
 
             // Add services to the container
-            builder.Services.AddControllers();
-            
+            builder.Services.AddControllers().AddJsonOptions(opts =>
+            {
+                opts.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
+            });
+
             // Add Swagger/OpenAPI
             builder.Services.AddEndpointsApiExplorer();
-            builder.Services.AddSwaggerGen();
+            builder.Services.AddSwaggerGen(options =>
+            {
+                options.SwaggerDoc("v1", new OpenApiInfo
+                {
+                    Version = "v1",
+                    Title = "EVM Management API",
+                    Description = "API for Event and Venue Management System"
+                });
+              
+                options.SchemaFilter<EVMManagement.API.Setup.Swagger.EnumSchemaFilter>();
+            });
 
             // Add Database Configuration
             builder.Services.AddDatabaseConfiguration(builder.Configuration);
@@ -44,15 +58,23 @@ namespace EVMManagement.API
             if (app.Environment.IsDevelopment())
             {
                 app.UseSwagger();
-                app.UseSwaggerUI();
+                app.UseSwaggerUI(c =>
+                {
+                    c.SwaggerEndpoint("/swagger/v1/swagger.json", "EVM Management API v1");
+                });
+                app.UseHttpsRedirection();
             }
 
             // Enable Swagger in Production for Render.com
             if (app.Environment.IsProduction())
             {
                 app.UseSwagger();
-                app.UseSwaggerUI();
+                app.UseSwaggerUI(c =>
+                {
+                    c.SwaggerEndpoint("/swagger/v1/swagger.json", "EVM Management API v1");
+                });
             }
+
 
             app.UseCors("AllowAll");
 

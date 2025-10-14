@@ -70,8 +70,7 @@ namespace EVMManagement.DAL.Data
             {
                 entity.HasKey(e => e.Id);
                 entity.HasIndex(e => e.Email).IsUnique();
-                entity.Property(e => e.Role)
-                    .HasConversion<string>();
+                // Role enum will be stored as int by default
             });
 
             // Configure UserProfile
@@ -120,8 +119,7 @@ namespace EVMManagement.DAL.Data
             modelBuilder.Entity<Warehouse>(entity =>
             {
                 entity.HasKey(e => e.Id);
-                entity.Property(e => e.Type)
-                    .HasConversion<string>();
+                // Type enum will be stored as int by default
                 entity.HasOne(e => e.Dealer)
                     .WithMany(d => d.Warehouses)
                     .HasForeignKey(e => e.DealerId)
@@ -133,10 +131,8 @@ namespace EVMManagement.DAL.Data
             {
                 entity.HasKey(e => e.Id);
                 entity.HasIndex(e => e.Vin).IsUnique();
-                entity.Property(e => e.Status)
-                    .HasConversion<string>();
-                entity.Property(e => e.Purpose)
-                    .HasConversion<string>();
+                // Status enum will be stored as int by default
+                // Purpose enum will be stored as int by default
                 entity.HasOne(e => e.VehicleVariant)
                     .WithMany(v => v.Vehicles)
                     .HasForeignKey(e => e.VariantId)
@@ -152,8 +148,7 @@ namespace EVMManagement.DAL.Data
             {
                 entity.HasKey(e => e.Id);
                 entity.HasIndex(e => e.Code).IsUnique();
-                entity.Property(e => e.Status)
-                    .HasConversion<string>();
+                // Status enum will be stored as int by default
                 entity.HasOne(e => e.Customer)
                     .WithMany(c => c.Quotations)
                     .HasForeignKey(e => e.CustomerId)
@@ -183,10 +178,8 @@ namespace EVMManagement.DAL.Data
             {
                 entity.HasKey(e => e.Id);
                 entity.HasIndex(e => e.Code).IsUnique();
-                entity.Property(e => e.Status)
-                    .HasConversion<string>();
-                entity.Property(e => e.OrderType)
-                    .HasConversion<string>();
+                // Status enum will be stored as int by default
+                // OrderType enum will be stored as int by default
                 entity.HasOne(e => e.Quotation)
                     .WithOne(q => q.Order)
                     .HasForeignKey<Order>(e => e.QuotationId)
@@ -228,8 +221,7 @@ namespace EVMManagement.DAL.Data
             {
                 entity.HasKey(e => e.Id);
                 entity.HasIndex(e => e.Code).IsUnique();
-                entity.Property(e => e.Status)
-                    .HasConversion<string>();
+                // Status enum will be stored as int by default
                 entity.HasOne(e => e.Order)
                     .WithOne(o => o.Contract)
                     .HasForeignKey<Contract>(e => e.OrderId)
@@ -249,8 +241,7 @@ namespace EVMManagement.DAL.Data
             {
                 entity.HasKey(e => e.Id);
                 entity.HasIndex(e => e.ContractCode).IsUnique();
-                entity.Property(e => e.Status)
-                    .HasConversion<string>();
+                // Status enum will be stored as int by default
                 entity.HasOne(e => e.Dealer)
                     .WithOne(d => d.DealerContract)
                     .HasForeignKey<DealerContract>(e => e.DealerId)
@@ -269,10 +260,8 @@ namespace EVMManagement.DAL.Data
             modelBuilder.Entity<Deposit>(entity =>
             {
                 entity.HasKey(e => e.Id);
-                entity.Property(e => e.Method)
-                    .HasConversion<string>();
-                entity.Property(e => e.Status)
-                    .HasConversion<string>();
+                // Method enum will be stored as int by default
+                // Status enum will be stored as int by default
                 entity.HasOne(e => e.Order)
                     .WithMany(o => o.Deposits)
                     .HasForeignKey(e => e.OrderId)
@@ -288,8 +277,7 @@ namespace EVMManagement.DAL.Data
             {
                 entity.HasKey(e => e.Id);
                 entity.HasIndex(e => e.InvoiceCode).IsUnique();
-                entity.Property(e => e.Status)
-                    .HasConversion<string>();
+                // Status enum will be stored as int by default
                 entity.HasOne(e => e.Order)
                     .WithOne(o => o.Invoice)
                     .HasForeignKey<Invoice>(e => e.OrderId)
@@ -300,8 +288,7 @@ namespace EVMManagement.DAL.Data
             modelBuilder.Entity<InstallmentPlan>(entity =>
             {
                 entity.HasKey(e => e.Id);
-                entity.Property(e => e.Status)
-                    .HasConversion<string>();
+                // Status enum will be stored as int by default
                 entity.HasOne(e => e.Order)
                     .WithOne(o => o.InstallmentPlan)
                     .HasForeignKey<InstallmentPlan>(e => e.OrderId)
@@ -312,8 +299,7 @@ namespace EVMManagement.DAL.Data
             modelBuilder.Entity<InstallmentPayment>(entity =>
             {
                 entity.HasKey(e => e.Id);
-                entity.Property(e => e.Status)
-                    .HasConversion<string>();
+                // Status enum will be stored as int by default
                 entity.HasOne(e => e.InstallmentPlan)
                     .WithMany(p => p.InstallmentPayments)
                     .HasForeignKey(e => e.PlanId)
@@ -324,8 +310,7 @@ namespace EVMManagement.DAL.Data
             modelBuilder.Entity<Transaction>(entity =>
             {
                 entity.HasKey(e => e.Id);
-                entity.Property(e => e.Status)
-                    .HasConversion<string>();
+                // Status enum will be stored as int by default
                 entity.HasOne(e => e.Invoice)
                     .WithMany(i => i.Transactions)
                     .HasForeignKey(e => e.InvoiceId)
@@ -376,8 +361,7 @@ namespace EVMManagement.DAL.Data
             modelBuilder.Entity<Transport>(entity =>
             {
                 entity.HasKey(e => e.Id);
-                entity.Property(e => e.Status)
-                    .HasConversion<string>();
+                // Status enum will be stored as int by default
             });
 
             // Configure TransportDetail
@@ -423,8 +407,7 @@ namespace EVMManagement.DAL.Data
             modelBuilder.Entity<VehicleTimeSlot>(entity =>
             {
                 entity.HasKey(e => e.Id);
-                entity.Property(e => e.Status)
-                    .HasConversion<string>();
+                // Status enum will be stored as int by default
                 entity.HasOne(e => e.Vehicle)
                     .WithMany(v => v.VehicleTimeSlots)
                     .HasForeignKey(e => e.VehicleId)
@@ -443,8 +426,7 @@ namespace EVMManagement.DAL.Data
             modelBuilder.Entity<TestDriveBooking>(entity =>
             {
                 entity.HasKey(e => e.Id);
-                entity.Property(e => e.Status)
-                    .HasConversion<string>();
+                // Status enum will be stored as int by default
                 entity.HasOne(e => e.VehicleTimeSlot)
                     .WithOne(v => v.TestDriveBooking)
                     .HasForeignKey<TestDriveBooking>(e => e.VehicleTimeslotId)

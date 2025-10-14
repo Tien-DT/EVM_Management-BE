@@ -1,10 +1,12 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using EVMManagement.BLL.Services.Interface;
 using EVMManagement.DAL.Repositories.Interface;
 using EVMManagement.DAL.UnitOfWork;
 using EVMManagement.DAL.Models.Entities;
+using EVMManagement.BLL.DTOs.Response.User;
 
 namespace EVMManagement.BLL.Services.Class
 {
@@ -19,30 +21,42 @@ namespace EVMManagement.BLL.Services.Class
             _unitOfWork = unitOfWork;
         }
 
-        public async Task<IEnumerable<UserProfile>> GetAllAsync()
+        public async Task<IEnumerable<UserProfileResponse>> GetAllAsync()
         {
-            return await _userProfileRepository.GetAllAsync();
+            var list = await _userProfileRepository.GetAllAsync();
+            return list.Select(MapToResponse);
         }
 
-        public async Task<UserProfile?> GetByIdAsync(Guid id)
+        public async Task<UserProfileResponse?> GetByIdAsync(Guid id)
         {
-            return await _userProfileRepository.GetByIdAsync(id);
+            var entity = await _userProfileRepository.GetByIdAsync(id);
+            return entity == null ? null : MapToResponse(entity);
         }
 
-        public async Task<UserProfile> CreateAsync(UserProfile entity)
+        public async Task<IEnumerable<UserProfileResponse>> GetByRoleAndStatusAsync(EVMManagement.DAL.Models.Enums.AccountRole role, bool? isActive)
+        {
+            var list = await _userProfileRepository.GetByRoleAndStatusAsync(role, isActive);
+            return list.Select(MapToResponse);
+        }
+
+        public async Task<IEnumerable<UserProfileResponse>> GetByDealerIdAsync(Guid dealerId)
+        {
+            var list = await _userProfileRepository.GetByDealerIdAsync(dealerId);
+            return list.Select(MapToResponse);
+        }
+
+        public async Task<UserProfileResponse> CreateAsync(UserProfile entity)
         {
             await _userProfileRepository.AddAsync(entity);
             await _unitOfWork.SaveChangesAsync();
-            return entity;
+            return MapToResponse(entity);
         }
 
-        public async Task<UserProfile?> UpdateAsync(Guid id, UserProfile entity)
+        public async Task<UserProfileResponse?> UpdateAsync(Guid id, UserProfile entity)
         {
             var existing = await _userProfileRepository.GetByIdAsync(id);
             if (existing == null) return null;
 
-            // AccountId must not be changed via update
-            // existing.AccountId = entity.AccountId; // intentionally not changed
             existing.DealerId = entity.DealerId;
             existing.FullName = entity.FullName;
             existing.Phone = entity.Phone;
@@ -50,7 +64,19 @@ namespace EVMManagement.BLL.Services.Class
 
             _userProfileRepository.Update(existing);
             await _unitOfWork.SaveChangesAsync();
-            return existing;
+            return MapToResponse(existing);
+        }
+
+        public async Task<UserProfileResponse?> UpdateIsDeletedAsync(Guid id, bool isDeleted)
+        {
+            var existing = await _userProfileRepository.GetByIdAsync(id);
+            if (existing == null) return null;
+
+            existing.IsDeleted = isDeleted;
+            existing.DeletedDate = isDeleted ? DateTime.UtcNow : null;
+            _userProfileRepository.Update(existing);
+            await _unitOfWork.SaveChangesAsync();
+            return MapToResponse(existing);
         }
 
         public async Task<bool> DeleteAsync(Guid id)
@@ -60,6 +86,21 @@ namespace EVMManagement.BLL.Services.Class
             _userProfileRepository.Delete(existing);
             await _unitOfWork.SaveChangesAsync();
             return true;
+        }
+
+        private static UserProfileResponse MapToResponse(UserProfile u)
+        {
+            return new UserProfileResponse
+            {
+                Id = u.Id,
+                AccountId = u.AccountId,
+                DealerId = u.DealerId,
+                FullName = u.FullName,
+                Phone = u.Phone,
+                CardId = u.CardId,
+                Dealer = u.DealerId == null ? null : new DealerDto { Id = u.Dealer!.Id, Name = u.Dealer!.Name }
+                , Account = u.Account == null ? null : new AccountDto { Role = u.Account.Role, IsActive = u.Account.IsActive }
+            };
         }
     }
 }
