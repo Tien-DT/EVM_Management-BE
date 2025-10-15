@@ -18,6 +18,7 @@ namespace EVMManagement.DAL.UnitOfWork
         private IVehicleModelRepository? _vehicleModels;
         private IWarehouseRepository? _warehouses;
         private ICustomerRepository? _customers;
+        private IOrderRepository? _orders;
 
         public UnitOfWork(AppDbContext context)
         {
@@ -30,6 +31,7 @@ namespace EVMManagement.DAL.UnitOfWork
         public IVehicleModelRepository VehicleModels => _vehicleModels ??= new VehicleModelRepository(_context);
         public IWarehouseRepository Warehouses => _warehouses ??= new WarehouseRepository(_context);
         public ICustomerRepository Customers => _customers ??= new CustomerRepository(_context);
+        public IOrderRepository Orders => _orders ??= new OrderRepository(_context);
 
         public async Task<int> SaveChangesAsync()
         {
