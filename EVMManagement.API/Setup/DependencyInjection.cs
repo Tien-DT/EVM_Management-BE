@@ -29,6 +29,7 @@ namespace EVMManagement.API.Setup
             services.AddScoped<IVehicleModelRepository, VehicleModelRepository>();
             services.AddScoped<IWarehouseRepository, WarehouseRepository>();
             services.AddScoped<ICustomerRepository, CustomerRepository>();
+            services.AddScoped<IDealerRepository, DealerRepository>();
 
             // Register domain services
             services.AddScoped<IUserProfileService, UserProfileService>();
@@ -36,6 +37,7 @@ namespace EVMManagement.API.Setup
             services.AddScoped<IVehicleModelService, VehicleModelService>();
             services.AddScoped<IWarehouseService, WarehouseService>();
             services.AddScoped<ICustomerService, CustomerService>();
+            services.AddScoped<IDealerService, DealerService>();
 
             // Add JWT Authentication
             AddJwtAuthentication(services, configuration);

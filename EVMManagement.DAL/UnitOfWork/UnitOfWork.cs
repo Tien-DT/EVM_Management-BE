@@ -18,6 +18,7 @@ namespace EVMManagement.DAL.UnitOfWork
         private IVehicleModelRepository? _vehicleModels;
         private IWarehouseRepository? _warehouses;
         private ICustomerRepository? _customers;
+        private IDealerRepository? _dealers;
         private IOrderRepository? _orders;
         private IOrderDetailRepository? _orderDetails;
 
@@ -32,6 +33,7 @@ namespace EVMManagement.DAL.UnitOfWork
         public IVehicleModelRepository VehicleModels => _vehicleModels ??= new VehicleModelRepository(_context);
         public IWarehouseRepository Warehouses => _warehouses ??= new WarehouseRepository(_context);
         public ICustomerRepository Customers => _customers ??= new CustomerRepository(_context);
+        public IDealerRepository Dealers => _dealers ??= new DealerRepository(_context);
         public IOrderRepository Orders => _orders ??= new OrderRepository(_context);
         public IOrderDetailRepository OrderDetails => _orderDetails ??= new OrderDetailRepository(_context);
 
@@ -43,7 +45,6 @@ namespace EVMManagement.DAL.UnitOfWork
             }
             catch (DbUpdateException ex)
             {
-                // Log the error (uncomment ex variable name and write a log)
                 throw new Exception("An error occurred while saving changes to the database.", ex);
             }
         }
