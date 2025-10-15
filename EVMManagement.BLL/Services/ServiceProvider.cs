@@ -13,6 +13,7 @@ namespace EVMManagement.BLL.Services
             services.AddScoped<IAuthService, AuthService>();
             services.AddScoped<ICustomerService, CustomerService>();
             services.AddScoped<IOrderService, OrderService>();
+            services.AddScoped<IOrderDetailService, OrderDetailService>();
             return services;
         }
     }
