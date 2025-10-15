@@ -8,9 +8,10 @@ namespace EVMManagement.DAL.Repositories.Interface
 {
     public interface IUserProfileRepository : IGenericRepository<UserProfile>
     {
-        Task<System.Collections.Generic.IEnumerable<UserProfile>> GetByRoleAndStatusAsync(AccountRole role, bool? isActive);
-        Task<System.Collections.Generic.IEnumerable<UserProfile>> GetByDealerIdAsync(Guid dealerId);
+        IQueryable<UserProfile> GetByRoleAndStatusAsync(AccountRole role, bool? isActive);
+        IQueryable<UserProfile> GetByDealerIdAsync(Guid dealerId);
         Task<UserProfile?> GetByAccountIdAsync(Guid accountId);
-
+        IQueryable<UserProfile> GetAllAsync();
+        Task<UserProfile?> GetByIdAsync(Guid id);
     }
 }

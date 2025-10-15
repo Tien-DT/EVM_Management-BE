@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using EVMManagement.DAL.Data;
 using EVMManagement.DAL.Models.Entities;
 using EVMManagement.DAL.Repositories.Interface;
+using EVMManagement.DAL.Models.Enums;
 
 namespace EVMManagement.DAL.Repositories.Class
 {
@@ -14,54 +15,11 @@ namespace EVMManagement.DAL.Repositories.Class
         {
         }
 
-        public override async Task<UserProfile?> GetByIdAsync(Guid id)
-        {
-            return await _dbSet
-                .Where(u => u.Id == id)
-                .Select(u => new UserProfile
-                {
-                    Id = u.Id,
-                    AccountId = u.AccountId,
-                    DealerId = u.DealerId,
-                    FullName = u.FullName,
-                    Phone = u.Phone,
-                    CardId = u.CardId,
-                    CreatedDate = u.CreatedDate,
-                    ModifiedDate = u.ModifiedDate,
-                    DeletedDate = u.DeletedDate,
-                    IsDeleted = u.IsDeleted,
-                    Account = new Account { Id = u.Account.Id, Role = u.Account.Role, IsActive = u.Account.IsActive },
-                    Dealer = u.DealerId == null ? null : new Dealer { Id = u.Dealer!.Id, Name = u.Dealer!.Name }
-                })
-                .FirstOrDefaultAsync();
-        }
-
-        public override async Task<IEnumerable<UserProfile>> GetAllAsync()
-        {
-            return await _dbSet
-                .Include(u => u.Account)
-                .Select(u => new UserProfile
-                {
-                    Id = u.Id,
-                    AccountId = u.AccountId,
-                    DealerId = u.DealerId,
-                    FullName = u.FullName,
-                    Phone = u.Phone,
-                    CardId = u.CardId,
-                    CreatedDate = u.CreatedDate,
-                    ModifiedDate = u.ModifiedDate,
-                    DeletedDate = u.DeletedDate,
-                    IsDeleted = u.IsDeleted,
-                    Account = new Account { Id = u.Account.Id, Role = u.Account.Role, IsActive = u.Account.IsActive },
-                    Dealer = u.DealerId == null ? null : new Dealer { Id = u.Dealer!.Id, Name = u.Dealer!.Name }
-                })
-                .ToListAsync();
-        }
-
-        public async Task<System.Collections.Generic.IEnumerable<UserProfile>> GetByRoleAndStatusAsync(EVMManagement.DAL.Models.Enums.AccountRole role, bool? isActive)
+        public IQueryable<UserProfile> GetByRoleAndStatusAsync(AccountRole role, bool? isActive)
         {
             var query = _dbSet
                 .Include(u => u.Account)
+                .Include(u => u.Dealer)
                 .Where(u => u.Account.Role == role);
 
             if (isActive.HasValue)
@@ -69,68 +27,39 @@ namespace EVMManagement.DAL.Repositories.Class
                 query = query.Where(u => u.Account.IsActive == isActive.Value);
             }
 
-            return await query
-                .Select(u => new UserProfile
-                {
-                    Id = u.Id,
-                    AccountId = u.AccountId,
-                    DealerId = u.DealerId,
-                    FullName = u.FullName,
-                    Phone = u.Phone,
-                    CardId = u.CardId,
-                    CreatedDate = u.CreatedDate,
-                    ModifiedDate = u.ModifiedDate,
-                    DeletedDate = u.DeletedDate,
-                    IsDeleted = u.IsDeleted,
-                    Account = new Account { Id = u.Account.Id, Role = u.Account.Role, IsActive = u.Account.IsActive },
-                    Dealer = u.DealerId == null ? null : new Dealer { Id = u.Dealer!.Id, Name = u.Dealer!.Name }
-                })
-                .ToListAsync();
+            return query;
         }
 
-        public async Task<System.Collections.Generic.IEnumerable<UserProfile>> GetByDealerIdAsync(Guid dealerId)
+        public IQueryable<UserProfile> GetByDealerIdAsync(Guid dealerId)
         {
-            return await _dbSet
+            return _dbSet
                 .Include(u => u.Account)
-                .Where(u => u.DealerId == dealerId)
-                .Select(u => new UserProfile
-                {
-                    Id = u.Id,
-                    AccountId = u.AccountId,
-                    DealerId = u.DealerId,
-                    FullName = u.FullName,
-                    Phone = u.Phone,
-                    CardId = u.CardId,
-                    CreatedDate = u.CreatedDate,
-                    ModifiedDate = u.ModifiedDate,
-                    DeletedDate = u.DeletedDate,
-                    IsDeleted = u.IsDeleted,
-                    Account = new Account { Id = u.Account.Id, Role = u.Account.Role, IsActive = u.Account.IsActive },
-                    Dealer = u.DealerId == null ? null : new Dealer { Id = u.Dealer!.Id, Name = u.Dealer!.Name }
-                })
-                .ToListAsync();
+                .Include(u => u.Dealer)
+                .Where(u => u.DealerId == dealerId);
         }
 
         public async Task<UserProfile?> GetByAccountIdAsync(Guid accountId)
         {
             return await _dbSet
+                .Include(u => u.Account)
+                .Include(u => u.Dealer)
                 .Where(u => u.AccountId == accountId)
-                .Select(u => new UserProfile
-                {
-                    Id = u.Id,
-                    AccountId = u.AccountId,
-                    DealerId = u.DealerId,
-                    FullName = u.FullName,
-                    Phone = u.Phone,
-                    CardId = u.CardId,
-                    CreatedDate = u.CreatedDate,
-                    ModifiedDate = u.ModifiedDate,
-                    DeletedDate = u.DeletedDate,
-                    IsDeleted = u.IsDeleted,
-                    Account = new Account { Id = u.Account.Id, Role = u.Account.Role, IsActive = u.Account.IsActive },
-                    Dealer = u.DealerId == null ? null : new Dealer { Id = u.Dealer!.Id, Name = u.Dealer!.Name }
-                })
                 .FirstOrDefaultAsync();
+        }
+
+        public IQueryable<UserProfile> GetAllAsync()
+        {
+            return _dbSet
+                .Include(u => u.Account)
+                .Include(u => u.Dealer);
+        }
+
+        public async Task<UserProfile?> GetByIdAsync(Guid id)
+        {
+            return await _dbSet
+                .Include(u => u.Account)
+                .Include(u => u.Dealer)
+                .FirstOrDefaultAsync(u => u.Id == id);
         }
     }
 }
