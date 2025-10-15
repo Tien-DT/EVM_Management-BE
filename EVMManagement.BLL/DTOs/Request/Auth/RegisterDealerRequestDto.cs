@@ -24,7 +24,6 @@ namespace EVMManagement.BLL.DTOs.Request.Auth
         [MaxLength(50)]
         public string? CardId { get; set; }
 
-        // Chỉ cho phép các role thuộc đại lý; mặc định là DEALER_MANAGER
         public AccountRole Role { get; set; } = AccountRole.DEALER_MANAGER;
     }
 }
