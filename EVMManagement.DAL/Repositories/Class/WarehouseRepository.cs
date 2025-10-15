@@ -18,27 +18,25 @@ namespace EVMManagement.DAL.Repositories.Class
             _context = context;
         }
 
-        public IQueryable<Warehouse> GetQueryableWithIncludes()
+        public IQueryable<Warehouse> GetAllAsync()
         {
-            return _context.Set<Warehouse>()
-                .Include(w => w.Dealer)
-                .Include(w => w.Vehicles);
-        }
-
-        public async Task<Warehouse?> GetByIdWithIncludesAsync(Guid id)
-        {
-            return await _context.Set<Warehouse>()
+            return _dbSet
                 .Include(w => w.Dealer)
                 .Include(w => w.Vehicles)
+                .ThenInclude(v => v.VehicleVariant)
+                .ThenInclude(vv => vv.VehicleModel);
+        }
+
+        public async Task<Warehouse?> GetByIdAsync(Guid id)
+        {
+            return await _dbSet
+                .Include(w => w.Dealer)
+                .Include(w => w.Vehicles)
+                     .ThenInclude(v => v.VehicleVariant)
+                         .ThenInclude(vv => vv.VehicleModel)
                 .FirstOrDefaultAsync(w => w.Id == id);
         }
 
-        public async Task<IEnumerable<Warehouse>> GetAllWithIncludesAsync()
-        {
-            return await _context.Set<Warehouse>()
-                .Include(w => w.Dealer)
-                .Include(w => w.Vehicles)
-                .ToListAsync();
-        }
+      
     }
 }

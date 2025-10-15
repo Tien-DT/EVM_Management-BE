@@ -7,6 +7,7 @@ using EVMManagement.BLL.DTOs.Response.Warehouse;
 using EVMManagement.BLL.Services.Interface;
 using EVMManagement.DAL.UnitOfWork;
 using EVMManagement.DAL.Models.Entities;
+using EVMManagement.DAL.Models.Enums;
 
 namespace EVMManagement.BLL.Services.Class
 {
@@ -33,64 +34,32 @@ namespace EVMManagement.BLL.Services.Class
             await _unitOfWork.Warehouses.AddAsync(entity);
             await _unitOfWork.SaveChangesAsync();
 
-            return new WarehouseResponseDto
-            {
-                Id = entity.Id,
-                DealerId = entity.DealerId,
-                Name = entity.Name,
-                Address = entity.Address,
-                Capacity = entity.Capacity,
-                Type = entity.Type,
-                CreatedDate = entity.CreatedDate,
-                ModifiedDate = entity.ModifiedDate,
-                IsDeleted = entity.IsDeleted
-            };
+            return MapToDto(entity);
         }
 
         public async Task<PagedResult<WarehouseResponseDto>> GetAllWarehousesAsync(int pageNumber = 1, int pageSize = 10)
         {
-            var query = _unitOfWork.Warehouses.GetQueryableWithIncludes();
+            var query = _unitOfWork.Warehouses.GetAllAsync();
             var totalCount = await _unitOfWork.Warehouses.CountAsync();
 
-            var items = query
+            var entities = query
                 .Where(x => !x.IsDeleted)
                 .OrderByDescending(x => x.CreatedDate)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
-                .Select(x => new WarehouseResponseDto
-                {
-                    Id = x.Id,
-                    DealerId = x.DealerId,
-                    Name = x.Name,
-                    Address = x.Address,
-                    Capacity = x.Capacity,
-                    Type = x.Type,
-                    CreatedDate = x.CreatedDate,
-                    ModifiedDate = x.ModifiedDate,
-                    IsDeleted = x.IsDeleted
-                })
                 .ToList();
+
+            var items = entities.Select(MapToDto).ToList();
 
             return PagedResult<WarehouseResponseDto>.Create(items, totalCount, pageNumber, pageSize);
         }
 
         public async Task<WarehouseResponseDto?> GetWarehouseByIdAsync(Guid id)
         {
-            var entity = await _unitOfWork.Warehouses.GetByIdWithIncludesAsync(id);
+            var entity = await _unitOfWork.Warehouses.GetByIdAsync(id);
             if (entity == null) return null;
 
-            return new WarehouseResponseDto
-            {
-                Id = entity.Id,
-                DealerId = entity.DealerId,
-                Name = entity.Name,
-                Address = entity.Address,
-                Capacity = entity.Capacity,
-                Type = entity.Type,
-                CreatedDate = entity.CreatedDate,
-                ModifiedDate = entity.ModifiedDate,
-                IsDeleted = entity.IsDeleted
-            };
+            return MapToDto(entity);
         }
 
         public async Task<WarehouseResponseDto?> UpdateWarehouseAsync(Guid id, WarehouseUpdateDto dto)
@@ -122,15 +91,43 @@ namespace EVMManagement.BLL.Services.Class
             return await GetWarehouseByIdAsync(id);
         }
 
-        public async Task<bool> DeleteWarehouseAsync(Guid id)
+       
+        private static WarehouseResponseDto MapToDto(Warehouse w)
         {
-            var entity = await _unitOfWork.Warehouses.GetByIdAsync(id);
-            if (entity == null) return false;
-
-            _unitOfWork.Warehouses.Delete(entity);
-            await _unitOfWork.SaveChangesAsync();
-
-            return true;
+            return new WarehouseResponseDto
+            {
+                Id = w.Id,
+                DealerId = w.DealerId,
+                Name = w.Name,
+                Address = w.Address,
+                Capacity = w.Capacity,
+                Type = w.Type,
+                Dealer = w.Dealer == null ? null : new DealerDto
+                {
+                    Id = w.Dealer.Id,
+                    Name = w.Dealer.Name
+                },
+                Vehicles = w.Vehicles?.Select(v => new VehicleDto
+                {
+                    Id = v.Id,
+                    VariantId = v.VariantId,
+                    Vin = v.Vin,
+                    Status = v.Status,
+                    Variant = v.VehicleVariant == null ? null : new VehicleVariantDto
+                    {
+                        Color = v.VehicleVariant.Color,
+                        VehicleModel = v.VehicleVariant.VehicleModel == null ? null : new VehicleModelDto
+                        {
+                            Name = v.VehicleVariant.VehicleModel.Name,
+                            Ranking = (VehicleModelRanking)v.VehicleVariant.VehicleModel.Ranking
+                        }
+                    }
+                }).ToList(),
+                CreatedDate = w.CreatedDate,
+                ModifiedDate = w.ModifiedDate,
+                DeletedDate = w.DeletedDate,
+                IsDeleted = w.IsDeleted
+            };
         }
     }
 }

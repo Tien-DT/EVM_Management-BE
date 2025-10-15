@@ -76,12 +76,6 @@ namespace EVMManagement.API.Controllers
             return Ok(ApiResponse<WarehouseResponseDto>.CreateSuccess(updated));
         }
 
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> Delete(Guid id)
-        {
-            var deleted = await _service.DeleteWarehouseAsync(id);
-            if (!deleted) return NotFound(ApiResponse<string>.CreateFail("Warehouse not found", null, 404));
-            return Ok(ApiResponse<string>.CreateSuccess("Deleted"));
-        }
+        
     }
 }

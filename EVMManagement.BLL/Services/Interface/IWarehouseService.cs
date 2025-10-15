@@ -13,6 +13,6 @@ namespace EVMManagement.BLL.Services.Interface
         Task<WarehouseResponseDto> CreateWarehouseAsync(WarehouseCreateDto dto);
         Task<WarehouseResponseDto?> UpdateWarehouseAsync(Guid id, WarehouseUpdateDto dto);
         Task<WarehouseResponseDto?> UpdateIsDeletedAsync(Guid id, bool isDeleted);
-        Task<bool> DeleteWarehouseAsync(Guid id);
+        
     }
 }

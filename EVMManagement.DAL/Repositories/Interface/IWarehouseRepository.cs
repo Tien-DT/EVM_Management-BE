@@ -7,8 +7,8 @@ namespace EVMManagement.DAL.Repositories.Interface
 {
     public interface IWarehouseRepository : IGenericRepository<Warehouse>
     {
-        IQueryable<Warehouse> GetQueryableWithIncludes();
-        Task<Warehouse?> GetByIdWithIncludesAsync(Guid id);
-        Task<IEnumerable<Warehouse>> GetAllWithIncludesAsync();
+        IQueryable<Warehouse> GetAllAsync();
+        Task<Warehouse?> GetByIdAsync(Guid id);
+        
     }
 }
