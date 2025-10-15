@@ -19,6 +19,8 @@ namespace EVMManagement.DAL.UnitOfWork
         private IWarehouseRepository? _warehouses;
         private ICustomerRepository? _customers;
         private IDealerRepository? _dealers;
+        private IOrderRepository? _orders;
+        private IOrderDetailRepository? _orderDetails;
 
         public UnitOfWork(AppDbContext context)
         {
@@ -32,6 +34,8 @@ namespace EVMManagement.DAL.UnitOfWork
         public IWarehouseRepository Warehouses => _warehouses ??= new WarehouseRepository(_context);
         public ICustomerRepository Customers => _customers ??= new CustomerRepository(_context);
         public IDealerRepository Dealers => _dealers ??= new DealerRepository(_context);
+        public IOrderRepository Orders => _orders ??= new OrderRepository(_context);
+        public IOrderDetailRepository OrderDetails => _orderDetails ??= new OrderDetailRepository(_context);
 
         public async Task<int> SaveChangesAsync()
         {
@@ -41,7 +45,6 @@ namespace EVMManagement.DAL.UnitOfWork
             }
             catch (DbUpdateException ex)
             {
-                // Log the error (uncomment ex variable name and write a log)
                 throw new Exception("An error occurred while saving changes to the database.", ex);
             }
         }
