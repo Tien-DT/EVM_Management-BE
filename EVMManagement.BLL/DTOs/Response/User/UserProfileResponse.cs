@@ -25,6 +25,10 @@ namespace EVMManagement.BLL.DTOs.Response.User
         public string FullName { get; set; } = string.Empty;
         public string? Phone { get; set; }
         public string? CardId { get; set; }
+        public DateTime CreatedDate { get; set; }
+        public DateTime? ModifiedDate { get; set; }
+        public DateTime? DeletedDate { get; set; }
+        public bool IsDeleted { get; set; }
         public DealerDto? Dealer { get; set; }
         public AccountDto? Account { get; set; }
     }

@@ -4,7 +4,7 @@ namespace EVMManagement.BLL.DTOs.Request.User
 {
     public class UserProfileUpdateDto
     {
-        public Guid AccountId { get; set; }
+        
         public Guid? DealerId { get; set; }
 
         [Required]

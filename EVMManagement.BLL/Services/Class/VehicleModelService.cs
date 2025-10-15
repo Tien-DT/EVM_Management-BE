@@ -2,13 +2,14 @@ using EVMManagement.BLL.DTOs.Request.Vehicle;
 using EVMManagement.BLL.DTOs.Response;
 using EVMManagement.BLL.Services.Interface;
 using EVMManagement.DAL.Models.Entities;
-using EVMManagement.DAL.UnitOfWork;
 using EVMManagement.DAL.Models.Enums;
+using EVMManagement.DAL.UnitOfWork;
 using Microsoft.EntityFrameworkCore;
 
 namespace EVMManagement.BLL.Services.Class
 {
     using EVMManagement.BLL.DTOs.Response.Vehicle;
+    using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
     public class VehicleModelService : IVehicleModelService
     {
@@ -39,12 +40,12 @@ namespace EVMManagement.BLL.Services.Class
 
         public async Task<PagedResult<VehicleModelResponseDto>> GetAllAsync(int pageNumber = 1, int pageSize = 10)
         {
-            var query = _unitOfWork.VehicleModels.GetQueryable()
-                .OrderByDescending(m => m.CreatedDate);
+            var query = _unitOfWork.VehicleModels.GetQueryable();
 
-            var totalCount = await _unitOfWork.VehicleModels.CountAsync();
+            var totalCount = await query.CountAsync();
 
             var items = await query
+                .OrderByDescending(u => u.CreatedDate)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
@@ -56,9 +57,7 @@ namespace EVMManagement.BLL.Services.Class
 
         public async Task<PagedResult<VehicleModelResponseDto>> GetByRankingAsync(VehicleModelRanking ranking, int pageNumber = 1, int pageSize = 10)
         {
-            var query = _unitOfWork.VehicleModels.GetQueryable()
-                .Where(m => m.Ranking == ranking)
-                .OrderByDescending(m => m.CreatedDate);
+            var query = _unitOfWork.VehicleModels.GetByRankingAsync(ranking);
 
             var totalCount = await query.CountAsync();
 
@@ -86,28 +85,42 @@ namespace EVMManagement.BLL.Services.Class
             existing.Description = dto.Description;
             existing.Status = dto.Status;
             existing.Ranking = dto.Ranking;
-            var updated = await _unitOfWork.VehicleModels.UpdateAsync(existing);
-            if (updated == null) return null;
-            return MapToDto(updated);
+            _unitOfWork.VehicleModels.Update(existing);
+            await _unitOfWork.SaveChangesAsync();
+            return MapToDto(existing);
         }
 
         public async Task<VehicleModelResponseDto?> UpdateIsDeletedAsync(Guid id, bool isDeleted)
         {
-            var updated = await _unitOfWork.VehicleModels.UpdateIsDeletedAsync(id, isDeleted);
-            if (updated == null) return null;
-            return MapToDto(updated);
+            var existing = await _unitOfWork.VehicleModels.GetByIdAsync(id);
+            if (existing == null) return null;
+
+            existing.IsDeleted = isDeleted;
+            existing.DeletedDate = isDeleted ? DateTime.UtcNow : null;
+            _unitOfWork.VehicleModels.Update(existing);
+            await _unitOfWork.SaveChangesAsync();
+            return MapToDto(existing);
         }
 
 
-        public async Task<IEnumerable<VehicleModelResponseDto>> SearchByQueryAsync(string? q)
+        public async Task<PagedResult<VehicleModelResponseDto>> SearchByQueryAsync(string? q, int pageNumber = 1, int pageSize = 10)
         {
             if (string.IsNullOrWhiteSpace(q))
             {
-                var all = await _unitOfWork.VehicleModels.GetAllOrderedByCreatedDateDescAsync();
-                return all.Select(MapToDto);
+                GetAllAsync();
             }
-            var results = await _unitOfWork.VehicleModels.SearchByQueryAsync(q!);
-            return results.Select(MapToDto);
+            var query = _unitOfWork.VehicleModels.SearchByQueryAsync(q!);
+            var totalCount = await query.CountAsync();
+
+            var items = await query
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            var responses = items.Select(MapToDto).ToList();
+
+            return PagedResult<VehicleModelResponseDto>.Create(responses, totalCount, pageNumber, pageSize);
+            
         }
 
         private VehicleModelResponseDto MapToDto(VehicleModel model)

@@ -41,6 +41,7 @@ namespace EVMManagement.API.Controllers
             }
 
             var result = await _service.GetByRoleAndStatusAsync(role, isActive, pageNumber, pageSize);
+            
             return Ok(ApiResponse<PagedResult<UserProfileResponse>>.CreateSuccess(result));
         }
 
@@ -53,6 +54,7 @@ namespace EVMManagement.API.Controllers
             }
 
             var result = await _service.GetByDealerIdAsync(dealerId, pageNumber, pageSize);
+
             return Ok(ApiResponse<PagedResult<UserProfileResponse>>.CreateSuccess(result));
         }
 
@@ -70,61 +72,34 @@ namespace EVMManagement.API.Controllers
             if (item == null) return NotFound(ApiResponse<UserProfileResponse>.CreateFail("UserProfile not found", null, 404));
             return Ok(ApiResponse<UserProfileResponse>.CreateSuccess(item));
         }
-        [HttpPost]
-        public async Task<IActionResult> Create([FromBody] UserProfileCreateDto dto)
+       
+        [HttpPut("{accId}")]
+        public async Task<IActionResult> Update(Guid accId, [FromBody] UserProfileUpdateDto dto)
         {
             if (!ModelState.IsValid)
             {
                 var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
                 return BadRequest(ApiResponse<UserProfileResponse>.CreateFail("Validation failed", errors, 400));
             }
-
-            var toCreate = new UserProfile
-            {
-                AccountId = dto.AccountId,
-                DealerId = dto.DealerId,
-                FullName = dto.FullName,
-                Phone = dto.Phone,
-                CardId = dto.CardId
-            };
-
-            var created = await _service.CreateAsync(toCreate);
-            return CreatedAtAction(nameof(GetById), new { id = created.Id }, ApiResponse<UserProfileResponse>.CreateSuccess(created));
-        }
-
-        [HttpPut("{id}")]
-        public async Task<IActionResult> Update(Guid id, [FromBody] UserProfileUpdateDto dto)
-        {
-            if (!ModelState.IsValid)
-            {
-                var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
-                return BadRequest(ApiResponse<UserProfileResponse>.CreateFail("Validation failed", errors, 400));
-            }
-            var existing = await _service.GetByIdAsync(id);
+            var existing = await _service.GetByAccountIdAsync(accId);
             if (existing == null) return NotFound(ApiResponse<UserProfileResponse>.CreateFail("UserProfile not found", null, 404));
 
 
             var toUpdate = new UserProfile
             {
-                AccountId = dto.AccountId,
+                
                 DealerId = dto.DealerId,
                 FullName = dto.FullName,
                 Phone = dto.Phone,
                 CardId = dto.CardId
             };
 
-            var updated = await _service.UpdateAsync(id, toUpdate);
+            var updated = await _service.UpdateAsync(accId, toUpdate);
             if (updated == null) return NotFound(ApiResponse<UserProfileResponse>.CreateFail("UserProfile not found", null, 404));
             return Ok(ApiResponse<UserProfileResponse>.CreateSuccess(updated));
         }
 
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> Delete(Guid id)
-        {
-            var deleted = await _service.DeleteAsync(id);
-            if (!deleted) return NotFound(ApiResponse<string>.CreateFail("UserProfile not found", null, 404));
-            return Ok(ApiResponse<string>.CreateSuccess("Deleted"));
-        }
+        
 
         [HttpPatch("{id}")]
         public async Task<IActionResult> UpdateIsDeleted(Guid id, [FromQuery] bool isDeleted)
