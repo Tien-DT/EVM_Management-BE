@@ -1,3 +1,4 @@
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
@@ -101,6 +102,74 @@ namespace EVMManagement.API.Controllers
             if (statusCode == StatusCodes.Status403Forbidden)
             {
                 return StatusCode(StatusCodes.Status403Forbidden, result);
+            }
+
+            return StatusCode(statusCode, result);
+        }
+
+        [HttpPost("forgot-password")]
+        [AllowAnonymous]
+        public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequestDto request, CancellationToken cancellationToken)
+        {
+            var result = await _authService.ForgotPasswordAsync(request, cancellationToken);
+            if (result.Success)
+            {
+                return Ok(result);
+            }
+
+            var statusCode = result.ErrorCode ?? StatusCodes.Status400BadRequest;
+            return StatusCode(statusCode, result);
+        }
+
+        [HttpPost("reset-password")]
+        [AllowAnonymous]
+        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequestDto request, CancellationToken cancellationToken)
+        {
+            var result = await _authService.ResetPasswordAsync(request, cancellationToken);
+            if (result.Success)
+            {
+                return Ok(result);
+            }
+
+            var statusCode = result.ErrorCode ?? StatusCodes.Status400BadRequest;
+            if (statusCode == StatusCodes.Status403Forbidden)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, result);
+            }
+
+            return StatusCode(statusCode, result);
+        }
+
+        [HttpPost("change-password")]
+        [Authorize]
+        public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequestDto request, CancellationToken cancellationToken)
+        {
+            var accountIdClaim = User.FindFirst("Id")?.Value;
+            if (string.IsNullOrWhiteSpace(accountIdClaim) || !Guid.TryParse(accountIdClaim, out var accountId))
+            {
+                return Unauthorized(ApiResponse<string>.CreateFail("Không tìm thấy thông tin tài khoản.", errorCode: 401));
+            }
+
+            var result = await _authService.ChangePasswordAsync(accountId, request, cancellationToken);
+            if (result.Success)
+            {
+                return Ok(result);
+            }
+
+            var statusCode = result.ErrorCode ?? StatusCodes.Status400BadRequest;
+            if (statusCode == StatusCodes.Status401Unauthorized)
+            {
+                return Unauthorized(result);
+            }
+
+            if (statusCode == StatusCodes.Status403Forbidden)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, result);
+            }
+
+            if (statusCode == StatusCodes.Status404NotFound)
+            {
+                return NotFound(result);
             }
 
             return StatusCode(statusCode, result);

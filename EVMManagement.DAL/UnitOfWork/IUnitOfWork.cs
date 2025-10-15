@@ -10,7 +10,7 @@ namespace EVMManagement.DAL.UnitOfWork
         IUserProfileRepository UserProfiles { get; }
         IVehicleVariantRepository VehicleVariants { get; }
         IVehicleModelRepository VehicleModels { get; }
-        IWarehouseRepository Warehouses { get; }
+        ICustomerRepository Customers { get; }
 
         // Transaction methods
         Task<int> SaveChangesAsync();

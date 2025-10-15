@@ -27,14 +27,16 @@ namespace EVMManagement.BLL.Services.Class
         private readonly IDistributedCache _cache;
         private readonly JwtSettings _jwtSettings;
         private readonly ILogger<AuthService> _logger;
+        private readonly IEmailService _emailService;
         private readonly PasswordHasher<Account> _passwordHasher = new();
 
-        public AuthService(IUnitOfWork unitOfWork, IDistributedCache cache, IOptions<JwtSettings> jwtOptions, ILogger<AuthService> logger)
+        public AuthService(IUnitOfWork unitOfWork, IDistributedCache cache, IOptions<JwtSettings> jwtOptions, ILogger<AuthService> logger, IEmailService emailService)
         {
             _unitOfWork = unitOfWork;
             _cache = cache;
             _jwtSettings = jwtOptions.Value;
             _logger = logger;
+            _emailService = emailService;
         }
 
         public async Task<ApiResponse<LoginTokenDto>> LoginAsync(LoginRequestDto request, CancellationToken cancellationToken = default)
@@ -135,6 +137,19 @@ namespace EVMManagement.BLL.Services.Class
             return Convert.ToHexString(buffer);
         }
 
+        private static string GenerateResetPasswordCode()
+        {
+            const string chars = "ABCDEFGHJKLMNPQRSTUVWXYZ0123456789";
+            Span<char> code = stackalloc char[6];
+            Span<byte> bytes = stackalloc byte[6];
+            RandomNumberGenerator.Fill(bytes);
+            for (int i = 0; i < 6; i++)
+            {
+                code[i] = chars[bytes[i] % chars.Length];
+            }
+            return new string(code);
+        }
+
         private async Task StoreRefreshTokenAsync(Account account, string refreshToken, CancellationToken cancellationToken)
         {
             var cacheKey = $"auth:refresh:{refreshToken}";
@@ -203,7 +218,33 @@ namespace EVMManagement.BLL.Services.Class
 
                 await _unitOfWork.SaveChangesAsync();
 
-                return ApiResponse<string>.CreateSuccess(plainPassword, "Tạo tài khoản đại lý thành công.");
+                var emailSubject = "Tài khoản đại lý EVM - Thông tin đăng nhập";
+                var emailBody = $@"
+                    <html>
+                    <body style='font-family: Arial, sans-serif;'>
+                        <h2>Chào mừng đến với hệ thống EVM Management</h2>
+                        <p>Xin chào <strong>{request.FullName}</strong>,</p>
+                        <p>Tài khoản đại lý của bạn đã được tạo thành công.</p>
+                        <p><strong>Thông tin đăng nhập:</strong></p>
+                        <ul>
+                            <li>Email: <strong>{request.Email}</strong></li>
+                            <li>Mật khẩu tạm thời: <strong>{plainPassword}</strong></li>
+                        </ul>
+                        <p style='color: #d9534f;'><strong>Lưu ý:</strong> Vui lòng đổi mật khẩu sau khi đăng nhập lần đầu.</p>
+                        <p>Trân trọng,<br/>Đội ngũ EVM Management</p>
+                    </body>
+                    </html>";
+
+                try
+                {
+                    await _emailService.SendEmailAsync(request.Email, emailSubject, emailBody, isHtml: true);
+                }
+                catch (Exception emailEx)
+                {
+                    _logger.LogError(emailEx, "Lỗi khi gửi email đến {Email}", request.Email);
+                }
+
+                return ApiResponse<string>.CreateSuccess(account.Id.ToString(), "Tạo tài khoản đại lý thành công.");
             }
             catch (Exception ex)
             {
@@ -335,6 +376,220 @@ namespace EVMManagement.BLL.Services.Class
             {
                 _logger.LogError(ex, "Lỗi khi làm mới token");
                 return ApiResponse<LoginTokenDto>.CreateFail(ex);
+            }
+        }
+
+        public async Task<ApiResponse<string>> ForgotPasswordAsync(ForgotPasswordRequestDto request, CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                if (request == null || string.IsNullOrWhiteSpace(request.Email))
+                {
+                    return ApiResponse<string>.CreateFail("Email là bắt buộc.");
+                }
+
+                var account = await _unitOfWork.Accounts.GetByEmailAsync(request.Email);
+                if (account == null)
+                {
+                    return ApiResponse<string>.CreateSuccess(string.Empty, "Kiểm tra hòm thư Email để lấy mã xác thực đặt lại mật khẩu.");
+                }
+
+                if (account.IsDeleted || !account.IsActive)
+                {
+                    return ApiResponse<string>.CreateSuccess(string.Empty, "Kiểm tra hòm thư Email để lấy mã xác thực đặt lại mật khẩu.");
+                }
+
+                var resetToken = GenerateResetPasswordCode();
+                var cacheKey = $"auth:reset:{resetToken}";
+                var payload = account.Id.ToString();
+
+                var options = new DistributedCacheEntryOptions
+                {
+                    AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5)
+                };
+
+                await _cache.SetStringAsync(cacheKey, payload, options, cancellationToken);
+
+                var emailSubject = "Đặt lại mật khẩu - EVM Management";
+                var emailBody = $@"
+                    <html>
+                    <body style='font-family: Arial, sans-serif;'>
+                        <h2>Yêu cầu đặt lại mật khẩu</h2>
+                        <p>Xin chào,</p>
+                        <p>Chúng tôi đã nhận được yêu cầu đặt lại mật khẩu cho tài khoản của bạn.</p>
+                        <p><strong>Mã xác nhận của bạn:</strong></p>
+                        <div style='background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;'>
+                            <code style='font-size: 18px; font-weight: bold; color: #333;'>{resetToken}</code>
+                        </div>
+                        <p>Mã này có hiệu lực trong <strong>5 phút</strong>.</p>
+                        <p style='color: #d9534f;'><strong>Lưu ý:</strong> Nếu bạn không yêu cầu đặt lại mật khẩu, vui lòng bỏ qua email này.</p>
+                        <p>Trân trọng,<br/>Đội ngũ EVM Management</p>
+                    </body>
+                    </html>";
+
+                try
+                {
+                    await _emailService.SendEmailAsync(request.Email, emailSubject, emailBody, isHtml: true);
+                }
+                catch (Exception emailEx)
+                {
+                    _logger.LogError(emailEx, "Lỗi khi gửi email reset password đến {Email}", request.Email);
+                }
+
+                return ApiResponse<string>.CreateSuccess(string.Empty, "Kiểm tra hòm thư Email để lấy mã xác thực đặt lại mật khẩu.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi xử lý forgot password");
+                return ApiResponse<string>.CreateFail(ex);
+            }
+        }
+
+        public async Task<ApiResponse<string>> ResetPasswordAsync(ResetPasswordRequestDto request, CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                if (request == null || string.IsNullOrWhiteSpace(request.Email) || 
+                    string.IsNullOrWhiteSpace(request.ResetToken) || 
+                    string.IsNullOrWhiteSpace(request.NewPassword))
+                {
+                    return ApiResponse<string>.CreateFail("Thiếu thông tin bắt buộc.");
+                }
+
+                var cacheKey = $"auth:reset:{request.ResetToken}";
+                var accountIdStr = await _cache.GetStringAsync(cacheKey, cancellationToken);
+
+                if (string.IsNullOrWhiteSpace(accountIdStr))
+                {
+                    return ApiResponse<string>.CreateFail("Mã xác nhận không hợp lệ hoặc đã hết hạn.", errorCode: 400);
+                }
+
+                if (!Guid.TryParse(accountIdStr, out var accountId))
+                {
+                    return ApiResponse<string>.CreateFail("Mã xác nhận không hợp lệ.", errorCode: 400);
+                }
+
+                var account = await _unitOfWork.Accounts.GetByIdAsync(accountId);
+                if (account == null || account.Email != request.Email)
+                {
+                    return ApiResponse<string>.CreateFail("Thông tin không hợp lệ.", errorCode: 400);
+                }
+
+                if (account.IsDeleted)
+                {
+                    return ApiResponse<string>.CreateFail("Tài khoản đã bị vô hiệu.", errorCode: 403);
+                }
+
+                account.PasswordHash = _passwordHasher.HashPassword(account, request.NewPassword);
+                account.ModifiedDate = DateTime.UtcNow;
+
+                _unitOfWork.Accounts.Update(account);
+                await _unitOfWork.SaveChangesAsync();
+
+                await _cache.RemoveAsync(cacheKey, cancellationToken);
+
+                var emailSubject = "Mật khẩu đã được đặt lại - EVM Management";
+                var emailBody = $@"
+                    <html>
+                    <body style='font-family: Arial, sans-serif;'>
+                        <h2>Mật khẩu của bạn đã được đặt lại</h2>
+                        <p>Xin chào,</p>
+                        <p>Mật khẩu cho tài khoản <strong>{account.Email}</strong> đã được đặt lại thành công.</p>
+                        <p>Bạn có thể đăng nhập ngay bây giờ với mật khẩu mới.</p>
+                        <p style='color: #d9534f;'><strong>Lưu ý:</strong> Nếu bạn không thực hiện thay đổi này, vui lòng liên hệ với chúng tôi ngay lập tức.</p>
+                        <p>Trân trọng,<br/>Đội ngũ EVM Management</p>
+                    </body>
+                    </html>";
+
+                try
+                {
+                    await _emailService.SendEmailAsync(account.Email, emailSubject, emailBody, isHtml: true);
+                }
+                catch (Exception emailEx)
+                {
+                    _logger.LogError(emailEx, "Lỗi khi gửi email xác nhận reset password đến {Email}", account.Email);
+                }
+
+                return ApiResponse<string>.CreateSuccess(string.Empty, "Đặt lại mật khẩu thành công.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi reset password");
+                return ApiResponse<string>.CreateFail(ex);
+            }
+        }
+
+        public async Task<ApiResponse<string>> ChangePasswordAsync(Guid accountId, ChangePasswordRequestDto request, CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                if (request == null || string.IsNullOrWhiteSpace(request.OldPassword) || 
+                    string.IsNullOrWhiteSpace(request.NewPassword))
+                {
+                    return ApiResponse<string>.CreateFail("Mật khẩu cũ và mật khẩu mới là bắt buộc.");
+                }
+
+                if (request.OldPassword == request.NewPassword)
+                {
+                    return ApiResponse<string>.CreateFail("Mật khẩu mới phải khác mật khẩu cũ.");
+                }
+
+                var account = await _unitOfWork.Accounts.GetByIdAsync(accountId);
+                if (account == null)
+                {
+                    return ApiResponse<string>.CreateFail("Tài khoản không tồn tại.", errorCode: 404);
+                }
+
+                if (account.IsDeleted)
+                {
+                    return ApiResponse<string>.CreateFail("Tài khoản đã bị vô hiệu.", errorCode: 403);
+                }
+
+                if (!account.IsActive)
+                {
+                    return ApiResponse<string>.CreateFail("Tài khoản chưa được kích hoạt.", errorCode: 403);
+                }
+
+                var verifyResult = _passwordHasher.VerifyHashedPassword(account, account.PasswordHash, request.OldPassword);
+                if (verifyResult == PasswordVerificationResult.Failed)
+                {
+                    return ApiResponse<string>.CreateFail("Mật khẩu cũ không đúng.", errorCode: 400);
+                }
+
+                account.PasswordHash = _passwordHasher.HashPassword(account, request.NewPassword);
+                account.ModifiedDate = DateTime.UtcNow;
+
+                _unitOfWork.Accounts.Update(account);
+                await _unitOfWork.SaveChangesAsync();
+
+                var emailSubject = "Mật khẩu đã được thay đổi - EVM Management";
+                var emailBody = $@"
+                    <html>
+                    <body style='font-family: Arial, sans-serif;'>
+                        <h2>Mật khẩu của bạn đã được thay đổi</h2>
+                        <p>Xin chào,</p>
+                        <p>Mật khẩu cho tài khoản <strong>{account.Email}</strong> đã được thay đổi thành công.</p>
+                        <p>Thời gian: <strong>{DateTime.UtcNow:dd/MM/yyyy HH:mm:ss} UTC</strong></p>
+                        <p style='color: #d9534f;'><strong>Lưu ý:</strong> Nếu bạn không thực hiện thay đổi này, vui lòng liên hệ với chúng tôi ngay lập tức.</p>
+                        <p>Trân trọng,<br/>Đội ngũ EVM Management</p>
+                    </body>
+                    </html>";
+
+                try
+                {
+                    await _emailService.SendEmailAsync(account.Email, emailSubject, emailBody, isHtml: true);
+                }
+                catch (Exception emailEx)
+                {
+                    _logger.LogError(emailEx, "Lỗi khi gửi email thông báo đổi password đến {Email}", account.Email);
+                }
+
+                return ApiResponse<string>.CreateSuccess(string.Empty, "Đổi mật khẩu thành công.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi đổi password");
+                return ApiResponse<string>.CreateFail(ex);
             }
         }
     }

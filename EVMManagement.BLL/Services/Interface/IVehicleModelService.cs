@@ -12,6 +12,6 @@ namespace EVMManagement.BLL.Services.Interface
         Task<PagedResult<VehicleModelResponseDto>> GetByRankingAsync(VehicleModelRanking ranking, int pageNumber = 1, int pageSize = 10);
         Task<VehicleModelResponseDto?> UpdateVehicleModelAsync(Guid id, VehicleModelUpdateDto dto);
         Task<VehicleModelResponseDto?> UpdateIsDeletedAsync(Guid id, bool isDeleted);
-        Task<IEnumerable<VehicleModelResponseDto>> SearchByQueryAsync(string? q);
+        Task<PagedResult<VehicleModelResponseDto>> SearchByQueryAsync(string? q, int pageNumber = 1, int pageSize = 10);
     }
 }

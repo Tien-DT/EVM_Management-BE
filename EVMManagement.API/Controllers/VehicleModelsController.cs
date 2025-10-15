@@ -80,11 +80,11 @@ namespace EVMManagement.API.Controllers
         }
 
         [HttpGet("search")]
-        public async Task<IActionResult> Search([FromQuery] string? q)
+        public async Task<IActionResult> Search([FromQuery] string? q, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
         {
-            var results = await _service.SearchByQueryAsync(q);
-            return Ok(ApiResponse<IEnumerable<VehicleModelResponseDto>>.CreateSuccess(results));
-           
+            var results = await _service.SearchByQueryAsync(q, pageNumber, pageSize);
+            return Ok(ApiResponse<PagedResult<VehicleModelResponseDto>>.CreateSuccess(results));
+
         }
     }
 }
