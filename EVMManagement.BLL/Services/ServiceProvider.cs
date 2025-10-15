@@ -11,6 +11,7 @@ namespace EVMManagement.BLL.Services
             services.AddScoped<IEmailService, EmailService>();
             services.AddScoped<IStorageService, SupabaseStorageService>();
             services.AddScoped<IAuthService, AuthService>();
+            services.AddScoped<ICustomerService, CustomerService>();
             return services;
         }
     }
