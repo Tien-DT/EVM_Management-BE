@@ -16,6 +16,7 @@ namespace EVMManagement.DAL.UnitOfWork
         private IUserProfileRepository? _userProfiles;
         private IVehicleVariantRepository? _vehicleVariants;
         private IVehicleModelRepository? _vehicleModels;
+        private IWarehouseRepository? _warehouses;
         private ICustomerRepository? _customers;
 
         public UnitOfWork(AppDbContext context)
@@ -27,6 +28,7 @@ namespace EVMManagement.DAL.UnitOfWork
         public IUserProfileRepository UserProfiles => _userProfiles ??= new UserProfileRepository(_context);
         public IVehicleVariantRepository VehicleVariants => _vehicleVariants ??= new VehicleVariantRepository(_context);
         public IVehicleModelRepository VehicleModels => _vehicleModels ??= new VehicleModelRepository(_context);
+        public IWarehouseRepository Warehouses => _warehouses ??= new WarehouseRepository(_context);
         public ICustomerRepository Customers => _customers ??= new CustomerRepository(_context);
 
         public async Task<int> SaveChangesAsync()
