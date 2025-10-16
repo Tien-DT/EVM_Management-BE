@@ -32,6 +32,7 @@ namespace EVMManagement.API.Setup
             services.AddScoped<IDealerRepository, DealerRepository>();
             services.AddScoped<IPromotionRepository, PromotionRepository>();
             services.AddScoped<IVehicleTimeSlotRepository, VehicleTimeSlotRepository>();
+            services.AddScoped<IMasterTimeSlotRepository, MasterTimeSlotRepository>();
 
             services.AddScoped<IUserProfileService, UserProfileService>();
             services.AddScoped<IVehicleVariantService, VehicleVariantService>();
@@ -41,6 +42,7 @@ namespace EVMManagement.API.Setup
             services.AddScoped<IDealerService, DealerService>();
             services.AddScoped<IPromotionService, PromotionService>();
             services.AddScoped<IVehicleTimeSlotService, VehicleTimeSlotService>();
+            services.AddScoped<IMasterTimeSlotService, MasterTimeSlotService>();
 
             // add JWT auth
             AddJwtAuthentication(services, configuration);
