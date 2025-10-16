@@ -19,7 +19,7 @@ namespace EVMManagement.DAL.UnitOfWork
         IOrderDetailRepository OrderDetails { get; }
         IQuotationRepository Quotations { get; }
         IQuotationDetailRepository QuotationDetails { get; }
-        IContractRepository Contracts { get; }
+       
         IVehicleRepository Vehicles { get; }
         IVehicleTimeSlotRepository VehicleTimeSlots { get; }
         IMasterTimeSlotRepository MasterTimeSlots { get; }
