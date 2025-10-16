@@ -19,11 +19,12 @@ namespace EVMManagement.DAL.UnitOfWork
         private IWarehouseRepository? _warehouses;
         private ICustomerRepository? _customers;
         private IDealerRepository? _dealers;
+        private IPromotionRepository? _promotions;
+        private IContractRepository? _contracts;
         private IOrderRepository? _orders;
         private IOrderDetailRepository? _orderDetails;
         private IQuotationRepository? _quotations;
         private IQuotationDetailRepository? _quotationDetails;
-        private IContractRepository? _contracts;
 
         public UnitOfWork(AppDbContext context)
         {
@@ -37,11 +38,12 @@ namespace EVMManagement.DAL.UnitOfWork
         public IWarehouseRepository Warehouses => _warehouses ??= new WarehouseRepository(_context);
         public ICustomerRepository Customers => _customers ??= new CustomerRepository(_context);
         public IDealerRepository Dealers => _dealers ??= new DealerRepository(_context);
+        public IPromotionRepository Promotions => _promotions ??= new PromotionRepository(_context);
+        public IContractRepository Contracts => _contracts ??= new ContractRepository(_context);
         public IOrderRepository Orders => _orders ??= new OrderRepository(_context);
         public IOrderDetailRepository OrderDetails => _orderDetails ??= new OrderDetailRepository(_context);
         public IQuotationRepository Quotations => _quotations ??= new QuotationRepository(_context);
         public IQuotationDetailRepository QuotationDetails => _quotationDetails ??= new QuotationDetailRepository(_context);
-        public IContractRepository Contracts => _contracts ??= new ContractRepository(_context);
 
         public async Task<int> SaveChangesAsync()
         {

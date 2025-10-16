@@ -23,26 +23,23 @@ namespace EVMManagement.API.Setup
 
             services.AddBLLServices();
 
-            // Register Repositories
             services.AddScoped<IUserProfileRepository, UserProfileRepository>();
             services.AddScoped<IVehicleVariantRepository, VehicleVariantRepository>();
             services.AddScoped<IVehicleModelRepository, VehicleModelRepository>();
             services.AddScoped<IWarehouseRepository, WarehouseRepository>();
             services.AddScoped<ICustomerRepository, CustomerRepository>();
             services.AddScoped<IDealerRepository, DealerRepository>();
-            services.AddScoped<IQuotationRepository, QuotationRepository>();
-            services.AddScoped<IQuotationDetailRepository, QuotationDetailRepository>();
+            services.AddScoped<IPromotionRepository, PromotionRepository>();
 
-            // Register domain services
             services.AddScoped<IUserProfileService, UserProfileService>();
             services.AddScoped<IVehicleVariantService, VehicleVariantService>();
             services.AddScoped<IVehicleModelService, VehicleModelService>();
             services.AddScoped<IWarehouseService, WarehouseService>();
             services.AddScoped<ICustomerService, CustomerService>();
             services.AddScoped<IDealerService, DealerService>();
-            services.AddScoped<IQuotationService, QuotationService>();
+            services.AddScoped<IPromotionService, PromotionService>();
 
-            // Add JWT Authentication
+            // add JWT auth
             AddJwtAuthentication(services, configuration);
 
             return services;
