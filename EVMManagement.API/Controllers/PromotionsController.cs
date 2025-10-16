@@ -86,6 +86,22 @@ namespace EVMManagement.API.Controllers
             if (updated == null) return NotFound(ApiResponse<PromotionResponseDto>.CreateFail("Promotion not found", null, 404));
             return Ok(ApiResponse<PromotionResponseDto>.CreateSuccess(updated));
         }
+
+        [HttpPatch("{id}/is-deleted")]
+        public async Task<IActionResult> UpdateIsDeleted(Guid id, [FromQuery] bool isDeleted)
+        {
+            var updated = await _service.UpdateIsDeletedAsync(id, isDeleted);
+            if (updated == null) return NotFound(ApiResponse<PromotionResponseDto>.CreateFail("Promotion not found", null, 404));
+            return Ok(ApiResponse<PromotionResponseDto>.CreateSuccess(updated));
+        }
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> Delete(Guid id)
+        {
+            var deleted = await _service.DeleteAsync(id);
+            if (!deleted) return NotFound(ApiResponse<string>.CreateFail("Promotion not found", null, 404));
+            return Ok(ApiResponse<string>.CreateSuccess("Deleted"));
+        }
     }
 }
 

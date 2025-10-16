@@ -173,6 +173,35 @@ namespace EVMManagement.BLL.Services.Class
 
             return await GetByIdAsync(id);
         }
+
+        public async Task<PromotionResponseDto?> UpdateIsDeletedAsync(Guid id, bool isDeleted)
+        {
+            var entity = await _unitOfWork.Promotions.GetByIdAsync(id);
+            if (entity == null) return null;
+
+            entity.IsDeleted = isDeleted;
+            if (isDeleted)
+            {
+                entity.DeletedDate = DateTime.UtcNow;
+            }
+            entity.ModifiedDate = DateTime.UtcNow;
+
+            _unitOfWork.Promotions.Update(entity);
+            await _unitOfWork.SaveChangesAsync();
+
+            return await GetByIdAsync(id);
+        }
+
+        public async Task<bool> DeleteAsync(Guid id)
+        {
+            var entity = await _unitOfWork.Promotions.GetByIdAsync(id);
+            if (entity == null) return false;
+
+            _unitOfWork.Promotions.Delete(entity);
+            await _unitOfWork.SaveChangesAsync();
+
+            return true;
+        }
     }
 }
 

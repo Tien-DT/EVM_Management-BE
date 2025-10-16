@@ -14,6 +14,8 @@ namespace EVMManagement.BLL.Services.Interface
         Task<PagedResult<PromotionResponseDto>> SearchAsync(string? query, int pageNumber = 1, int pageSize = 10);
         Task<PromotionResponseDto?> UpdateAsync(Guid id, PromotionUpdateDto dto);
         Task<PromotionResponseDto?> UpdateIsActiveAsync(Guid id, bool isActive);
+        Task<PromotionResponseDto?> UpdateIsDeletedAsync(Guid id, bool isDeleted);
+        Task<bool> DeleteAsync(Guid id);
     }
 }
 
