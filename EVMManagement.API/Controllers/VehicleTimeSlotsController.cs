@@ -111,6 +111,22 @@ namespace EVMManagement.API.Controllers
             if (updated == null) return NotFound(ApiResponse<VehicleTimeSlotResponseDto>.CreateFail("VehicleTimeSlot not found", null, 404));
             return Ok(ApiResponse<VehicleTimeSlotResponseDto>.CreateSuccess(updated));
         }
+
+        [HttpPatch("{id}/is-deleted")]
+        public async Task<IActionResult> UpdateIsDeleted(Guid id, [FromQuery] bool isDeleted)
+        {
+            var updated = await _service.UpdateIsDeletedAsync(id, isDeleted);
+            if (updated == null) return NotFound(ApiResponse<VehicleTimeSlotResponseDto>.CreateFail("VehicleTimeSlot not found", null, 404));
+            return Ok(ApiResponse<VehicleTimeSlotResponseDto>.CreateSuccess(updated));
+        }
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> Delete(Guid id)
+        {
+            var deleted = await _service.DeleteAsync(id);
+            if (!deleted) return NotFound(ApiResponse<string>.CreateFail("VehicleTimeSlot not found", null, 404));
+            return Ok(ApiResponse<string>.CreateSuccess("Deleted"));
+        }
     }
 }
 
