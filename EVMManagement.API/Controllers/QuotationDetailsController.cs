@@ -69,9 +69,15 @@ namespace EVMManagement.API.Controllers
         }
 
         [HttpPatch("{id}")]
-        public async Task<IActionResult> UpdateIsDeleted(Guid id, [FromQuery] bool isDeleted)
+        public async Task<IActionResult> PartialUpdate(Guid id, [FromBody] QuotationDetailUpdateDto dto)
         {
-            var updated = await _service.UpdateIsDeletedAsync(id, isDeleted);
+            if (!ModelState.IsValid)
+            {
+                var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
+                return BadRequest(ApiResponse<QuotationDetailResponse>.CreateFail("Validation failed", errors, 400));
+            }
+
+            var updated = await _service.UpdateAsync(id, dto);
             if (updated == null) return NotFound(ApiResponse<QuotationDetailResponse>.CreateFail("QuotationDetail not found", null, 404));
             return Ok(ApiResponse<QuotationDetailResponse>.CreateSuccess(updated));
         }
