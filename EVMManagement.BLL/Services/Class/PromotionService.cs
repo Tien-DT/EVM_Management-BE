@@ -138,6 +138,41 @@ namespace EVMManagement.BLL.Services.Class
 
             return Task.FromResult(PagedResult<PromotionResponseDto>.Create(items, totalCount, pageNumber, pageSize));
         }
+
+        public async Task<PromotionResponseDto?> UpdateAsync(Guid id, PromotionUpdateDto dto)
+        {
+            var entity = await _unitOfWork.Promotions.GetByIdAsync(id);
+            if (entity == null) return null;
+
+            if (dto.Code != null) entity.Code = dto.Code;
+            if (dto.Name != null) entity.Name = dto.Name;
+            if (dto.Description != null) entity.Description = dto.Description;
+            if (dto.DiscountPercent.HasValue) entity.DiscountPercent = dto.DiscountPercent;
+            if (dto.StartAt.HasValue) entity.StartAt = dto.StartAt;
+            if (dto.EndAt.HasValue) entity.EndAt = dto.EndAt;
+            if (dto.IsActive.HasValue) entity.IsActive = dto.IsActive.Value;
+
+            entity.ModifiedDate = DateTime.UtcNow;
+
+            _unitOfWork.Promotions.Update(entity);
+            await _unitOfWork.SaveChangesAsync();
+
+            return await GetByIdAsync(id);
+        }
+
+        public async Task<PromotionResponseDto?> UpdateIsActiveAsync(Guid id, bool isActive)
+        {
+            var entity = await _unitOfWork.Promotions.GetByIdAsync(id);
+            if (entity == null) return null;
+
+            entity.IsActive = isActive;
+            entity.ModifiedDate = DateTime.UtcNow;
+
+            _unitOfWork.Promotions.Update(entity);
+            await _unitOfWork.SaveChangesAsync();
+
+            return await GetByIdAsync(id);
+        }
     }
 }
 
