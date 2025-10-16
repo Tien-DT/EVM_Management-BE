@@ -47,6 +47,7 @@ namespace EVMManagement.API.Setup
             services.AddScoped<IVehicleTimeSlotService, VehicleTimeSlotService>();
             services.AddScoped<IMasterTimeSlotService, MasterTimeSlotService>();
             services.AddScoped<IAvailableSlotService, AvailableSlotService>();
+            services.AddScoped<IDealerContractService, DealerContractService>();
 
             // add JWT auth
             AddJwtAuthentication(services, configuration);
