@@ -15,6 +15,8 @@ namespace EVMManagement.DAL.UnitOfWork
         IDealerRepository Dealers { get; }
         IOrderRepository Orders { get; }
         IOrderDetailRepository OrderDetails { get; }
+        IQuotationRepository Quotations { get; }
+        IQuotationDetailRepository QuotationDetails { get; }
 
         Task<int> SaveChangesAsync();
         Task BeginTransactionAsync();
