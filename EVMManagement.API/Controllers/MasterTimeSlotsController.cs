@@ -30,7 +30,39 @@ namespace EVMManagement.API.Controllers
             }
 
             var created = await _service.CreateMasterTimeSlotAsync(dto);
-            return CreatedAtAction(nameof(Create), new { id = created.Id }, ApiResponse<MasterTimeSlotResponseDto>.CreateSuccess(created));
+            return CreatedAtAction(nameof(GetById), new { id = created.Id }, ApiResponse<MasterTimeSlotResponseDto>.CreateSuccess(created));
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetAll([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
+        {
+            if (pageNumber < 1 || pageSize < 1)
+            {
+                return BadRequest(ApiResponse<string>.CreateFail("PageNumber and PageSize must be greater than 0", null, 400));
+            }
+
+            var result = await _service.GetAllAsync(pageNumber, pageSize);
+            return Ok(ApiResponse<PagedResult<MasterTimeSlotResponseDto>>.CreateSuccess(result));
+        }
+
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetById(Guid id)
+        {
+            var item = await _service.GetByIdAsync(id);
+            if (item == null) return NotFound(ApiResponse<MasterTimeSlotResponseDto>.CreateFail("MasterTimeSlot not found", null, 404));
+            return Ok(ApiResponse<MasterTimeSlotResponseDto>.CreateSuccess(item));
+        }
+
+        [HttpGet("active")]
+        public async Task<IActionResult> GetActive([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
+        {
+            if (pageNumber < 1 || pageSize < 1)
+            {
+                return BadRequest(ApiResponse<string>.CreateFail("PageNumber and PageSize must be greater than 0", null, 400));
+            }
+
+            var result = await _service.GetActiveAsync(pageNumber, pageSize);
+            return Ok(ApiResponse<PagedResult<MasterTimeSlotResponseDto>>.CreateSuccess(result));
         }
     }
 }
