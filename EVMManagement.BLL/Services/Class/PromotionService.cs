@@ -1,6 +1,8 @@
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 using EVMManagement.BLL.DTOs.Request.Promotion;
+using EVMManagement.BLL.DTOs.Response;
 using EVMManagement.BLL.DTOs.Response.Promotion;
 using EVMManagement.BLL.Services.Interface;
 using EVMManagement.DAL.Models.Entities;
@@ -47,6 +49,94 @@ namespace EVMManagement.BLL.Services.Class
                 ModifiedDate = promotion.ModifiedDate,
                 IsDeleted = promotion.IsDeleted
             };
+        }
+
+        public async Task<PagedResult<PromotionResponseDto>> GetAllAsync(int pageNumber = 1, int pageSize = 10)
+        {
+            var query = _unitOfWork.Promotions.GetQueryable();
+            var totalCount = await _unitOfWork.Promotions.CountAsync();
+
+            var items = query
+                .OrderByDescending(x => x.CreatedDate)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .Select(x => new PromotionResponseDto
+                {
+                    Id = x.Id,
+                    Code = x.Code,
+                    Name = x.Name,
+                    Description = x.Description,
+                    DiscountPercent = x.DiscountPercent,
+                    StartAt = x.StartAt,
+                    EndAt = x.EndAt,
+                    IsActive = x.IsActive,
+                    CreatedDate = x.CreatedDate,
+                    ModifiedDate = x.ModifiedDate,
+                    IsDeleted = x.IsDeleted
+                })
+                .ToList();
+
+            return PagedResult<PromotionResponseDto>.Create(items, totalCount, pageNumber, pageSize);
+        }
+
+        public async Task<PromotionResponseDto?> GetByIdAsync(Guid id)
+        {
+            var entity = await _unitOfWork.Promotions.GetByIdAsync(id);
+            if (entity == null) return null;
+
+            return new PromotionResponseDto
+            {
+                Id = entity.Id,
+                Code = entity.Code,
+                Name = entity.Name,
+                Description = entity.Description,
+                DiscountPercent = entity.DiscountPercent,
+                StartAt = entity.StartAt,
+                EndAt = entity.EndAt,
+                IsActive = entity.IsActive,
+                CreatedDate = entity.CreatedDate,
+                ModifiedDate = entity.ModifiedDate,
+                IsDeleted = entity.IsDeleted
+            };
+        }
+
+        public Task<PagedResult<PromotionResponseDto>> SearchAsync(string? query, int pageNumber = 1, int pageSize = 10)
+        {
+            var queryable = _unitOfWork.Promotions.GetQueryable();
+
+            if (!string.IsNullOrWhiteSpace(query))
+            {
+                var lowerQuery = query.ToLower();
+                queryable = queryable.Where(x =>
+                    (x.Code != null && x.Code.ToLower().Contains(lowerQuery)) ||
+                    (x.Name != null && x.Name.ToLower().Contains(lowerQuery)) ||
+                    (x.Description != null && x.Description.ToLower().Contains(lowerQuery))
+                );
+            }
+
+            var totalCount = queryable.Count();
+
+            var items = queryable
+                .OrderByDescending(x => x.CreatedDate)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .Select(x => new PromotionResponseDto
+                {
+                    Id = x.Id,
+                    Code = x.Code,
+                    Name = x.Name,
+                    Description = x.Description,
+                    DiscountPercent = x.DiscountPercent,
+                    StartAt = x.StartAt,
+                    EndAt = x.EndAt,
+                    IsActive = x.IsActive,
+                    CreatedDate = x.CreatedDate,
+                    ModifiedDate = x.ModifiedDate,
+                    IsDeleted = x.IsDeleted
+                })
+                .ToList();
+
+            return Task.FromResult(PagedResult<PromotionResponseDto>.Create(items, totalCount, pageNumber, pageSize));
         }
     }
 }
