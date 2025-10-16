@@ -15,6 +15,7 @@ using EVMManagement.BLL.DTOs.Response;
 using EVMManagement.BLL.DTOs.Response.Auth;
 using EVMManagement.BLL.Options;
 using EVMManagement.BLL.Services.Interface;
+using EVMManagement.BLL.Services.Templates;
 using EVMManagement.DAL.Models.Entities;
 using EVMManagement.DAL.UnitOfWork;
 using EVMManagement.DAL.Models.Enums;
@@ -218,26 +219,10 @@ namespace EVMManagement.BLL.Services.Class
 
                 await _unitOfWork.SaveChangesAsync();
 
-                var emailSubject = "Tài khoản đại lý EVM - Thông tin đăng nhập";
-                var emailBody = $@"
-                    <html>
-                    <body style='font-family: Arial, sans-serif;'>
-                        <h2>Chào mừng đến với hệ thống EVM Management</h2>
-                        <p>Xin chào <strong>{request.FullName}</strong>,</p>
-                        <p>Tài khoản đại lý của bạn đã được tạo thành công.</p>
-                        <p><strong>Thông tin đăng nhập:</strong></p>
-                        <ul>
-                            <li>Email: <strong>{request.Email}</strong></li>
-                            <li>Mật khẩu tạm thời: <strong>{plainPassword}</strong></li>
-                        </ul>
-                        <p style='color: #d9534f;'><strong>Lưu ý:</strong> Vui lòng đổi mật khẩu sau khi đăng nhập lần đầu.</p>
-                        <p>Trân trọng,<br/>Đội ngũ EVM Management</p>
-                    </body>
-                    </html>";
-
                 try
                 {
-                    await _emailService.SendEmailAsync(request.Email, emailSubject, emailBody, isHtml: true);
+                    var emailBody = EmailTemplates.WelcomeDealerEmail(request.FullName, request.Email, plainPassword);
+                    await _emailService.SendEmailAsync(request.Email, EmailTemplates.Subjects.WelcomeDealer, emailBody, isHtml: true);
                 }
                 catch (Exception emailEx)
                 {
@@ -410,26 +395,10 @@ namespace EVMManagement.BLL.Services.Class
 
                 await _cache.SetStringAsync(cacheKey, payload, options, cancellationToken);
 
-                var emailSubject = "Đặt lại mật khẩu - EVM Management";
-                var emailBody = $@"
-                    <html>
-                    <body style='font-family: Arial, sans-serif;'>
-                        <h2>Yêu cầu đặt lại mật khẩu</h2>
-                        <p>Xin chào,</p>
-                        <p>Chúng tôi đã nhận được yêu cầu đặt lại mật khẩu cho tài khoản của bạn.</p>
-                        <p><strong>Mã xác nhận của bạn:</strong></p>
-                        <div style='background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;'>
-                            <code style='font-size: 18px; font-weight: bold; color: #333;'>{resetToken}</code>
-                        </div>
-                        <p>Mã này có hiệu lực trong <strong>5 phút</strong>.</p>
-                        <p style='color: #d9534f;'><strong>Lưu ý:</strong> Nếu bạn không yêu cầu đặt lại mật khẩu, vui lòng bỏ qua email này.</p>
-                        <p>Trân trọng,<br/>Đội ngũ EVM Management</p>
-                    </body>
-                    </html>";
-
                 try
                 {
-                    await _emailService.SendEmailAsync(request.Email, emailSubject, emailBody, isHtml: true);
+                    var emailBody = EmailTemplates.ForgotPasswordEmail(resetToken);
+                    await _emailService.SendEmailAsync(request.Email, EmailTemplates.Subjects.ForgotPassword, emailBody, isHtml: true);
                 }
                 catch (Exception emailEx)
                 {
@@ -488,22 +457,10 @@ namespace EVMManagement.BLL.Services.Class
 
                 await _cache.RemoveAsync(cacheKey, cancellationToken);
 
-                var emailSubject = "Mật khẩu đã được đặt lại - EVM Management";
-                var emailBody = $@"
-                    <html>
-                    <body style='font-family: Arial, sans-serif;'>
-                        <h2>Mật khẩu của bạn đã được đặt lại</h2>
-                        <p>Xin chào,</p>
-                        <p>Mật khẩu cho tài khoản <strong>{account.Email}</strong> đã được đặt lại thành công.</p>
-                        <p>Bạn có thể đăng nhập ngay bây giờ với mật khẩu mới.</p>
-                        <p style='color: #d9534f;'><strong>Lưu ý:</strong> Nếu bạn không thực hiện thay đổi này, vui lòng liên hệ với chúng tôi ngay lập tức.</p>
-                        <p>Trân trọng,<br/>Đội ngũ EVM Management</p>
-                    </body>
-                    </html>";
-
                 try
                 {
-                    await _emailService.SendEmailAsync(account.Email, emailSubject, emailBody, isHtml: true);
+                    var emailBody = EmailTemplates.PasswordResetConfirmationEmail(account.Email);
+                    await _emailService.SendEmailAsync(account.Email, EmailTemplates.Subjects.PasswordResetConfirmation, emailBody, isHtml: true);
                 }
                 catch (Exception emailEx)
                 {
@@ -562,22 +519,10 @@ namespace EVMManagement.BLL.Services.Class
                 _unitOfWork.Accounts.Update(account);
                 await _unitOfWork.SaveChangesAsync();
 
-                var emailSubject = "Mật khẩu đã được thay đổi - EVM Management";
-                var emailBody = $@"
-                    <html>
-                    <body style='font-family: Arial, sans-serif;'>
-                        <h2>Mật khẩu của bạn đã được thay đổi</h2>
-                        <p>Xin chào,</p>
-                        <p>Mật khẩu cho tài khoản <strong>{account.Email}</strong> đã được thay đổi thành công.</p>
-                        <p>Thời gian: <strong>{DateTime.UtcNow:dd/MM/yyyy HH:mm:ss} UTC</strong></p>
-                        <p style='color: #d9534f;'><strong>Lưu ý:</strong> Nếu bạn không thực hiện thay đổi này, vui lòng liên hệ với chúng tôi ngay lập tức.</p>
-                        <p>Trân trọng,<br/>Đội ngũ EVM Management</p>
-                    </body>
-                    </html>";
-
                 try
                 {
-                    await _emailService.SendEmailAsync(account.Email, emailSubject, emailBody, isHtml: true);
+                    var emailBody = EmailTemplates.PasswordChangeConfirmationEmail(account.Email);
+                    await _emailService.SendEmailAsync(account.Email, EmailTemplates.Subjects.PasswordChangeConfirmation, emailBody, isHtml: true);
                 }
                 catch (Exception emailEx)
                 {
