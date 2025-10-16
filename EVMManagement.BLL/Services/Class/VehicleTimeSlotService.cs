@@ -22,7 +22,6 @@ namespace EVMManagement.BLL.Services.Class
 
         public async Task<VehicleTimeSlotResponseDto> CreateVehicleTimeSlotAsync(VehicleTimeSlotCreateDto dto)
         {
-            // Nếu status là BOOKED, kiểm tra AvailableSlot
             if (dto.Status == TimeSlotStatus.BOOKED)
             {
                 var availableSlot = _unitOfWork.AvailableSlots.GetQueryable()
@@ -34,7 +33,6 @@ namespace EVMManagement.BLL.Services.Class
 
                 if (availableSlot != null)
                 {
-                    // Update AvailableSlot thành không rảnh
                     availableSlot.IsAvailable = false;
                     availableSlot.ModifiedDate = DateTime.UtcNow;
                     _unitOfWork.AvailableSlots.Update(availableSlot);
@@ -226,7 +224,6 @@ namespace EVMManagement.BLL.Services.Class
 
             var oldStatus = entity.Status;
 
-            // Tìm AvailableSlot tương ứng
             var availableSlot = _unitOfWork.AvailableSlots.GetQueryable()
                 .FirstOrDefault(x => x.VehicleId == entity.VehicleId
                                   && x.DealerId == entity.DealerId
@@ -235,7 +232,6 @@ namespace EVMManagement.BLL.Services.Class
 
             if (availableSlot != null)
             {
-                // Nếu đổi từ BOOKED sang CANCELED hoặc COMPLETED => giải phóng slot
                 if ((oldStatus == TimeSlotStatus.BOOKED || oldStatus == TimeSlotStatus.PENDING) 
                     && (status == TimeSlotStatus.CANCELED || status == TimeSlotStatus.COMPLETED))
                 {
@@ -243,7 +239,6 @@ namespace EVMManagement.BLL.Services.Class
                     availableSlot.ModifiedDate = DateTime.UtcNow;
                     _unitOfWork.AvailableSlots.Update(availableSlot);
                 }
-                // Nếu đổi từ CANCELED/COMPLETED sang BOOKED => lock slot
                 else if ((oldStatus == TimeSlotStatus.CANCELED || oldStatus == TimeSlotStatus.COMPLETED) 
                          && status == TimeSlotStatus.BOOKED)
                 {
@@ -267,7 +262,6 @@ namespace EVMManagement.BLL.Services.Class
             var entity = await _unitOfWork.VehicleTimeSlots.GetByIdAsync(id);
             if (entity == null) return null;
 
-            // Tìm AvailableSlot tương ứng
             var availableSlot = _unitOfWork.AvailableSlots.GetQueryable()
                 .FirstOrDefault(x => x.VehicleId == entity.VehicleId
                                   && x.DealerId == entity.DealerId
@@ -276,14 +270,12 @@ namespace EVMManagement.BLL.Services.Class
 
             if (availableSlot != null)
             {
-                // Nếu soft delete (xóa VehicleTimeSlot) => giải phóng slot
                 if (isDeleted && (entity.Status == TimeSlotStatus.BOOKED || entity.Status == TimeSlotStatus.PENDING))
                 {
                     availableSlot.IsAvailable = true;
                     availableSlot.ModifiedDate = DateTime.UtcNow;
                     _unitOfWork.AvailableSlots.Update(availableSlot);
                 }
-                // Nếu restore => lock lại slot
                 else if (!isDeleted && (entity.Status == TimeSlotStatus.BOOKED || entity.Status == TimeSlotStatus.PENDING))
                 {
                     availableSlot.IsAvailable = false;
@@ -314,7 +306,6 @@ namespace EVMManagement.BLL.Services.Class
             var entity = await _unitOfWork.VehicleTimeSlots.GetByIdAsync(id);
             if (entity == null) return false;
 
-            // Tìm AvailableSlot tương ứng và giải phóng
             var availableSlot = _unitOfWork.AvailableSlots.GetQueryable()
                 .FirstOrDefault(x => x.VehicleId == entity.VehicleId
                                   && x.DealerId == entity.DealerId
