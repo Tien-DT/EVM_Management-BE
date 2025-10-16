@@ -64,6 +64,44 @@ namespace EVMManagement.API.Controllers
             var results = await _service.SearchAsync(q, pageNumber, pageSize);
             return Ok(ApiResponse<PagedResult<PromotionResponseDto>>.CreateSuccess(results));
         }
+
+        [HttpPut("{id}")]
+        public async Task<IActionResult> Update(Guid id, [FromBody] PromotionUpdateDto dto)
+        {
+            if (!ModelState.IsValid)
+            {
+                var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
+                return BadRequest(ApiResponse<PromotionResponseDto>.CreateFail("Validation failed", errors, 400));
+            }
+
+            var updated = await _service.UpdateAsync(id, dto);
+            if (updated == null) return NotFound(ApiResponse<PromotionResponseDto>.CreateFail("Promotion not found", null, 404));
+            return Ok(ApiResponse<PromotionResponseDto>.CreateSuccess(updated));
+        }
+
+        [HttpPatch("{id}/is-active")]
+        public async Task<IActionResult> UpdateIsActive(Guid id, [FromQuery] bool isActive)
+        {
+            var updated = await _service.UpdateIsActiveAsync(id, isActive);
+            if (updated == null) return NotFound(ApiResponse<PromotionResponseDto>.CreateFail("Promotion not found", null, 404));
+            return Ok(ApiResponse<PromotionResponseDto>.CreateSuccess(updated));
+        }
+
+        [HttpPatch("{id}/is-deleted")]
+        public async Task<IActionResult> UpdateIsDeleted(Guid id, [FromQuery] bool isDeleted)
+        {
+            var updated = await _service.UpdateIsDeletedAsync(id, isDeleted);
+            if (updated == null) return NotFound(ApiResponse<PromotionResponseDto>.CreateFail("Promotion not found", null, 404));
+            return Ok(ApiResponse<PromotionResponseDto>.CreateSuccess(updated));
+        }
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> Delete(Guid id)
+        {
+            var deleted = await _service.DeleteAsync(id);
+            if (!deleted) return NotFound(ApiResponse<string>.CreateFail("Promotion not found", null, 404));
+            return Ok(ApiResponse<string>.CreateSuccess("Deleted"));
+        }
     }
 }
 
