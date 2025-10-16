@@ -15,6 +15,7 @@ namespace EVMManagement.BLL.Services
             services.AddScoped<IOrderService, OrderService>();
             services.AddScoped<IOrderDetailService, OrderDetailService>();
             services.AddScoped<IQuotationDetailService, QuotationDetailService>();
+            services.AddScoped<IContractService, ContractService>();
             return services;
         }
     }

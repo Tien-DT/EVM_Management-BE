@@ -23,6 +23,7 @@ namespace EVMManagement.DAL.UnitOfWork
         private IOrderDetailRepository? _orderDetails;
         private IQuotationRepository? _quotations;
         private IQuotationDetailRepository? _quotationDetails;
+        private IContractRepository? _contracts;
 
         public UnitOfWork(AppDbContext context)
         {
@@ -40,6 +41,7 @@ namespace EVMManagement.DAL.UnitOfWork
         public IOrderDetailRepository OrderDetails => _orderDetails ??= new OrderDetailRepository(_context);
         public IQuotationRepository Quotations => _quotations ??= new QuotationRepository(_context);
         public IQuotationDetailRepository QuotationDetails => _quotationDetails ??= new QuotationDetailRepository(_context);
+        public IContractRepository Contracts => _contracts ??= new ContractRepository(_context);
 
         public async Task<int> SaveChangesAsync()
         {
