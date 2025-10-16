@@ -1,0 +1,19 @@
+using EVMManagement.BLL.DTOs.Request.Vehicle;
+using EVMManagement.BLL.DTOs.Response;
+using EVMManagement.BLL.DTOs.Response.Vehicle;
+using System;
+using System.Threading.Tasks;
+
+namespace EVMManagement.BLL.Services.Interface
+{
+    public interface IVehicleService
+    {
+        Task<VehicleResponseDto> CreateVehicleAsync(VehicleCreateDto dto);
+        Task<PagedResult<VehicleResponseDto>> GetAllAsync(int pageNumber = 1, int pageSize = 10);
+        Task<VehicleResponseDto?> GetByIdAsync(Guid id);
+        Task<VehicleResponseDto?> UpdateAsync(Guid id, VehicleUpdateDto dto);
+        Task<VehicleResponseDto?> UpdateIsDeletedAsync(Guid id, bool isDeleted);
+        Task<bool> DeleteAsync(Guid id);
+        Task<PagedResult<VehicleResponseDto>> SearchByQueryAsync(string? q, int pageNumber = 1, int pageSize = 10);
+    }
+}
