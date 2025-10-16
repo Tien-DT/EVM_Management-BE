@@ -5,6 +5,7 @@ using EVMManagement.BLL.DTOs.Response.Vehicle;
 using EVMManagement.BLL.DTOs.Response;
 using System;
 using System.Linq;
+using EVMManagement.DAL.Models.Enums;
 
 namespace EVMManagement.API.Controllers
 {
@@ -74,13 +75,7 @@ namespace EVMManagement.API.Controllers
             return Ok(ApiResponse<VehicleResponseDto>.CreateSuccess(updated));
         }
 
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> Delete(Guid id)
-        {
-            var deleted = await _service.DeleteAsync(id);
-            if (!deleted) return NotFound(ApiResponse<string>.CreateFail("Vehicle not found", null, 404));
-            return Ok(ApiResponse<string>.CreateSuccess("Deleted"));
-        }
+      
 
         [HttpGet("search")]
         public async Task<IActionResult> Search([FromQuery] string? q, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
@@ -88,6 +83,26 @@ namespace EVMManagement.API.Controllers
             var results = await _service.SearchByQueryAsync(q, pageNumber, pageSize);
             return Ok(ApiResponse<PagedResult<VehicleResponseDto>>.CreateSuccess(results));
 
+        }
+
+
+
+        [HttpGet("filter")]
+        public async Task<IActionResult> Filter([FromQuery] EVMManagement.BLL.DTOs.Request.Vehicle.VehicleFilterDto filter)
+        {
+            if (filter.PageNumber < 1 || filter.PageSize < 1)
+                return BadRequest(ApiResponse<string>.CreateFail("PageNumber and PageSize must be greater than 0", null, 400));
+
+            var results = await _service.GetByFilterAsync(filter);
+            return Ok(ApiResponse<PagedResult<VehicleResponseDto>>.CreateSuccess(results));
+        }
+
+        [HttpPatch("{id}/status")]
+        public async Task<IActionResult> UpdateStatus([FromRoute] Guid id, [FromQuery] VehicleStatus status)
+        {
+            var updated = await _service.UpdateStatusAsync(id, status);
+            if (updated == null) return NotFound(ApiResponse<VehicleResponseDto>.CreateFail("Vehicle not found", null, 404));
+            return Ok(ApiResponse<VehicleResponseDto>.CreateSuccess(updated));
         }
     }
 }

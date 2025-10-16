@@ -3,6 +3,7 @@ using EVMManagement.BLL.DTOs.Response;
 using EVMManagement.BLL.DTOs.Response.Vehicle;
 using EVMManagement.BLL.Services.Interface;
 using EVMManagement.DAL.Models.Entities;
+using EVMManagement.DAL.Models.Enums;
 using EVMManagement.DAL.UnitOfWork;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -90,15 +91,7 @@ namespace EVMManagement.BLL.Services.Class
             return MapToDto(entity);
         }
 
-        public async Task<bool> DeleteAsync(Guid id)
-        {
-            var entity = await _unitOfWork.Vehicles.GetByIdAsync(id);
-            if (entity == null) return false;
-
-            _unitOfWork.Vehicles.Delete(entity);
-            await _unitOfWork.SaveChangesAsync();
-            return true;
-        }
+        
 
         public async Task<PagedResult<VehicleResponseDto>> SearchByQueryAsync(string? q, int pageNumber = 1, int pageSize = 10)
         {
@@ -119,6 +112,48 @@ namespace EVMManagement.BLL.Services.Class
             var responses = items.Select(MapToDto).ToList();
 
             return PagedResult<VehicleResponseDto>.Create(responses, totalCount, pageNumber, pageSize);
+        }
+
+        
+        
+
+        public async Task<PagedResult<VehicleResponseDto>> GetByFilterAsync(VehicleFilterDto filter)
+        {
+            var query = _unitOfWork.Vehicles.GetQueryable();
+
+            if (!string.IsNullOrWhiteSpace(filter.Q))
+            {
+                var q = filter.Q.ToLower();
+                query = query.Where(v => v.Vin.ToLower().Contains(q));
+            }
+
+            if (filter.Status.HasValue) query = query.Where(v => v.Status == filter.Status.Value);
+            if (filter.Purpose.HasValue) query = query.Where(v => v.Purpose == filter.Purpose.Value);
+            if (filter.WarehouseId.HasValue) query = query.Where(v => v.WarehouseId == filter.WarehouseId.Value);
+            if (filter.VariantId.HasValue) query = query.Where(v => v.VariantId == filter.VariantId.Value);
+
+            var totalCount = await query.CountAsync();
+
+            var items = await query
+                .OrderByDescending(x => x.CreatedDate)
+                .Skip((filter.PageNumber - 1) * filter.PageSize)
+                .Take(filter.PageSize)
+                .ToListAsync();
+
+            var responses = items.Select(MapToDto).ToList();
+            return PagedResult<VehicleResponseDto>.Create(responses, totalCount, filter.PageNumber, filter.PageSize);
+        }
+
+        public async Task<VehicleResponseDto?> UpdateStatusAsync(Guid id, VehicleStatus status)
+        {
+            var entity = await _unitOfWork.Vehicles.GetByIdAsync(id);
+            if (entity == null) return null;
+
+            entity.Status = status;
+            _unitOfWork.Vehicles.Update(entity);
+            await _unitOfWork.SaveChangesAsync();
+
+            return MapToDto(entity);
         }
 
         private VehicleResponseDto MapToDto(Vehicle e)
