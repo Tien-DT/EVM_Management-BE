@@ -20,6 +20,7 @@ namespace EVMManagement.DAL.UnitOfWork
         IQuotationRepository Quotations { get; }
         IQuotationDetailRepository QuotationDetails { get; }
         IVehicleTimeSlotRepository VehicleTimeSlots { get; }
+        IMasterTimeSlotRepository MasterTimeSlots { get; }
 
         Task<int> SaveChangesAsync();
         Task BeginTransactionAsync();
