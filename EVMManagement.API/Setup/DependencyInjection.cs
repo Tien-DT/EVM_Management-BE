@@ -20,6 +20,7 @@ namespace EVMManagement.API.Setup
             services.AddScoped<IUnitOfWork, UnitOfWork>();
 
             services.Configure<JwtSettings>(configuration.GetSection(JwtSettings.SectionName));
+            services.Configure<GmailApiSettings>(configuration.GetSection(GmailApiSettings.SectionName));
 
             services.AddBLLServices();
 
