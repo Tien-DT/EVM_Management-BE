@@ -89,6 +89,28 @@ namespace EVMManagement.API.Controllers
             var result = await _service.GetByStatusAsync(status, pageNumber, pageSize);
             return Ok(ApiResponse<PagedResult<VehicleTimeSlotResponseDto>>.CreateSuccess(result));
         }
+
+        [HttpPut("{id}")]
+        public async Task<IActionResult> Update(Guid id, [FromBody] VehicleTimeSlotUpdateDto dto)
+        {
+            if (!ModelState.IsValid)
+            {
+                var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
+                return BadRequest(ApiResponse<VehicleTimeSlotResponseDto>.CreateFail("Validation failed", errors, 400));
+            }
+
+            var updated = await _service.UpdateAsync(id, dto);
+            if (updated == null) return NotFound(ApiResponse<VehicleTimeSlotResponseDto>.CreateFail("VehicleTimeSlot not found", null, 404));
+            return Ok(ApiResponse<VehicleTimeSlotResponseDto>.CreateSuccess(updated));
+        }
+
+        [HttpPatch("{id}/status")]
+        public async Task<IActionResult> UpdateStatus(Guid id, [FromQuery] TimeSlotStatus status)
+        {
+            var updated = await _service.UpdateStatusAsync(id, status);
+            if (updated == null) return NotFound(ApiResponse<VehicleTimeSlotResponseDto>.CreateFail("VehicleTimeSlot not found", null, 404));
+            return Ok(ApiResponse<VehicleTimeSlotResponseDto>.CreateSuccess(updated));
+        }
     }
 }
 

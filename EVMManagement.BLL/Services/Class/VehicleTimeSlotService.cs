@@ -180,6 +180,39 @@ namespace EVMManagement.BLL.Services.Class
 
             return Task.FromResult(PagedResult<VehicleTimeSlotResponseDto>.Create(items, totalCount, pageNumber, pageSize));
         }
+
+        public async Task<VehicleTimeSlotResponseDto?> UpdateAsync(Guid id, VehicleTimeSlotUpdateDto dto)
+        {
+            var entity = await _unitOfWork.VehicleTimeSlots.GetByIdAsync(id);
+            if (entity == null) return null;
+
+            if (dto.VehicleId.HasValue) entity.VehicleId = dto.VehicleId.Value;
+            if (dto.DealerId.HasValue) entity.DealerId = dto.DealerId.Value;
+            if (dto.MasterSlotId.HasValue) entity.MasterSlotId = dto.MasterSlotId.Value;
+            if (dto.SlotDate.HasValue) entity.SlotDate = dto.SlotDate.Value;
+            if (dto.Status.HasValue) entity.Status = dto.Status.Value;
+
+            entity.ModifiedDate = DateTime.UtcNow;
+
+            _unitOfWork.VehicleTimeSlots.Update(entity);
+            await _unitOfWork.SaveChangesAsync();
+
+            return await GetByIdAsync(id);
+        }
+
+        public async Task<VehicleTimeSlotResponseDto?> UpdateStatusAsync(Guid id, TimeSlotStatus status)
+        {
+            var entity = await _unitOfWork.VehicleTimeSlots.GetByIdAsync(id);
+            if (entity == null) return null;
+
+            entity.Status = status;
+            entity.ModifiedDate = DateTime.UtcNow;
+
+            _unitOfWork.VehicleTimeSlots.Update(entity);
+            await _unitOfWork.SaveChangesAsync();
+
+            return await GetByIdAsync(id);
+        }
     }
 }
 
