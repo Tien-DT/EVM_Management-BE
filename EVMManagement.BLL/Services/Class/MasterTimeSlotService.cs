@@ -102,6 +102,35 @@ namespace EVMManagement.BLL.Services.Class
 
             return Task.FromResult(PagedResult<MasterTimeSlotResponseDto>.Create(items, totalCount, pageNumber, pageSize));
         }
+
+        public async Task<MasterTimeSlotResponseDto?> UpdateAsync(Guid id, MasterTimeSlotUpdateDto dto)
+        {
+            var entity = await _unitOfWork.MasterTimeSlots.GetByIdAsync(id);
+            if (entity == null) return null;
+
+            if (dto.Code != null) entity.Code = dto.Code;
+            if (dto.StartOffsetMinutes.HasValue) entity.StartOffsetMinutes = dto.StartOffsetMinutes;
+            if (dto.DurationMinutes.HasValue) entity.DurationMinutes = dto.DurationMinutes;
+            if (dto.IsActive.HasValue) entity.IsActive = dto.IsActive.Value;
+
+            _unitOfWork.MasterTimeSlots.Update(entity);
+            await _unitOfWork.SaveChangesAsync();
+
+            return await GetByIdAsync(id);
+        }
+
+        public async Task<MasterTimeSlotResponseDto?> UpdateIsActiveAsync(Guid id, bool isActive)
+        {
+            var entity = await _unitOfWork.MasterTimeSlots.GetByIdAsync(id);
+            if (entity == null) return null;
+
+            entity.IsActive = isActive;
+
+            _unitOfWork.MasterTimeSlots.Update(entity);
+            await _unitOfWork.SaveChangesAsync();
+
+            return await GetByIdAsync(id);
+        }
     }
 }
 

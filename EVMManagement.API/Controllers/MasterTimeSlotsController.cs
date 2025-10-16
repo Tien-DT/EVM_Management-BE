@@ -64,6 +64,28 @@ namespace EVMManagement.API.Controllers
             var result = await _service.GetActiveAsync(pageNumber, pageSize);
             return Ok(ApiResponse<PagedResult<MasterTimeSlotResponseDto>>.CreateSuccess(result));
         }
+
+        [HttpPut("{id}")]
+        public async Task<IActionResult> Update(Guid id, [FromBody] MasterTimeSlotUpdateDto dto)
+        {
+            if (!ModelState.IsValid)
+            {
+                var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
+                return BadRequest(ApiResponse<MasterTimeSlotResponseDto>.CreateFail("Validation failed", errors, 400));
+            }
+
+            var updated = await _service.UpdateAsync(id, dto);
+            if (updated == null) return NotFound(ApiResponse<MasterTimeSlotResponseDto>.CreateFail("MasterTimeSlot not found", null, 404));
+            return Ok(ApiResponse<MasterTimeSlotResponseDto>.CreateSuccess(updated));
+        }
+
+        [HttpPatch("{id}/is-active")]
+        public async Task<IActionResult> UpdateIsActive(Guid id, [FromQuery] bool isActive)
+        {
+            var updated = await _service.UpdateIsActiveAsync(id, isActive);
+            if (updated == null) return NotFound(ApiResponse<MasterTimeSlotResponseDto>.CreateFail("MasterTimeSlot not found", null, 404));
+            return Ok(ApiResponse<MasterTimeSlotResponseDto>.CreateSuccess(updated));
+        }
     }
 }
 
