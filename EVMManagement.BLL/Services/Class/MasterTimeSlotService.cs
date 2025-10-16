@@ -131,6 +131,17 @@ namespace EVMManagement.BLL.Services.Class
 
             return await GetByIdAsync(id);
         }
+
+        public async Task<bool> DeleteAsync(Guid id)
+        {
+            var entity = await _unitOfWork.MasterTimeSlots.GetByIdAsync(id);
+            if (entity == null) return false;
+
+            _unitOfWork.MasterTimeSlots.Delete(entity);
+            await _unitOfWork.SaveChangesAsync();
+
+            return true;
+        }
     }
 }
 

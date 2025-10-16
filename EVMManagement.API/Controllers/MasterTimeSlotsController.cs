@@ -86,6 +86,14 @@ namespace EVMManagement.API.Controllers
             if (updated == null) return NotFound(ApiResponse<MasterTimeSlotResponseDto>.CreateFail("MasterTimeSlot not found", null, 404));
             return Ok(ApiResponse<MasterTimeSlotResponseDto>.CreateSuccess(updated));
         }
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> Delete(Guid id)
+        {
+            var deleted = await _service.DeleteAsync(id);
+            if (!deleted) return NotFound(ApiResponse<string>.CreateFail("MasterTimeSlot not found", null, 404));
+            return Ok(ApiResponse<string>.CreateSuccess("Deleted"));
+        }
     }
 }
 
