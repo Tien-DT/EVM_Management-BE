@@ -3,6 +3,7 @@ using EVMManagement.BLL.Services.Interface;
 using EVMManagement.BLL.DTOs.Request.VehicleTimeSlot;
 using EVMManagement.BLL.DTOs.Response;
 using EVMManagement.BLL.DTOs.Response.VehicleTimeSlot;
+using EVMManagement.DAL.Models.Enums;
 using System;
 using System.Threading.Tasks;
 using System.Linq;
@@ -30,7 +31,63 @@ namespace EVMManagement.API.Controllers
             }
 
             var created = await _service.CreateVehicleTimeSlotAsync(dto);
-            return CreatedAtAction(nameof(Create), new { id = created.Id }, ApiResponse<VehicleTimeSlotResponseDto>.CreateSuccess(created));
+            return CreatedAtAction(nameof(GetById), new { id = created.Id }, ApiResponse<VehicleTimeSlotResponseDto>.CreateSuccess(created));
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetAll([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
+        {
+            if (pageNumber < 1 || pageSize < 1)
+            {
+                return BadRequest(ApiResponse<string>.CreateFail("PageNumber and PageSize must be greater than 0", null, 400));
+            }
+
+            var result = await _service.GetAllAsync(pageNumber, pageSize);
+            return Ok(ApiResponse<PagedResult<VehicleTimeSlotResponseDto>>.CreateSuccess(result));
+        }
+
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetById(Guid id)
+        {
+            var item = await _service.GetByIdAsync(id);
+            if (item == null) return NotFound(ApiResponse<VehicleTimeSlotResponseDto>.CreateFail("VehicleTimeSlot not found", null, 404));
+            return Ok(ApiResponse<VehicleTimeSlotResponseDto>.CreateSuccess(item));
+        }
+
+        [HttpGet("by-vehicle/{vehicleId}")]
+        public async Task<IActionResult> GetByVehicleId(Guid vehicleId, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
+        {
+            if (pageNumber < 1 || pageSize < 1)
+            {
+                return BadRequest(ApiResponse<string>.CreateFail("PageNumber and PageSize must be greater than 0", null, 400));
+            }
+
+            var result = await _service.GetByVehicleIdAsync(vehicleId, pageNumber, pageSize);
+            return Ok(ApiResponse<PagedResult<VehicleTimeSlotResponseDto>>.CreateSuccess(result));
+        }
+
+        [HttpGet("by-dealer/{dealerId}")]
+        public async Task<IActionResult> GetByDealerId(Guid dealerId, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
+        {
+            if (pageNumber < 1 || pageSize < 1)
+            {
+                return BadRequest(ApiResponse<string>.CreateFail("PageNumber and PageSize must be greater than 0", null, 400));
+            }
+
+            var result = await _service.GetByDealerIdAsync(dealerId, pageNumber, pageSize);
+            return Ok(ApiResponse<PagedResult<VehicleTimeSlotResponseDto>>.CreateSuccess(result));
+        }
+
+        [HttpGet("by-status")]
+        public async Task<IActionResult> GetByStatus([FromQuery] TimeSlotStatus status, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
+        {
+            if (pageNumber < 1 || pageSize < 1)
+            {
+                return BadRequest(ApiResponse<string>.CreateFail("PageNumber and PageSize must be greater than 0", null, 400));
+            }
+
+            var result = await _service.GetByStatusAsync(status, pageNumber, pageSize);
+            return Ok(ApiResponse<PagedResult<VehicleTimeSlotResponseDto>>.CreateSuccess(result));
         }
     }
 }
