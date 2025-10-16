@@ -51,6 +51,7 @@ namespace EVMManagement.DAL.Data
         public DbSet<HandoverRecord> HandoverRecords { get; set; }
         public DbSet<MasterTimeSlot> MasterTimeSlots { get; set; }
         public DbSet<VehicleTimeSlot> VehicleTimeSlots { get; set; }
+        public DbSet<AvailableSlot> AvailableSlots { get; set; }
         public DbSet<TestDriveBooking> TestDriveBookings { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -418,6 +419,24 @@ namespace EVMManagement.DAL.Data
                     .OnDelete(DeleteBehavior.Restrict);
                 entity.HasOne(e => e.MasterSlot)
                     .WithMany(m => m.VehicleTimeSlots)
+                    .HasForeignKey(e => e.MasterSlotId)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            // Configure AvailableSlot
+            modelBuilder.Entity<AvailableSlot>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.HasOne(e => e.Vehicle)
+                    .WithMany()
+                    .HasForeignKey(e => e.VehicleId)
+                    .OnDelete(DeleteBehavior.Restrict);
+                entity.HasOne(e => e.Dealer)
+                    .WithMany()
+                    .HasForeignKey(e => e.DealerId)
+                    .OnDelete(DeleteBehavior.Restrict);
+                entity.HasOne(e => e.MasterSlot)
+                    .WithMany()
                     .HasForeignKey(e => e.MasterSlotId)
                     .OnDelete(DeleteBehavior.Restrict);
             });

@@ -27,6 +27,7 @@ namespace EVMManagement.DAL.UnitOfWork
         private IQuotationDetailRepository? _quotationDetails;
         private IVehicleTimeSlotRepository? _vehicleTimeSlots;
         private IMasterTimeSlotRepository? _masterTimeSlots;
+        private IAvailableSlotRepository? _availableSlots;
 
         public UnitOfWork(AppDbContext context)
         {
@@ -48,6 +49,7 @@ namespace EVMManagement.DAL.UnitOfWork
         public IQuotationDetailRepository QuotationDetails => _quotationDetails ??= new QuotationDetailRepository(_context);
         public IVehicleTimeSlotRepository VehicleTimeSlots => _vehicleTimeSlots ??= new VehicleTimeSlotRepository(_context);
         public IMasterTimeSlotRepository MasterTimeSlots => _masterTimeSlots ??= new MasterTimeSlotRepository(_context);
+        public IAvailableSlotRepository AvailableSlots => _availableSlots ??= new AvailableSlotRepository(_context);
 
         public async Task<int> SaveChangesAsync()
         {
