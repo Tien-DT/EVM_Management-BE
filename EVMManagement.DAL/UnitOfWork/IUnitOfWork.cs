@@ -13,11 +13,12 @@ namespace EVMManagement.DAL.UnitOfWork
         ICustomerRepository Customers { get; }
         IWarehouseRepository Warehouses { get; }
         IDealerRepository Dealers { get; }
+        IPromotionRepository Promotions { get; }
+        IContractRepository Contracts { get; }
         IOrderRepository Orders { get; }
         IOrderDetailRepository OrderDetails { get; }
         IQuotationRepository Quotations { get; }
         IQuotationDetailRepository QuotationDetails { get; }
-        IContractRepository Contracts { get; }
 
         Task<int> SaveChangesAsync();
         Task BeginTransactionAsync();
