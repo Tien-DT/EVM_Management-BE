@@ -37,6 +37,14 @@ namespace EVMManagement.DAL.Repositories.Class
                 .FirstOrDefaultAsync(w => w.Id == id);
         }
 
-      
+        public IQueryable<Warehouse> GetWarehousesByDealerIdAsync(Guid dealerId)
+        {
+            return _dbSet
+                .Where(w => w.DealerId == dealerId)
+                .Include(w => w.Dealer)
+                .Include(w => w.Vehicles)
+                    .ThenInclude(v => v.VehicleVariant)
+                        .ThenInclude(vv => vv.VehicleModel);
+        }
     }
 }
