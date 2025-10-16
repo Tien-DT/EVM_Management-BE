@@ -29,8 +29,15 @@ namespace EVMManagement.API.Controllers
                 return BadRequest(ApiResponse<AvailableSlotResponseDto>.CreateFail("Validation failed", errors, 400));
             }
 
-            var created = await _service.CreateAvailableSlotAsync(dto);
-            return CreatedAtAction(nameof(GetById), new { id = created.Id }, ApiResponse<AvailableSlotResponseDto>.CreateSuccess(created));
+            try
+            {
+                var created = await _service.CreateAvailableSlotAsync(dto);
+                return CreatedAtAction(nameof(GetById), new { id = created.Id }, ApiResponse<AvailableSlotResponseDto>.CreateSuccess(created));
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(ApiResponse<AvailableSlotResponseDto>.CreateFail(ex.Message, null, 400));
+            }
         }
 
         [HttpGet]

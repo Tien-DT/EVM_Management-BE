@@ -21,13 +21,39 @@ namespace EVMManagement.BLL.Services.Class
 
         public async Task<AvailableSlotResponseDto> CreateAvailableSlotAsync(AvailableSlotCreateDto dto)
         {
+            // Kiểm tra xem đã tồn tại AvailableSlot cho cùng vehicle, dealer, master slot và date chưa
+            var existingSlot = _unitOfWork.AvailableSlots.GetQueryable()
+                .FirstOrDefault(x => x.VehicleId == dto.VehicleId
+                                  && x.DealerId == dto.DealerId
+                                  && x.MasterSlotId == dto.MasterSlotId
+                                  && x.SlotDate.Date == dto.SlotDate.Date
+                                  && !x.IsDeleted);
+
+            if (existingSlot != null)
+            {
+                throw new InvalidOperationException("AvailableSlot already exists for this vehicle, dealer, master slot and date");
+            }
+
+            // Kiểm tra xem có VehicleTimeSlot đang BOOKED hoặc PENDING không
+            var bookedSlot = _unitOfWork.VehicleTimeSlots.GetQueryable()
+                .FirstOrDefault(x => x.VehicleId == dto.VehicleId
+                                  && x.DealerId == dto.DealerId
+                                  && x.MasterSlotId == dto.MasterSlotId
+                                  && x.SlotDate.Date == dto.SlotDate.Date
+                                  && (x.Status == DAL.Models.Enums.TimeSlotStatus.BOOKED 
+                                      || x.Status == DAL.Models.Enums.TimeSlotStatus.PENDING)
+                                  && !x.IsDeleted);
+
+            // Nếu có slot đang booked, tự động set IsAvailable = false
+            var isAvailable = dto.IsAvailable && bookedSlot == null;
+
             var availableSlot = new AvailableSlot
             {
                 VehicleId = dto.VehicleId,
                 DealerId = dto.DealerId,
                 MasterSlotId = dto.MasterSlotId,
                 SlotDate = dto.SlotDate,
-                IsAvailable = dto.IsAvailable
+                IsAvailable = isAvailable
             };
 
             await _unitOfWork.AvailableSlots.AddAsync(availableSlot);
