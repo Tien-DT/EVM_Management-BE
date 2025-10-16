@@ -179,6 +179,71 @@ namespace EVMManagement.BLL.Services.Class
 
             return Task.FromResult(PagedResult<AvailableSlotResponseDto>.Create(items, totalCount, pageNumber, pageSize));
         }
+
+        public async Task<AvailableSlotResponseDto?> UpdateAsync(Guid id, AvailableSlotUpdateDto dto)
+        {
+            var entity = await _unitOfWork.AvailableSlots.GetByIdAsync(id);
+            if (entity == null) return null;
+
+            entity.VehicleId = dto.VehicleId;
+            entity.DealerId = dto.DealerId;
+            entity.MasterSlotId = dto.MasterSlotId;
+            entity.SlotDate = dto.SlotDate;
+            entity.IsAvailable = dto.IsAvailable;
+            entity.ModifiedDate = DateTime.UtcNow;
+
+            _unitOfWork.AvailableSlots.Update(entity);
+            await _unitOfWork.SaveChangesAsync();
+
+            return new AvailableSlotResponseDto
+            {
+                Id = entity.Id,
+                VehicleId = entity.VehicleId,
+                DealerId = entity.DealerId,
+                MasterSlotId = entity.MasterSlotId,
+                SlotDate = entity.SlotDate,
+                IsAvailable = entity.IsAvailable,
+                CreatedDate = entity.CreatedDate,
+                ModifiedDate = entity.ModifiedDate,
+                IsDeleted = entity.IsDeleted
+            };
+        }
+
+        public async Task<AvailableSlotResponseDto?> UpdateIsDeletedAsync(Guid id, bool isDeleted)
+        {
+            var entity = await _unitOfWork.AvailableSlots.GetByIdAsync(id);
+            if (entity == null) return null;
+
+            entity.IsDeleted = isDeleted;
+            entity.DeletedDate = isDeleted ? DateTime.UtcNow : null;
+            entity.ModifiedDate = DateTime.UtcNow;
+
+            _unitOfWork.AvailableSlots.Update(entity);
+            await _unitOfWork.SaveChangesAsync();
+
+            return new AvailableSlotResponseDto
+            {
+                Id = entity.Id,
+                VehicleId = entity.VehicleId,
+                DealerId = entity.DealerId,
+                MasterSlotId = entity.MasterSlotId,
+                SlotDate = entity.SlotDate,
+                IsAvailable = entity.IsAvailable,
+                CreatedDate = entity.CreatedDate,
+                ModifiedDate = entity.ModifiedDate,
+                IsDeleted = entity.IsDeleted
+            };
+        }
+
+        public async Task<bool> DeleteAsync(Guid id)
+        {
+            var entity = await _unitOfWork.AvailableSlots.GetByIdAsync(id);
+            if (entity == null) return false;
+
+            _unitOfWork.AvailableSlots.Delete(entity);
+            await _unitOfWork.SaveChangesAsync();
+            return true;
+        }
     }
 }
 

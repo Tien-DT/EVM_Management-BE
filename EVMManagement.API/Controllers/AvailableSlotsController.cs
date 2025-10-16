@@ -88,6 +88,36 @@ namespace EVMManagement.API.Controllers
             var result = await _service.GetAvailableAsync(pageNumber, pageSize);
             return Ok(ApiResponse<PagedResult<AvailableSlotResponseDto>>.CreateSuccess(result));
         }
+
+        [HttpPut("{id}")]
+        public async Task<IActionResult> Update(Guid id, [FromBody] AvailableSlotUpdateDto dto)
+        {
+            if (!ModelState.IsValid)
+            {
+                var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
+                return BadRequest(ApiResponse<AvailableSlotResponseDto>.CreateFail("Validation failed", errors, 400));
+            }
+
+            var updated = await _service.UpdateAsync(id, dto);
+            if (updated == null) return NotFound(ApiResponse<AvailableSlotResponseDto>.CreateFail("AvailableSlot not found", null, 404));
+            return Ok(ApiResponse<AvailableSlotResponseDto>.CreateSuccess(updated));
+        }
+
+        [HttpPatch("{id}/is-deleted")]
+        public async Task<IActionResult> UpdateIsDeleted(Guid id, [FromBody] bool isDeleted)
+        {
+            var updated = await _service.UpdateIsDeletedAsync(id, isDeleted);
+            if (updated == null) return NotFound(ApiResponse<AvailableSlotResponseDto>.CreateFail("AvailableSlot not found", null, 404));
+            return Ok(ApiResponse<AvailableSlotResponseDto>.CreateSuccess(updated));
+        }
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> Delete(Guid id)
+        {
+            var result = await _service.DeleteAsync(id);
+            if (!result) return NotFound(ApiResponse<string>.CreateFail("AvailableSlot not found", null, 404));
+            return Ok(ApiResponse<string>.CreateSuccess("AvailableSlot deleted successfully"));
+        }
     }
 }
 
