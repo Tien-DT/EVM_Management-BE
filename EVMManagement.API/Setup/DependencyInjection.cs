@@ -20,10 +20,10 @@ namespace EVMManagement.API.Setup
             services.AddScoped<IUnitOfWork, UnitOfWork>();
 
             services.Configure<JwtSettings>(configuration.GetSection(JwtSettings.SectionName));
+            services.Configure<GmailApiSettings>(configuration.GetSection(GmailApiSettings.SectionName));
 
             services.AddBLLServices();
 
-            // Register Repositories
             services.AddScoped<IUserProfileRepository, UserProfileRepository>();
             services.AddScoped<IVehicleVariantRepository, VehicleVariantRepository>();
             services.AddScoped<IVehicleRepository, VehicleRepository>();
@@ -31,10 +31,10 @@ namespace EVMManagement.API.Setup
             services.AddScoped<IWarehouseRepository, WarehouseRepository>();
             services.AddScoped<ICustomerRepository, CustomerRepository>();
             services.AddScoped<IDealerRepository, DealerRepository>();
-            services.AddScoped<IQuotationRepository, QuotationRepository>();
-            services.AddScoped<IQuotationDetailRepository, QuotationDetailRepository>();
+            services.AddScoped<IPromotionRepository, PromotionRepository>();
+            services.AddScoped<IVehicleTimeSlotRepository, VehicleTimeSlotRepository>();
+            services.AddScoped<IMasterTimeSlotRepository, MasterTimeSlotRepository>();
 
-            // Register domain services
             services.AddScoped<IUserProfileService, UserProfileService>();
             services.AddScoped<IVehicleVariantService, VehicleVariantService>();
             services.AddScoped<IVehicleService, VehicleService>();
@@ -42,9 +42,11 @@ namespace EVMManagement.API.Setup
             services.AddScoped<IWarehouseService, WarehouseService>();
             services.AddScoped<ICustomerService, CustomerService>();
             services.AddScoped<IDealerService, DealerService>();
-            services.AddScoped<IQuotationService, QuotationService>();
+            services.AddScoped<IPromotionService, PromotionService>();
+            services.AddScoped<IVehicleTimeSlotService, VehicleTimeSlotService>();
+            services.AddScoped<IMasterTimeSlotService, MasterTimeSlotService>();
 
-            // Add JWT Authentication
+            // add JWT auth
             AddJwtAuthentication(services, configuration);
 
             return services;

@@ -54,6 +54,25 @@ namespace EVMManagement.BLL.Services.Class
             return PagedResult<WarehouseResponseDto>.Create(items, totalCount, pageNumber, pageSize);
         }
 
+        public Task<PagedResult<WarehouseResponseDto>> GetWarehousesByDealerIdAsync(Guid dealerId, int pageNumber = 1, int pageSize = 10)
+        {
+            var query = _unitOfWork.Warehouses.GetWarehousesByDealerIdAsync(dealerId);
+            
+            var totalCount = query.Count(x => !x.IsDeleted);
+
+            var entities = query
+                .Where(x => !x.IsDeleted)
+                .OrderByDescending(x => x.CreatedDate)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToList();
+
+            var items = entities.Select(MapToDto).ToList();
+
+            var result = PagedResult<WarehouseResponseDto>.Create(items, totalCount, pageNumber, pageSize);
+            return Task.FromResult(result);
+        }
+
         public async Task<WarehouseResponseDto?> GetWarehouseByIdAsync(Guid id)
         {
             var entity = await _unitOfWork.Warehouses.GetByIdAsync(id);
