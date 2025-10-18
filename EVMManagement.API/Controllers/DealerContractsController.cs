@@ -60,5 +60,24 @@ namespace EVMManagement.API.Controllers
             var created = await _service.CreateAsync(dto);
             return CreatedAtAction(nameof(GetById), new { id = created.Id }, ApiResponse<DealerContractResponseDto>.CreateSuccess(created));
         }
+
+        [HttpPost("{dealerId}/send-otp")]
+        public async Task<IActionResult> SendOtp(Guid dealerId)
+        {
+            var success = await _service.SendOtpAsync(dealerId);
+            if (!success) return BadRequest(ApiResponse<string>.CreateFail("Failed to send OTP", null, 400));
+            return Ok(ApiResponse<string>.CreateSuccess("OTP sent"));
+        }
+
+        [HttpPost("{dealerId}/verify-otp")]
+        public async Task<IActionResult> VerifyOtp(Guid dealerId, [FromBody] EVMManagement.BLL.DTOs.Request.DealerContract.DealerOtpVerifyRequestDto dto)
+        {
+            if (!ModelState.IsValid) return BadRequest(ApiResponse<string>.CreateFail("Invalid request", null, 400));
+
+            var valid = await _service.VerifyOtpAsync(dealerId, dto.Otp);
+            if (!valid) return BadRequest(ApiResponse<string>.CreateFail("OTP is invalid or expired", null, 400));
+
+            return Ok(ApiResponse<string>.CreateSuccess("OTP verified"));
+        }
     }
 }

@@ -51,6 +51,22 @@ namespace EVMManagement.BLL.Services.Class
             return entity == null ? null : MapToResponse(entity);
         }
 
+        public async Task<UserProfileResponse?> GetManagerByDealerIdAsync(Guid dealerId)
+        {
+            var managerEntity = await _unitOfWork.UserProfiles.GetManagerByDealerIdAsync(dealerId);
+
+            // fallback: if not found (maybe inactive), try looser lookup
+            if (managerEntity == null)
+            {
+                managerEntity = await _unitOfWork.UserProfiles.GetByDealerIdAsync(dealerId)
+                    .Where(u => u.Account != null && u.Account.Role == EVMManagement.DAL.Models.Enums.AccountRole.DEALER_MANAGER)
+                    .OrderByDescending(u => u.CreatedDate)
+                    .FirstOrDefaultAsync();
+            }
+
+            return managerEntity == null ? null : MapToResponse(managerEntity);
+        }
+
         public async Task<PagedResult<UserProfileResponse>> GetByRoleAndStatusAsync(AccountRole role, bool? isActive, int pageNumber = 1, int pageSize = 10)
         {
             var query = _unitOfWork.UserProfiles.GetByRoleAndStatusAsync(role, isActive);
@@ -171,7 +187,7 @@ namespace EVMManagement.BLL.Services.Class
                 Phone = u.Phone,
                 CardId = u.CardId,
                 Dealer = u.DealerId == null ? null : new DealerDto { Id = u.Dealer!.Id, Name = u.Dealer!.Name },
-                Account = u.Account == null ? null : new AccountDto { Role = u.Account.Role, IsActive = u.Account.IsActive },
+                Account = u.Account == null ? null : new AccountDto { Role = u.Account.Role, IsActive = u.Account.IsActive, Email = u.Account.Email },
                 CreatedDate = u.CreatedDate,
                 ModifiedDate = u.ModifiedDate,
                 DeletedDate = u.DeletedDate,

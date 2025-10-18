@@ -75,6 +75,24 @@ namespace EVMManagement.BLL.Services.Templates
             public const string ForgotPassword = "Đặt lại mật khẩu - EVM Management";
             public const string PasswordResetConfirmation = "Mật khẩu đã được đặt lại - EVM Management";
             public const string PasswordChangeConfirmation = "Mật khẩu đã được thay đổi - EVM Management";
+            public const string Otp = "Mã OTP từ EVM Management";
+        }
+
+        public static string OtpEmail(string fullName, string otp, int minutesValid = 5)
+        {
+            return $@"
+                <html>
+                <body style='font-family: Arial, sans-serif;'>
+                    <h2>Mã OTP xác thực</h2>
+                    <p>Xin chào <strong>{fullName}</strong>,</p>
+                    <p>Mã OTP của bạn là:</p>
+                    <div style='background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;'>
+                        <code style='font-size: 22px; font-weight: bold; color: #333;'>{otp}</code>
+                    </div>
+                    <p>Mã có hiệu lực trong <strong>{minutesValid} phút</strong>. Vui lòng không chia sẻ mã này với bất kỳ ai.</p>
+                    <p>Trân trọng,<br/>Đội ngũ EVM Management</p>
+                </body>
+                </html>";
         }
     }
 }
