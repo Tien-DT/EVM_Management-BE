@@ -55,6 +55,80 @@ namespace EVMManagement.BLL.Services.Class
             return PagedResult<TestDriveBookingResponseDto>.Create(items, total, pageNumber, pageSize);
         }
 
+        public async Task<PagedResult<TestDriveBookingResponseDto>> GetByDealerIdAsync(Guid dealerId, int pageNumber = 1, int pageSize = 10)
+        {
+            var query = _unitOfWork.TestDriveBookings.GetQueryableWithIncludes()
+                .Where(x => x.VehicleTimeSlot != null && x.VehicleTimeSlot.DealerId == dealerId);
+
+            var total = await query.CountAsync();
+
+            var entities = await query
+                .OrderByDescending(x => x.CreatedDate)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            var items = entities.Select(MapToDto).ToList();
+
+            return PagedResult<TestDriveBookingResponseDto>.Create(items, total, pageNumber, pageSize);
+        }
+
+        public async Task<PagedResult<TestDriveBookingResponseDto>> GetByCustomerIdAsync(Guid customerId, int pageNumber = 1, int pageSize = 10)
+        {
+            var query = _unitOfWork.TestDriveBookings.GetQueryableWithIncludes()
+                .Where(x => x.CustomerId == customerId);
+
+            var total = await query.CountAsync();
+
+            var entities = await query
+                .OrderByDescending(x => x.CreatedDate)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            var items = entities.Select(MapToDto).ToList();
+
+            return PagedResult<TestDriveBookingResponseDto>.Create(items, total, pageNumber, pageSize);
+        }
+
+        public async Task<PagedResult<TestDriveBookingResponseDto>> GetByStatusAsync(EVMManagement.DAL.Models.Enums.TestDriveBookingStatus status, int pageNumber = 1, int pageSize = 10)
+        {
+            var query = _unitOfWork.TestDriveBookings.GetQueryableWithIncludes()
+                .Where(x => x.Status == status);
+
+            var total = await query.CountAsync();
+
+            var entities = await query
+                .OrderByDescending(x => x.CreatedDate)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            var items = entities.Select(MapToDto).ToList();
+
+            return PagedResult<TestDriveBookingResponseDto>.Create(items, total, pageNumber, pageSize);
+        }
+
+        public async Task<PagedResult<TestDriveBookingResponseDto>> GetByFilterAsync(TestDriveBookingFilterDto filterDto)
+        {
+            var pageNumber = filterDto?.PageNumber ?? 1;
+            var pageSize = filterDto?.PageSize ?? 10;
+
+            var query = _unitOfWork.TestDriveBookings.GetQueryableWithFilter(filterDto?.DealerId, filterDto?.CustomerId, filterDto?.Status);
+
+            var total = await query.CountAsync();
+
+            var entities = await query
+                .OrderByDescending(x => x.CreatedDate)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            var items = entities.Select(MapToDto).ToList();
+
+            return PagedResult<TestDriveBookingResponseDto>.Create(items, total, pageNumber, pageSize);
+        }
+
        
 
         public async Task<TestDriveBookingResponseDto?> GetByIdAsync(Guid id)
