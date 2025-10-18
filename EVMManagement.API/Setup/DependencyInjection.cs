@@ -33,6 +33,7 @@ namespace EVMManagement.API.Setup
             services.AddScoped<IVehicleTimeSlotRepository, VehicleTimeSlotRepository>();
             services.AddScoped<IMasterTimeSlotRepository, MasterTimeSlotRepository>();
             services.AddScoped<IAvailableSlotRepository, AvailableSlotRepository>();
+            services.AddScoped<ITestDriveBookingRepository, TestDriveBookingRepository>();
 
             services.AddScoped<IUserProfileService, UserProfileService>();
             services.AddScoped<IVehicleVariantService, VehicleVariantService>();
@@ -45,6 +46,7 @@ namespace EVMManagement.API.Setup
             services.AddScoped<IVehicleTimeSlotService, VehicleTimeSlotService>();
             services.AddScoped<IMasterTimeSlotService, MasterTimeSlotService>();
             services.AddScoped<IAvailableSlotService, AvailableSlotService>();
+            services.AddScoped<ITestDriveBookingService, TestDriveBookingService>();
             services.AddScoped<IEmailService, GmailApiService>();
             services.AddScoped<IStorageService, SupabaseStorageService>();
             services.AddScoped<IAuthService, AuthService>();

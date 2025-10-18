@@ -31,6 +31,7 @@ namespace EVMManagement.DAL.UnitOfWork
         private IVehicleTimeSlotRepository? _vehicleTimeSlots;
         private IMasterTimeSlotRepository? _masterTimeSlots;
         private IAvailableSlotRepository? _availableSlots;
+    private ITestDriveBookingRepository? _testDriveBookings;
         private IInvoiceRepository? _invoices;
 
         public UnitOfWork(AppDbContext context)
@@ -54,9 +55,10 @@ namespace EVMManagement.DAL.UnitOfWork
        
         public IVehicleRepository Vehicles => _vehicles ??= new VehicleRepository(_context);
         public IVehicleTimeSlotRepository VehicleTimeSlots => _vehicleTimeSlots ??= new VehicleTimeSlotRepository(_context);
-        public IMasterTimeSlotRepository MasterTimeSlots => _masterTimeSlots ??= new MasterTimeSlotRepository(_context);
-        public IAvailableSlotRepository AvailableSlots => _availableSlots ??= new AvailableSlotRepository(_context);
-        public IInvoiceRepository Invoices => _invoices ??= new InvoiceRepository(_context);
+    public IMasterTimeSlotRepository MasterTimeSlots => _masterTimeSlots ??= new MasterTimeSlotRepository(_context);
+    public IAvailableSlotRepository AvailableSlots => _availableSlots ??= new AvailableSlotRepository(_context);
+    public ITestDriveBookingRepository TestDriveBookings => _testDriveBookings ??= new Repositories.Class.TestDriveBookingRepository(_context);
+    public IInvoiceRepository Invoices => _invoices ??= new InvoiceRepository(_context);
 
         public async Task<int> SaveChangesAsync()
         {
