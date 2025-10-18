@@ -22,6 +22,7 @@ namespace EVMManagement.API.Services
         public IVehicleTimeSlotService VehicleTimeSlotService { get; }
         public IMasterTimeSlotService MasterTimeSlotService { get; }
         public IAvailableSlotService AvailableSlotService { get; }
+    public ITestDriveBookingService TestDriveBookingService { get; }
         public IEmailService EmailService { get; }
         public IStorageService StorageService { get; }
 
@@ -44,6 +45,7 @@ namespace EVMManagement.API.Services
             IVehicleTimeSlotService vehicleTimeSlotService,
             IMasterTimeSlotService masterTimeSlotService,
             IAvailableSlotService availableSlotService,
+            ITestDriveBookingService testDriveBookingService,
             IEmailService emailService,
             IStorageService storageService)
         {
@@ -65,6 +67,7 @@ namespace EVMManagement.API.Services
             VehicleTimeSlotService = vehicleTimeSlotService;
             MasterTimeSlotService = masterTimeSlotService;
             AvailableSlotService = availableSlotService;
+            TestDriveBookingService = testDriveBookingService;
             EmailService = emailService;
             StorageService = storageService;
         }

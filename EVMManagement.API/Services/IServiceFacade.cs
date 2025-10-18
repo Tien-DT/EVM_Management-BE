@@ -22,6 +22,7 @@ namespace EVMManagement.API.Services
         IVehicleTimeSlotService VehicleTimeSlotService { get; }
         IMasterTimeSlotService MasterTimeSlotService { get; }
         IAvailableSlotService AvailableSlotService { get; }
+    ITestDriveBookingService TestDriveBookingService { get; }
         IEmailService EmailService { get; }
         IStorageService StorageService { get; }
     }
