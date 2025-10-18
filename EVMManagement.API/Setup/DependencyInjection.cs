@@ -3,11 +3,11 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using EVMManagement.DAL.UnitOfWork;
 using EVMManagement.BLL.Options;
-using EVMManagement.BLL.Services;
 using EVMManagement.DAL.Repositories.Interface;
 using EVMManagement.DAL.Repositories.Class;
 using EVMManagement.BLL.Services.Interface;
 using EVMManagement.BLL.Services.Class;
+using EVMManagement.API.Services;
 
 namespace EVMManagement.API.Setup
 {
@@ -21,8 +21,6 @@ namespace EVMManagement.API.Setup
 
             services.Configure<JwtSettings>(configuration.GetSection(JwtSettings.SectionName));
             services.Configure<GmailApiSettings>(configuration.GetSection(GmailApiSettings.SectionName));
-
-            services.AddBLLServices();
 
             services.AddScoped<IUserProfileRepository, UserProfileRepository>();
             services.AddScoped<IVehicleVariantRepository, VehicleVariantRepository>();
@@ -47,6 +45,17 @@ namespace EVMManagement.API.Setup
             services.AddScoped<IVehicleTimeSlotService, VehicleTimeSlotService>();
             services.AddScoped<IMasterTimeSlotService, MasterTimeSlotService>();
             services.AddScoped<IAvailableSlotService, AvailableSlotService>();
+            services.AddScoped<IEmailService, GmailApiService>();
+            services.AddScoped<IStorageService, SupabaseStorageService>();
+            services.AddScoped<IAuthService, AuthService>();
+            services.AddScoped<IOrderService, OrderService>();
+            services.AddScoped<IOrderDetailService, OrderDetailService>();
+            services.AddScoped<IQuotationDetailService, QuotationDetailService>();
+            services.AddScoped<IContractService, ContractService>();
+            services.AddScoped<IInvoiceService, InvoiceService>();
+            services.AddScoped<IQuotationService, QuotationService>();
+
+            services.AddScoped<IServiceFacade, ServiceFacade>();
 
             // add JWT auth
             AddJwtAuthentication(services, configuration);

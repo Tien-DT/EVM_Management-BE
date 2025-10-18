@@ -1,9 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
-using EVMManagement.BLL.Services.Interface;
 using EVMManagement.BLL.DTOs.Request.Vehicle;
 using EVMManagement.BLL.DTOs.Response;
 using EVMManagement.BLL.DTOs.Response.Vehicle;
 using EVMManagement.DAL.Models.Enums;
+using EVMManagement.API.Services;
 
 
 namespace EVMManagement.API.Controllers
@@ -12,11 +12,11 @@ namespace EVMManagement.API.Controllers
     [ApiController]
     public class VehicleModelsController : ControllerBase
     {
-        private readonly IVehicleModelService _service;
+        private readonly IServiceFacade _services;
 
-        public VehicleModelsController(IVehicleModelService service)
+        public VehicleModelsController(IServiceFacade services)
         {
-            _service = service;
+            _services = services;
         }
 
         [HttpPost]
@@ -28,7 +28,7 @@ namespace EVMManagement.API.Controllers
                 return BadRequest(ApiResponse<VehicleModelResponseDto>.CreateFail("Validation failed", errors, 400));
             }
 
-            var created = await _service.CreateVehicleModelAsync(dto);
+            var created = await _services.VehicleModelService.CreateVehicleModelAsync(dto);
             return Ok(ApiResponse<VehicleModelResponseDto>.CreateSuccess(created));
         }
 
@@ -40,7 +40,7 @@ namespace EVMManagement.API.Controllers
                 return BadRequest(ApiResponse<string>.CreateFail("PageNumber and PageSize must be greater than 0", null, 400));
             }
 
-            var result = await _service.GetAllAsync(pageNumber, pageSize);
+            var result = await _services.VehicleModelService.GetAllAsync(pageNumber, pageSize);
             return Ok(ApiResponse<PagedResult<VehicleModelResponseDto>>.CreateSuccess(result));
         }
 
@@ -52,7 +52,7 @@ namespace EVMManagement.API.Controllers
                 return BadRequest(ApiResponse<string>.CreateFail("PageNumber and PageSize must be greater than 0", null, 400));
             }
 
-            var result = await _service.GetByRankingAsync(ranking, pageNumber, pageSize);
+            var result = await _services.VehicleModelService.GetByRankingAsync(ranking, pageNumber, pageSize);
             return Ok(ApiResponse<PagedResult<VehicleModelResponseDto>>.CreateSuccess(result));
         }
 
@@ -66,7 +66,7 @@ namespace EVMManagement.API.Controllers
                 return BadRequest(ApiResponse<VehicleModelResponseDto>.CreateFail("Validation failed", errors, 400));
             }
 
-            var updated = await _service.UpdateVehicleModelAsync(id, dto);
+            var updated = await _services.VehicleModelService.UpdateVehicleModelAsync(id, dto);
             if (updated == null) return NotFound(ApiResponse<VehicleModelResponseDto>.CreateFail("VehicleModel not found", null, 404));
             return Ok(ApiResponse<VehicleModelResponseDto>.CreateSuccess(updated));
         }
@@ -74,7 +74,7 @@ namespace EVMManagement.API.Controllers
         [HttpPatch("{id}/is-deleted")]
         public async Task<IActionResult> UpdateIsDeleted([FromRoute] Guid id, [FromQuery] bool isDeleted)
         {
-            var updated = await _service.UpdateIsDeletedAsync(id, isDeleted);
+            var updated = await _services.VehicleModelService.UpdateIsDeletedAsync(id, isDeleted);
             if (updated == null) return NotFound(ApiResponse<VehicleModelResponseDto>.CreateFail("VehicleModel not found", null, 404));
             return Ok(ApiResponse<VehicleModelResponseDto>.CreateSuccess(updated));
         }
@@ -82,7 +82,7 @@ namespace EVMManagement.API.Controllers
         [HttpGet("search")]
         public async Task<IActionResult> Search([FromQuery] string? q, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
         {
-            var results = await _service.SearchByQueryAsync(q, pageNumber, pageSize);
+            var results = await _services.VehicleModelService.SearchByQueryAsync(q, pageNumber, pageSize);
             return Ok(ApiResponse<PagedResult<VehicleModelResponseDto>>.CreateSuccess(results));
 
         }

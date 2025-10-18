@@ -1,11 +1,11 @@
 using Microsoft.AspNetCore.Mvc;
-using EVMManagement.BLL.Services.Interface;
 using EVMManagement.BLL.DTOs.Request.Vehicle;
 using EVMManagement.BLL.DTOs.Response.Vehicle;
 using EVMManagement.BLL.DTOs.Response;
 using System;
 using System.Linq;
 using EVMManagement.DAL.Models.Enums;
+using EVMManagement.API.Services;
 
 namespace EVMManagement.API.Controllers
 {
@@ -13,11 +13,11 @@ namespace EVMManagement.API.Controllers
     [ApiController]
     public class VehiclesController : ControllerBase
     {
-        private readonly IVehicleService _service;
+        private readonly IServiceFacade _services;
 
-        public VehiclesController(IVehicleService service)
+        public VehiclesController(IServiceFacade services)
         {
-            _service = service;
+            _services = services;
         }
 
         [HttpGet]
@@ -28,14 +28,14 @@ namespace EVMManagement.API.Controllers
                 return BadRequest(ApiResponse<string>.CreateFail("PageNumber and PageSize must be greater than 0", null, 400));
             }
 
-            var result = await _service.GetAllAsync(pageNumber, pageSize);
+            var result = await _services.VehicleService.GetAllAsync(pageNumber, pageSize);
             return Ok(ApiResponse<PagedResult<VehicleResponseDto>>.CreateSuccess(result));
         }
 
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(Guid id)
         {
-            var item = await _service.GetByIdAsync(id);
+            var item = await _services.VehicleService.GetByIdAsync(id);
             if (item == null) return NotFound(ApiResponse<VehicleResponseDto>.CreateFail("Vehicle not found", null, 404));
             return Ok(ApiResponse<VehicleResponseDto>.CreateSuccess(item));
         }
@@ -49,7 +49,7 @@ namespace EVMManagement.API.Controllers
                 return BadRequest(ApiResponse<VehicleResponseDto>.CreateFail("Validation failed", errors, 400));
             }
 
-            var created = await _service.CreateVehicleAsync(dto);
+            var created = await _services.VehicleService.CreateVehicleAsync(dto);
             return CreatedAtAction(nameof(GetById), new { id = created.Id }, ApiResponse<VehicleResponseDto>.CreateSuccess(created));
         }
 
@@ -62,7 +62,7 @@ namespace EVMManagement.API.Controllers
                 return BadRequest(ApiResponse<VehicleResponseDto>.CreateFail("Validation failed", errors, 400));
             }
 
-            var updated = await _service.UpdateAsync(id, dto);
+            var updated = await _services.VehicleService.UpdateAsync(id, dto);
             if (updated == null) return NotFound(ApiResponse<VehicleResponseDto>.CreateFail("Vehicle not found", null, 404));
             return Ok(ApiResponse<VehicleResponseDto>.CreateSuccess(updated));
         }
@@ -70,7 +70,7 @@ namespace EVMManagement.API.Controllers
         [HttpPatch("{id}/is-deleted")]
         public async Task<IActionResult> UpdateIsDeleted([FromRoute] Guid id, [FromQuery] bool isDeleted)
         {
-            var updated = await _service.UpdateIsDeletedAsync(id, isDeleted);
+            var updated = await _services.VehicleService.UpdateIsDeletedAsync(id, isDeleted);
             if (updated == null) return NotFound(ApiResponse<VehicleResponseDto>.CreateFail("Vehicle not found", null, 404));
             return Ok(ApiResponse<VehicleResponseDto>.CreateSuccess(updated));
         }
@@ -80,7 +80,7 @@ namespace EVMManagement.API.Controllers
         [HttpGet("search")]
         public async Task<IActionResult> Search([FromQuery] string? q, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
         {
-            var results = await _service.SearchByQueryAsync(q, pageNumber, pageSize);
+            var results = await _services.VehicleService.SearchByQueryAsync(q, pageNumber, pageSize);
             return Ok(ApiResponse<PagedResult<VehicleResponseDto>>.CreateSuccess(results));
 
         }
@@ -93,14 +93,14 @@ namespace EVMManagement.API.Controllers
             if (filter.PageNumber < 1 || filter.PageSize < 1)
                 return BadRequest(ApiResponse<string>.CreateFail("PageNumber and PageSize must be greater than 0", null, 400));
 
-            var results = await _service.GetByFilterAsync(filter);
+            var results = await _services.VehicleService.GetByFilterAsync(filter);
             return Ok(ApiResponse<PagedResult<VehicleResponseDto>>.CreateSuccess(results));
         }
 
         [HttpPatch("{id}/status")]
         public async Task<IActionResult> UpdateStatus([FromRoute] Guid id, [FromQuery] VehicleStatus status)
         {
-            var updated = await _service.UpdateStatusAsync(id, status);
+            var updated = await _services.VehicleService.UpdateStatusAsync(id, status);
             if (updated == null) return NotFound(ApiResponse<VehicleResponseDto>.CreateFail("Vehicle not found", null, 404));
             return Ok(ApiResponse<VehicleResponseDto>.CreateSuccess(updated));
         }

@@ -1,11 +1,11 @@
 using Microsoft.AspNetCore.Mvc;
-using EVMManagement.BLL.Services.Interface;
 using EVMManagement.BLL.DTOs.Request.Promotion;
 using EVMManagement.BLL.DTOs.Response;
 using EVMManagement.BLL.DTOs.Response.Promotion;
 using System;
 using System.Threading.Tasks;
 using System.Linq;
+using EVMManagement.API.Services;
 
 namespace EVMManagement.API.Controllers
 {
@@ -13,11 +13,11 @@ namespace EVMManagement.API.Controllers
     [ApiController]
     public class PromotionsController : ControllerBase
     {
-        private readonly IPromotionService _service;
+        private readonly IServiceFacade _services;
 
-        public PromotionsController(IPromotionService service)
+        public PromotionsController(IServiceFacade services)
         {
-            _service = service;
+            _services = services;
         }
 
         [HttpPost]
@@ -29,7 +29,7 @@ namespace EVMManagement.API.Controllers
                 return BadRequest(ApiResponse<PromotionResponseDto>.CreateFail("Validation failed", errors, 400));
             }
 
-            var created = await _service.CreatePromotionAsync(dto);
+            var created = await _services.PromotionService.CreatePromotionAsync(dto);
             return CreatedAtAction(nameof(GetById), new { id = created.Id }, ApiResponse<PromotionResponseDto>.CreateSuccess(created));
         }
 
@@ -41,14 +41,14 @@ namespace EVMManagement.API.Controllers
                 return BadRequest(ApiResponse<string>.CreateFail("PageNumber and PageSize must be greater than 0", null, 400));
             }
 
-            var result = await _service.GetAllAsync(pageNumber, pageSize);
+            var result = await _services.PromotionService.GetAllAsync(pageNumber, pageSize);
             return Ok(ApiResponse<PagedResult<PromotionResponseDto>>.CreateSuccess(result));
         }
 
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(Guid id)
         {
-            var item = await _service.GetByIdAsync(id);
+            var item = await _services.PromotionService.GetByIdAsync(id);
             if (item == null) return NotFound(ApiResponse<PromotionResponseDto>.CreateFail("Promotion not found", null, 404));
             return Ok(ApiResponse<PromotionResponseDto>.CreateSuccess(item));
         }
@@ -61,7 +61,7 @@ namespace EVMManagement.API.Controllers
                 return BadRequest(ApiResponse<string>.CreateFail("PageNumber and PageSize must be greater than 0", null, 400));
             }
 
-            var results = await _service.SearchAsync(q, pageNumber, pageSize);
+            var results = await _services.PromotionService.SearchAsync(q, pageNumber, pageSize);
             return Ok(ApiResponse<PagedResult<PromotionResponseDto>>.CreateSuccess(results));
         }
 
@@ -74,7 +74,7 @@ namespace EVMManagement.API.Controllers
                 return BadRequest(ApiResponse<PromotionResponseDto>.CreateFail("Validation failed", errors, 400));
             }
 
-            var updated = await _service.UpdateAsync(id, dto);
+            var updated = await _services.PromotionService.UpdateAsync(id, dto);
             if (updated == null) return NotFound(ApiResponse<PromotionResponseDto>.CreateFail("Promotion not found", null, 404));
             return Ok(ApiResponse<PromotionResponseDto>.CreateSuccess(updated));
         }
@@ -82,7 +82,7 @@ namespace EVMManagement.API.Controllers
         [HttpPatch("{id}/is-active")]
         public async Task<IActionResult> UpdateIsActive(Guid id, [FromQuery] bool isActive)
         {
-            var updated = await _service.UpdateIsActiveAsync(id, isActive);
+            var updated = await _services.PromotionService.UpdateIsActiveAsync(id, isActive);
             if (updated == null) return NotFound(ApiResponse<PromotionResponseDto>.CreateFail("Promotion not found", null, 404));
             return Ok(ApiResponse<PromotionResponseDto>.CreateSuccess(updated));
         }
@@ -90,7 +90,7 @@ namespace EVMManagement.API.Controllers
         [HttpPatch("{id}/is-deleted")]
         public async Task<IActionResult> UpdateIsDeleted(Guid id, [FromQuery] bool isDeleted)
         {
-            var updated = await _service.UpdateIsDeletedAsync(id, isDeleted);
+            var updated = await _services.PromotionService.UpdateIsDeletedAsync(id, isDeleted);
             if (updated == null) return NotFound(ApiResponse<PromotionResponseDto>.CreateFail("Promotion not found", null, 404));
             return Ok(ApiResponse<PromotionResponseDto>.CreateSuccess(updated));
         }
@@ -98,7 +98,7 @@ namespace EVMManagement.API.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(Guid id)
         {
-            var deleted = await _service.DeleteAsync(id);
+            var deleted = await _services.PromotionService.DeleteAsync(id);
             if (!deleted) return NotFound(ApiResponse<string>.CreateFail("Promotion not found", null, 404));
             return Ok(ApiResponse<string>.CreateSuccess("Deleted"));
         }

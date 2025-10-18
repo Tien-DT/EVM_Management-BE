@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.Mvc;
-using EVMManagement.BLL.Services.Interface;
 using EVMManagement.BLL.DTOs.Request.OrderDetail;
 using EVMManagement.BLL.DTOs.Response;
 using EVMManagement.BLL.DTOs.Response.OrderDetail;
@@ -7,6 +6,7 @@ using EVMManagement.DAL.Models.Entities;
 using System.Threading.Tasks;
 using System;
 using System.Linq;
+using EVMManagement.API.Services;
 
 namespace EVMManagement.API.Controllers
 {
@@ -14,11 +14,11 @@ namespace EVMManagement.API.Controllers
     [ApiController]
     public class OrderDetailsController : ControllerBase
     {
-        private readonly IOrderDetailService _service;
+        private readonly IServiceFacade _services;
 
-        public OrderDetailsController(IOrderDetailService service)
+        public OrderDetailsController(IServiceFacade services)
         {
-            _service = service;
+            _services = services;
         }
 
         [HttpGet]
@@ -29,14 +29,14 @@ namespace EVMManagement.API.Controllers
                 return BadRequest(ApiResponse<string>.CreateFail("PageNumber and PageSize must be greater than 0", null, 400));
             }
 
-            var result = await _service.GetAllAsync(pageNumber, pageSize);
+            var result = await _services.OrderDetailService.GetAllAsync(pageNumber, pageSize);
             return Ok(ApiResponse<PagedResult<OrderDetailResponse>>.CreateSuccess(result));
         }
 
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(Guid id)
         {
-            var item = await _service.GetByIdAsync(id);
+            var item = await _services.OrderDetailService.GetByIdAsync(id);
             if (item == null) return NotFound(ApiResponse<OrderDetailResponse>.CreateFail("OrderDetail not found", null, 404));
             return Ok(ApiResponse<OrderDetailResponse>.CreateSuccess(item));
         }
@@ -50,7 +50,7 @@ namespace EVMManagement.API.Controllers
                 return BadRequest(ApiResponse<OrderDetail>.CreateFail("Validation failed", errors, 400));
             }
 
-            var created = await _service.CreateOrderDetailAsync(dto);
+            var created = await _services.OrderDetailService.CreateOrderDetailAsync(dto);
             return CreatedAtAction(nameof(GetById), new { id = created.Id }, ApiResponse<OrderDetail>.CreateSuccess(created));
         }
 
@@ -63,7 +63,7 @@ namespace EVMManagement.API.Controllers
                 return BadRequest(ApiResponse<OrderDetailResponse>.CreateFail("Validation failed", errors, 400));
             }
 
-            var updated = await _service.UpdateAsync(id, dto);
+            var updated = await _services.OrderDetailService.UpdateAsync(id, dto);
             if (updated == null) return NotFound(ApiResponse<OrderDetailResponse>.CreateFail("OrderDetail not found", null, 404));
             return Ok(ApiResponse<OrderDetailResponse>.CreateSuccess(updated));
         }
@@ -71,7 +71,7 @@ namespace EVMManagement.API.Controllers
         [HttpPatch("{id}")]
         public async Task<IActionResult> UpdateIsDeleted(Guid id, [FromQuery] bool isDeleted)
         {
-            var updated = await _service.UpdateIsDeletedAsync(id, isDeleted);
+            var updated = await _services.OrderDetailService.UpdateIsDeletedAsync(id, isDeleted);
             if (updated == null) return NotFound(ApiResponse<OrderDetailResponse>.CreateFail("OrderDetail not found", null, 404));
             return Ok(ApiResponse<OrderDetailResponse>.CreateSuccess(updated));
         }
@@ -79,7 +79,7 @@ namespace EVMManagement.API.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(Guid id)
         {
-            var deleted = await _service.DeleteAsync(id);
+            var deleted = await _services.OrderDetailService.DeleteAsync(id);
             if (!deleted) return NotFound(ApiResponse<string>.CreateFail("OrderDetail not found", null, 404));
             return Ok(ApiResponse<string>.CreateSuccess("Deleted"));
         }

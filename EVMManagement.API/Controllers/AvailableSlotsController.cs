@@ -1,11 +1,11 @@
 using Microsoft.AspNetCore.Mvc;
-using EVMManagement.BLL.Services.Interface;
 using EVMManagement.BLL.DTOs.Request.AvailableSlot;
 using EVMManagement.BLL.DTOs.Response;
 using EVMManagement.BLL.DTOs.Response.AvailableSlot;
 using System;
 using System.Threading.Tasks;
 using System.Linq;
+using EVMManagement.API.Services;
 
 namespace EVMManagement.API.Controllers
 {
@@ -13,11 +13,11 @@ namespace EVMManagement.API.Controllers
     [ApiController]
     public class AvailableSlotsController : ControllerBase
     {
-        private readonly IAvailableSlotService _service;
+        private readonly IServiceFacade _services;
 
-        public AvailableSlotsController(IAvailableSlotService service)
+        public AvailableSlotsController(IServiceFacade services)
         {
-            _service = service;
+            _services = services;
         }
 
         [HttpPost]
@@ -31,7 +31,7 @@ namespace EVMManagement.API.Controllers
 
             try
             {
-                var created = await _service.CreateAvailableSlotAsync(dto);
+                var created = await _services.AvailableSlotService.CreateAvailableSlotAsync(dto);
                 return CreatedAtAction(nameof(GetById), new { id = created.Id }, ApiResponse<AvailableSlotResponseDto>.CreateSuccess(created));
             }
             catch (InvalidOperationException ex)
@@ -48,14 +48,14 @@ namespace EVMManagement.API.Controllers
                 return BadRequest(ApiResponse<string>.CreateFail("PageNumber and PageSize must be greater than 0", null, 400));
             }
 
-            var result = await _service.GetAllAsync(pageNumber, pageSize);
+            var result = await _services.AvailableSlotService.GetAllAsync(pageNumber, pageSize);
             return Ok(ApiResponse<PagedResult<AvailableSlotResponseDto>>.CreateSuccess(result));
         }
 
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(Guid id)
         {
-            var item = await _service.GetByIdAsync(id);
+            var item = await _services.AvailableSlotService.GetByIdAsync(id);
             if (item == null) return NotFound(ApiResponse<AvailableSlotResponseDto>.CreateFail("AvailableSlot not found", null, 404));
             return Ok(ApiResponse<AvailableSlotResponseDto>.CreateSuccess(item));
         }
@@ -68,7 +68,7 @@ namespace EVMManagement.API.Controllers
                 return BadRequest(ApiResponse<string>.CreateFail("PageNumber and PageSize must be greater than 0", null, 400));
             }
 
-            var result = await _service.GetByVehicleIdAsync(vehicleId, pageNumber, pageSize);
+            var result = await _services.AvailableSlotService.GetByVehicleIdAsync(vehicleId, pageNumber, pageSize);
             return Ok(ApiResponse<PagedResult<AvailableSlotResponseDto>>.CreateSuccess(result));
         }
 
@@ -80,7 +80,7 @@ namespace EVMManagement.API.Controllers
                 return BadRequest(ApiResponse<string>.CreateFail("PageNumber and PageSize must be greater than 0", null, 400));
             }
 
-            var result = await _service.GetByDealerIdAsync(dealerId, pageNumber, pageSize);
+            var result = await _services.AvailableSlotService.GetByDealerIdAsync(dealerId, pageNumber, pageSize);
             return Ok(ApiResponse<PagedResult<AvailableSlotResponseDto>>.CreateSuccess(result));
         }
 
@@ -92,7 +92,7 @@ namespace EVMManagement.API.Controllers
                 return BadRequest(ApiResponse<string>.CreateFail("PageNumber and PageSize must be greater than 0", null, 400));
             }
 
-            var result = await _service.GetAvailableAsync(pageNumber, pageSize);
+            var result = await _services.AvailableSlotService.GetAvailableAsync(pageNumber, pageSize);
             return Ok(ApiResponse<PagedResult<AvailableSlotResponseDto>>.CreateSuccess(result));
         }
 
@@ -105,7 +105,7 @@ namespace EVMManagement.API.Controllers
                 return BadRequest(ApiResponse<AvailableSlotResponseDto>.CreateFail("Validation failed", errors, 400));
             }
 
-            var updated = await _service.UpdateAsync(id, dto);
+            var updated = await _services.AvailableSlotService.UpdateAsync(id, dto);
             if (updated == null) return NotFound(ApiResponse<AvailableSlotResponseDto>.CreateFail("AvailableSlot not found", null, 404));
             return Ok(ApiResponse<AvailableSlotResponseDto>.CreateSuccess(updated));
         }
@@ -113,7 +113,7 @@ namespace EVMManagement.API.Controllers
         [HttpPatch("{id}/is-deleted")]
         public async Task<IActionResult> UpdateIsDeleted(Guid id, [FromBody] bool isDeleted)
         {
-            var updated = await _service.UpdateIsDeletedAsync(id, isDeleted);
+            var updated = await _services.AvailableSlotService.UpdateIsDeletedAsync(id, isDeleted);
             if (updated == null) return NotFound(ApiResponse<AvailableSlotResponseDto>.CreateFail("AvailableSlot not found", null, 404));
             return Ok(ApiResponse<AvailableSlotResponseDto>.CreateSuccess(updated));
         }
@@ -121,7 +121,7 @@ namespace EVMManagement.API.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(Guid id)
         {
-            var result = await _service.DeleteAsync(id);
+            var result = await _services.AvailableSlotService.DeleteAsync(id);
             if (!result) return NotFound(ApiResponse<string>.CreateFail("AvailableSlot not found", null, 404));
             return Ok(ApiResponse<string>.CreateSuccess("AvailableSlot deleted successfully"));
         }

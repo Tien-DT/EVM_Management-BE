@@ -1,9 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
-using EVMManagement.BLL.Services.Interface;
 using EVMManagement.BLL.DTOs.Request.Invoice;
 using EVMManagement.BLL.DTOs.Response;
 using EVMManagement.BLL.DTOs.Response.Invoice;
 using EVMManagement.DAL.Models.Entities;
+using EVMManagement.API.Services;
 using System.Threading.Tasks;
 using System;
 using System.Linq;
@@ -14,11 +14,11 @@ namespace EVMManagement.API.Controllers
     [ApiController]
     public class InvoicesController : ControllerBase
     {
-        private readonly IInvoiceService _service;
+        private readonly IServiceFacade _services;
 
-        public InvoicesController(IInvoiceService service)
+        public InvoicesController(IServiceFacade services)
         {
-            _service = service;
+            _services = services;
         }
 
         [HttpGet]
@@ -29,14 +29,14 @@ namespace EVMManagement.API.Controllers
                 return BadRequest(ApiResponse<string>.CreateFail("PageNumber and PageSize must be greater than 0", null, 400));
             }
 
-            var result = await _service.GetAllAsync(pageNumber, pageSize);
+            var result = await _services.InvoiceService.GetAllAsync(pageNumber, pageSize);
             return Ok(ApiResponse<PagedResult<InvoiceResponse>>.CreateSuccess(result));
         }
 
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(Guid id)
         {
-            var item = await _service.GetByIdAsync(id);
+            var item = await _services.InvoiceService.GetByIdAsync(id);
             if (item == null) return NotFound(ApiResponse<InvoiceResponse>.CreateFail("Invoice not found", null, 404));
             return Ok(ApiResponse<InvoiceResponse>.CreateSuccess(item));
         }
@@ -50,7 +50,7 @@ namespace EVMManagement.API.Controllers
                 return BadRequest(ApiResponse<Invoice>.CreateFail("Validation failed", errors, 400));
             }
 
-            var created = await _service.CreateInvoiceAsync(dto);
+            var created = await _services.InvoiceService.CreateInvoiceAsync(dto);
             return CreatedAtAction(nameof(GetById), new { id = created.Id }, ApiResponse<Invoice>.CreateSuccess(created));
         }
 
@@ -63,7 +63,7 @@ namespace EVMManagement.API.Controllers
                 return BadRequest(ApiResponse<InvoiceResponse>.CreateFail("Validation failed", errors, 400));
             }
 
-            var updated = await _service.UpdateAsync(id, dto);
+            var updated = await _services.InvoiceService.UpdateAsync(id, dto);
             if (updated == null) return NotFound(ApiResponse<InvoiceResponse>.CreateFail("Invoice not found", null, 404));
             return Ok(ApiResponse<InvoiceResponse>.CreateSuccess(updated));
         }
@@ -71,7 +71,7 @@ namespace EVMManagement.API.Controllers
         [HttpPatch("{id}")]
         public async Task<IActionResult> UpdateIsDeleted(Guid id, [FromQuery] bool isDeleted)
         {
-            var updated = await _service.UpdateIsDeletedAsync(id, isDeleted);
+            var updated = await _services.InvoiceService.UpdateIsDeletedAsync(id, isDeleted);
             if (updated == null) return NotFound(ApiResponse<InvoiceResponse>.CreateFail("Invoice not found", null, 404));
             return Ok(ApiResponse<InvoiceResponse>.CreateSuccess(updated));
         }
@@ -79,7 +79,7 @@ namespace EVMManagement.API.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(Guid id)
         {
-            var deleted = await _service.DeleteAsync(id);
+            var deleted = await _services.InvoiceService.DeleteAsync(id);
             if (!deleted) return NotFound(ApiResponse<string>.CreateFail("Invoice not found", null, 404));
             return Ok(ApiResponse<string>.CreateSuccess("Deleted"));
         }
