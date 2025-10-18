@@ -1,10 +1,12 @@
 using Microsoft.EntityFrameworkCore;
 using EVMManagement.DAL.Data;
 using EVMManagement.DAL.Models.Entities;
+using EVMManagement.DAL.Repositories.Interface;
+using EVMManagement.DAL.Models.Enums;
 
 namespace EVMManagement.DAL.Repositories.Class
 {
-    public class TestDriveBookingRepository : GenericRepository<TestDriveBooking>, Repositories.Interface.ITestDriveBookingRepository
+    public class TestDriveBookingRepository : GenericRepository<TestDriveBooking>, ITestDriveBookingRepository
     {
         public TestDriveBookingRepository(AppDbContext context) : base(context)
         {
@@ -22,6 +24,28 @@ namespace EVMManagement.DAL.Repositories.Class
         public async Task<TestDriveBooking?> GetByIdWithIncludesAsync(Guid id)
         {
             return await GetQueryableWithIncludes().FirstOrDefaultAsync(x => x.Id == id);
+        }
+
+        public IQueryable<TestDriveBooking> GetQueryableWithFilter(Guid? dealerId, Guid? customerId, TestDriveBookingStatus? status)
+        {
+            var query = GetQueryableWithIncludes();
+
+            if (dealerId.HasValue)
+            {
+                query = query.Where(x => x.VehicleTimeSlot != null && x.VehicleTimeSlot.DealerId == dealerId.Value);
+            }
+
+            if (customerId.HasValue)
+            {
+                query = query.Where(x => x.CustomerId == customerId.Value);
+            }
+
+            if (status.HasValue)
+            {
+                query = query.Where(x => x.Status == status.Value);
+            }
+
+            return query;
         }
     }
 }

@@ -1,4 +1,5 @@
 using EVMManagement.DAL.Models.Entities;
+using EVMManagement.DAL.Models.Enums;
 
 namespace EVMManagement.DAL.Repositories.Interface
 {
@@ -6,5 +7,6 @@ namespace EVMManagement.DAL.Repositories.Interface
     {
         IQueryable<TestDriveBooking> GetQueryableWithIncludes();
         Task<TestDriveBooking?> GetByIdWithIncludesAsync(Guid id);
+        IQueryable<TestDriveBooking> GetQueryableWithFilter(Guid? dealerId, Guid? customerId, TestDriveBookingStatus? status);
     }
 }

@@ -75,6 +75,27 @@ namespace EVMManagement.API.Controllers
             return Ok(ApiResponse<TestDriveBookingResponseDto>.CreateSuccess(updated));
         }
 
+        [HttpGet("filter")]
+        public async Task<IActionResult> GetByFilter([FromQuery] Guid? dealerId, [FromQuery] Guid? customerId, [FromQuery] EVMManagement.DAL.Models.Enums.TestDriveBookingStatus? status, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
+        {
+            if (pageNumber < 1 || pageSize < 1)
+            {
+                return BadRequest(ApiResponse<string>.CreateFail("PageNumber and PageSize must be greater than 0", null, 400));
+            }
+
+            var filterDto = new TestDriveBookingFilterDto
+            {
+                DealerId = dealerId,
+                CustomerId = customerId,
+                Status = status,
+                PageNumber = pageNumber,
+                PageSize = pageSize
+            };
+
+            var result = await _services.TestDriveBookingService.GetByFilterAsync(filterDto);
+            return Ok(ApiResponse<PagedResult<TestDriveBookingResponseDto>>.CreateSuccess(result));
+        }
+
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(Guid id)
         {
