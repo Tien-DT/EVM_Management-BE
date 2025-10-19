@@ -36,11 +36,17 @@ namespace EVMManagement.BLL.Services.Class
                 throw new ArgumentException("HandoverRecordId is required for HANDOVER_RECORD entity type");
             }
 
+            if (dto.EntityType == SignatureEntityType.DEALER_CONTRACT && !dto.DealerContractId.HasValue)
+            {
+                throw new ArgumentException("DealerContractId is required for DEALER_CONTRACT entity type");
+            }
+
             var existingOtp = await _unitOfWork.DigitalSignatures.GetPendingOtpAsync(
                 dto.SignerEmail, 
                 dto.EntityType, 
                 dto.ContractId, 
-                dto.HandoverRecordId
+                dto.HandoverRecordId,
+                dto.DealerContractId
             );
 
             if (existingOtp != null)
@@ -59,6 +65,7 @@ namespace EVMManagement.BLL.Services.Class
                 EntityType = dto.EntityType,
                 ContractId = dto.ContractId,
                 HandoverRecordId = dto.HandoverRecordId,
+                DealerContractId = dto.DealerContractId,
                 Status = SignatureStatus.OTP_SENT,
                 OtpCode = hashedOtp,
                 OtpExpiresAt = DateTime.UtcNow.AddMinutes(5),
@@ -86,7 +93,8 @@ namespace EVMManagement.BLL.Services.Class
                 dto.SignerEmail, 
                 dto.EntityType, 
                 dto.ContractId, 
-                dto.HandoverRecordId
+                dto.HandoverRecordId,
+                dto.DealerContractId
             );
 
             if (signature == null)
@@ -169,6 +177,12 @@ namespace EVMManagement.BLL.Services.Class
             return signatures.Select(MapToResponse).ToList();
         }
 
+        public async Task<List<DigitalSignatureResponse>> GetByDealerContractIdAsync(Guid dealerContractId)
+        {
+            var signatures = await _unitOfWork.DigitalSignatures.GetByDealerContractIdAsync(dealerContractId);
+            return signatures.Select(MapToResponse).ToList();
+        }
+
         private string GenerateOtpCode()
         {
             var random = new Random();
@@ -204,6 +218,7 @@ namespace EVMManagement.BLL.Services.Class
                 EntityType = entity.EntityType,
                 ContractId = entity.ContractId,
                 HandoverRecordId = entity.HandoverRecordId,
+                DealerContractId = entity.DealerContractId,
                 Status = entity.Status,
                 SignedAt = entity.SignedAt,
                 FileUrl = entity.FileUrl,
