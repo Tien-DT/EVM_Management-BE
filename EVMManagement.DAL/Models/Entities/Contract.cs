@@ -31,5 +31,6 @@ namespace EVMManagement.DAL.Models.Entities
         public virtual Order Order { get; set; } = null!;
         public virtual Customer Customer { get; set; } = null!;
         public virtual UserProfile CreatedByUser { get; set; } = null!;
+        public virtual ICollection<DigitalSignature> DigitalSignatures { get; set; } = new List<DigitalSignature>();
     }
 }
