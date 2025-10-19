@@ -138,5 +138,19 @@ namespace EVMManagement.API.Controllers
                 return StatusCode(500, ApiResponse<List<DigitalSignatureResponse>>.CreateFail("Internal server error", new List<string> { ex.Message }, 500));
             }
         }
+
+        [HttpGet("dealer-contracts/{dealerContractId}")]
+        public async Task<IActionResult> GetByDealerContractId(Guid dealerContractId)
+        {
+            try
+            {
+                var items = await _services.DigitalSignatureService.GetByDealerContractIdAsync(dealerContractId);
+                return Ok(ApiResponse<List<DigitalSignatureResponse>>.CreateSuccess(items));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ApiResponse<List<DigitalSignatureResponse>>.CreateFail("Internal server error", new List<string> { ex.Message }, 500));
+            }
+        }
     }
 }

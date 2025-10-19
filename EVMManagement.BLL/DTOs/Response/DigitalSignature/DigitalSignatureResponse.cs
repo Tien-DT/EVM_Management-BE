@@ -13,6 +13,7 @@ namespace EVMManagement.BLL.DTOs.Response.DigitalSignature
         public SignatureEntityType EntityType { get; set; }
         public Guid? ContractId { get; set; }
         public Guid? HandoverRecordId { get; set; }
+        public Guid? DealerContractId { get; set; }
         public SignatureStatus Status { get; set; }
         public DateTime? SignedAt { get; set; }
         public string? FileUrl { get; set; }

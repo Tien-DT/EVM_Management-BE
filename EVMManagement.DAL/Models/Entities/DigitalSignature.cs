@@ -28,6 +28,8 @@ namespace EVMManagement.DAL.Models.Entities
 
         public Guid? HandoverRecordId { get; set; }
 
+        public Guid? DealerContractId { get; set; }
+
         [Required]
         public SignatureStatus Status { get; set; } = SignatureStatus.OTP_SENT;
 
@@ -50,5 +52,6 @@ namespace EVMManagement.DAL.Models.Entities
 
         public virtual Contract? Contract { get; set; }
         public virtual HandoverRecord? HandoverRecord { get; set; }
+        public virtual DealerContract? DealerContract { get; set; }
     }
 }

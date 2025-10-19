@@ -32,7 +32,15 @@ namespace EVMManagement.DAL.Repositories.Class
                 .ToListAsync();
         }
 
-        public async Task<DigitalSignature?> GetPendingOtpAsync(string email, SignatureEntityType entityType, Guid? contractId, Guid? handoverRecordId)
+        public async Task<List<DigitalSignature>> GetByDealerContractIdAsync(Guid dealerContractId)
+        {
+            return await _context.DigitalSignatures
+                .Where(ds => ds.DealerContractId == dealerContractId && !ds.IsDeleted)
+                .OrderByDescending(ds => ds.CreatedDate)
+                .ToListAsync();
+        }
+
+        public async Task<DigitalSignature?> GetPendingOtpAsync(string email, SignatureEntityType entityType, Guid? contractId, Guid? handoverRecordId, Guid? dealerContractId)
         {
             var query = _context.DigitalSignatures
                 .Where(ds => ds.SignerEmail == email 
@@ -49,6 +57,11 @@ namespace EVMManagement.DAL.Repositories.Class
             if (handoverRecordId.HasValue)
             {
                 query = query.Where(ds => ds.HandoverRecordId == handoverRecordId.Value);
+            }
+
+            if (dealerContractId.HasValue)
+            {
+                query = query.Where(ds => ds.DealerContractId == dealerContractId.Value);
             }
 
             return await query.OrderByDescending(ds => ds.CreatedDate).FirstOrDefaultAsync();

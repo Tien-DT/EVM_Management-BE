@@ -467,7 +467,7 @@ namespace EVMManagement.DAL.Data
                 entity.HasKey(e => e.Id);
                 entity.HasIndex(e => e.VerificationCode);
                 entity.HasIndex(e => new { e.SignerEmail, e.Status, e.OtpExpiresAt });
-                entity.HasIndex(e => new { e.ContractId, e.HandoverRecordId });
+                entity.HasIndex(e => new { e.ContractId, e.HandoverRecordId, e.DealerContractId });
                 entity.HasOne(e => e.Contract)
                     .WithMany(c => c.DigitalSignatures)
                     .HasForeignKey(e => e.ContractId)
@@ -475,6 +475,10 @@ namespace EVMManagement.DAL.Data
                 entity.HasOne(e => e.HandoverRecord)
                     .WithMany(h => h.DigitalSignatures)
                     .HasForeignKey(e => e.HandoverRecordId)
+                    .OnDelete(DeleteBehavior.Cascade);
+                entity.HasOne(e => e.DealerContract)
+                    .WithMany(dc => dc.DigitalSignatures)
+                    .HasForeignKey(e => e.DealerContractId)
                     .OnDelete(DeleteBehavior.Cascade);
             });
         }

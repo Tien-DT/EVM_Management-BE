@@ -21,5 +21,7 @@ namespace EVMManagement.BLL.DTOs.Request.DigitalSignature
         public Guid? ContractId { get; set; }
 
         public Guid? HandoverRecordId { get; set; }
+
+        public Guid? DealerContractId { get; set; }
     }
 }
