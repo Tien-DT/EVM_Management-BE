@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using EVMManagement.BLL.Services.Interface;
 using EVMManagement.BLL.DTOs.Request.DealerContract;
 using EVMManagement.BLL.DTOs.Response.DealerContract;
 using EVMManagement.BLL.DTOs.Response;
@@ -58,7 +57,7 @@ namespace EVMManagement.API.Controllers
                 return BadRequest(ApiResponse<DealerContractResponseDto>.CreateFail("Validation failed", errors, 400));
             }
 
-            // If caller is EVM_ADMIN, allow create-and-sign by passing account id
+            
             Guid? evmSignerAccountId = null;
             var accountIdClaim = User.FindFirst("Id")?.Value;
             if (User.IsInRole("EVM_ADMIN") && !string.IsNullOrWhiteSpace(accountIdClaim) && Guid.TryParse(accountIdClaim, out var aid))
@@ -70,17 +69,7 @@ namespace EVMManagement.API.Controllers
             return CreatedAtAction(nameof(GetById), new { id = created.Id }, ApiResponse<DealerContractResponseDto>.CreateSuccess(created));
         }
 
-        [HttpPost("{dealerId}/send-otp")]
-        public async Task<IActionResult> SendOtp(Guid dealerId)
-        {
-            // Try reading Email from JWT claims first (JwtRegisteredClaimNames.Email or "Email")
-            string? emailClaim = User.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Email)?.Value
-                                 ?? User.FindFirst("Email")?.Value;
-
-            var success = await _services.DealerContractService.SendOtpAsync(dealerId, string.IsNullOrWhiteSpace(emailClaim) ? null : emailClaim);
-            if (!success) return BadRequest(ApiResponse<string>.CreateFail("Failed to send OTP", null, 400));
-            return Ok(ApiResponse<string>.CreateSuccess("OTP sent"));
-        }
+      
 
         [HttpPost("{dealerId}/verify-otp")]
         [Authorize]
@@ -88,18 +77,19 @@ namespace EVMManagement.API.Controllers
         {
             if (!ModelState.IsValid) return BadRequest(ApiResponse<string>.CreateFail("Invalid request", null, 400));
 
-            // Try to get signer account id from JWT (if caller is authenticated)
-            Guid? signerAccountId = null;
-            var accountIdClaim = User.FindFirst("Id")?.Value;
-            if (!string.IsNullOrWhiteSpace(accountIdClaim) && Guid.TryParse(accountIdClaim, out var accId))
+            string? signerEmail = User.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Email)?.Value
+                                 ?? User.FindFirst("Email")?.Value;
+
+            if (string.IsNullOrWhiteSpace(signerEmail))
             {
-                signerAccountId = accId;
+                return BadRequest(ApiResponse<string>.CreateFail("Signer email claim is required for OTP verification", null, 400));
             }
 
-            var valid = await _services.DealerContractService.VerifyOtpAsync(dealerId, dto.Otp, signerAccountId);
-            if (!valid) return BadRequest(ApiResponse<string>.CreateFail("OTP is invalid or expired", null, 400));
 
-            return Ok(ApiResponse<string>.CreateSuccess("OTP verified"));
+            var marked = await _services.DealerContractService.MarkAsSignedAsync(dealerId, dto.Otp, signerEmail);
+            if (!marked) return BadRequest(ApiResponse<string>.CreateFail("OTP is invalid, expired or failed to sign contract", null, 400));
+
+            return Ok(ApiResponse<string>.CreateSuccess("OTP verified and contract signed"));
         }
     }
 }

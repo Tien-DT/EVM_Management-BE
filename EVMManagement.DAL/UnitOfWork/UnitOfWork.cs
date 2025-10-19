@@ -62,7 +62,6 @@ namespace EVMManagement.DAL.UnitOfWork
         public IDealerContractRepository DealerContracts => _dealerContracts ??= new DealerContractRepository(_context);
         public ITestDriveBookingRepository TestDriveBookings => _testDriveBookings ??= new Repositories.Class.TestDriveBookingRepository(_context);
         public IInvoiceRepository Invoices => _invoices ??= new InvoiceRepository(_context);
-        public IInvoiceRepository Invoices => _invoices ??= new InvoiceRepository(_context);
         public IDigitalSignatureRepository DigitalSignatures => _digitalSignatures ??= new DigitalSignatureRepository(_context);
 
         public async Task<int> SaveChangesAsync()

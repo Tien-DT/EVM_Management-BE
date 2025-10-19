@@ -12,8 +12,6 @@ namespace EVMManagement.BLL.Services.Interface
     Task<PagedResult<DealerContractResponseDto>> GetAllAsync(int pageNumber = 1, int pageSize = 10);
     Task<DealerContractResponseDto?> GetByDealerIdAsync(Guid dealerId);
     Task<DealerContractResponseDto?> GetByIdAsync(Guid id);
-    // Send OTP for dealer associated with caller's accountId. Service will resolve dealerId from account.
-    Task<bool> SendOtpAsync(Guid accountId, string? recipientEmail = null);
-    Task<bool> VerifyOtpAsync(Guid dealerId, string otp, Guid? signerAccountId = null);
+    Task<bool> MarkAsSignedAsync(Guid dealerId, string otp, string signerEmail);
     }
 }
