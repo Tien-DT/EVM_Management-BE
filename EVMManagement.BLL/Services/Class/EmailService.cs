@@ -1,3 +1,4 @@
+using System;
 using System.IO;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
@@ -5,6 +6,7 @@ using MimeKit;
 using MailKit.Net.Smtp;
 using MailKit.Security;
 using EVMManagement.BLL.Services.Interface;
+using EVMManagement.BLL.Services.Templates;
 
 namespace EVMManagement.BLL.Services.Class
 {
@@ -97,6 +99,13 @@ namespace EVMManagement.BLL.Services.Class
             {
                 await client.DisconnectAsync(true);
             }
+        }
+
+        public async Task SendOtpEmailAsync(string toEmail, string otpCode, DateTime expiresAt)
+        {
+            var subject = "Mã OTP Ký Điện Tử - EVM Management";
+            var body = EmailTemplates.GetOtpEmailTemplate(otpCode, expiresAt);
+            await SendEmailAsync(toEmail, subject, body, true);
         }
     }
 }

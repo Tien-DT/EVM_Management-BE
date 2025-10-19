@@ -10,6 +10,7 @@ using Google.Apis.Services;
 using MimeKit;
 using EVMManagement.BLL.Options;
 using EVMManagement.BLL.Services.Interface;
+using EVMManagement.BLL.Services.Templates;
 
 namespace EVMManagement.BLL.Services.Class
 {
@@ -34,6 +35,13 @@ namespace EVMManagement.BLL.Services.Class
             var service = await CreateGmailServiceAsync();
             var message = CreateMimeMessageWithAttachment(toEmail, subject, body, attachmentPath);
             await SendMessageAsync(service, message);
+        }
+
+        public async Task SendOtpEmailAsync(string toEmail, string otpCode, DateTime expiresAt)
+        {
+            var subject = "Mã OTP Ký Điện Tử - EVM Management";
+            var body = EmailTemplates.GetOtpEmailTemplate(otpCode, expiresAt);
+            await SendEmailAsync(toEmail, subject, body, true);
         }
 
         private async Task<GmailService> CreateGmailServiceAsync()

@@ -26,6 +26,7 @@ namespace EVMManagement.DAL.UnitOfWork
         IAvailableSlotRepository AvailableSlots { get; }
     ITestDriveBookingRepository TestDriveBookings { get; }
         IInvoiceRepository Invoices { get; }
+        IDigitalSignatureRepository DigitalSignatures { get; }
 
         Task<int> SaveChangesAsync();
         Task BeginTransactionAsync();
