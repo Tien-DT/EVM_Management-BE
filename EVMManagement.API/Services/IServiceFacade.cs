@@ -10,6 +10,7 @@ namespace EVMManagement.API.Services
         IOrderDetailService OrderDetailService { get; }
         IInvoiceService InvoiceService { get; }
         IContractService ContractService { get; }
+        IDealerContractService DealerContractService { get; }
         IQuotationService QuotationService { get; }
         IQuotationDetailService QuotationDetailService { get; }
         IDealerService DealerService { get; }

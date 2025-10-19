@@ -6,6 +6,7 @@ using EVMManagement.BLL.DTOs.Response.DealerContract;
 using EVMManagement.BLL.DTOs.Response;
 using System;
 using System.Linq;
+using EVMManagement.API.Services;
 
 namespace EVMManagement.API.Controllers
 {
@@ -14,13 +15,11 @@ namespace EVMManagement.API.Controllers
     
     public class DealerContractsController : ControllerBase
     {
-        private readonly IDealerContractService _service;
-        private readonly EVMManagement.BLL.Services.Interface.IUserProfileService _userProfileService;
+        private readonly IServiceFacade _services;
 
-        public DealerContractsController(IDealerContractService service, EVMManagement.BLL.Services.Interface.IUserProfileService userProfileService)
+        public DealerContractsController(IServiceFacade services)
         {
-            _service = service;
-            _userProfileService = userProfileService;
+            _services = services;
         }
 
         [HttpGet]
@@ -29,14 +28,14 @@ namespace EVMManagement.API.Controllers
             if (pageNumber < 1 || pageSize < 1)
                 return BadRequest(ApiResponse<string>.CreateFail("PageNumber and PageSize must be greater than 0", null, 400));
 
-            var res = await _service.GetAllAsync(pageNumber, pageSize);
+            var res = await _services.DealerContractService.GetAllAsync(pageNumber, pageSize);
             return Ok(ApiResponse<PagedResult<DealerContractResponseDto>>.CreateSuccess(res));
         }
 
-    [HttpGet("dealer/{dealerId}")]
-    public async Task<IActionResult> GetByDealerId(Guid dealerId)
+        [HttpGet("dealer/{dealerId}")]
+        public async Task<IActionResult> GetByDealerId(Guid dealerId)
         {
-            var item = await _service.GetByDealerIdAsync(dealerId);
+            var item = await _services.DealerContractService.GetByDealerIdAsync(dealerId);
             if (item == null) return NotFound(ApiResponse<DealerContractResponseDto>.CreateFail("DealerContract not found for dealer", null, 404));
             return Ok(ApiResponse<DealerContractResponseDto>.CreateSuccess(item));
         }
@@ -44,7 +43,7 @@ namespace EVMManagement.API.Controllers
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(Guid id)
         {
-            var item = await _service.GetByIdAsync(id);
+            var item = await _services.DealerContractService.GetByIdAsync(id);
             if (item == null) return NotFound(ApiResponse<DealerContractResponseDto>.CreateFail("DealerContract not found", null, 404));
             return Ok(ApiResponse<DealerContractResponseDto>.CreateSuccess(item));
         }
@@ -67,41 +66,25 @@ namespace EVMManagement.API.Controllers
                 evmSignerAccountId = aid;
             }
 
-            var created = await _service.CreateAsync(dto, evmSignerAccountId, signAsEvm: evmSignerAccountId.HasValue);
+            var created = await _services.DealerContractService.CreateAsync(dto, evmSignerAccountId, signAsEvm: evmSignerAccountId.HasValue);
             return CreatedAtAction(nameof(GetById), new { id = created.Id }, ApiResponse<DealerContractResponseDto>.CreateSuccess(created));
         }
 
-        [HttpPost("send-otp")]
-        [Authorize]
-        public async Task<IActionResult> SendOtp()
+        [HttpPost("{dealerId}/send-otp")]
+        public async Task<IActionResult> SendOtp(Guid dealerId)
         {
-            // Read account id and email from JWT claims
-            var accountIdClaim = User.FindFirst("Id")?.Value;
+            // Try reading Email from JWT claims first (JwtRegisteredClaimNames.Email or "Email")
             string? emailClaim = User.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Email)?.Value
                                  ?? User.FindFirst("Email")?.Value;
 
-            if (string.IsNullOrWhiteSpace(accountIdClaim) || !Guid.TryParse(accountIdClaim, out var accountId))
-            {
-                return Unauthorized(ApiResponse<string>.CreateFail("Account claim missing or invalid", null, 401));
-            }
-
-            // Resolve user's profile to get dealerId (if any)
-            var profile = await _userProfileService.GetByAccountIdAsync(accountId);
-            if (profile == null || !profile.DealerId.HasValue)
-            {
-                return BadRequest(ApiResponse<string>.CreateFail("User is not associated with a dealer", null, 400));
-            }
-
-            var dealerId = profile.DealerId.Value;
-
-            var success = await _service.SendOtpAsync(dealerId, string.IsNullOrWhiteSpace(emailClaim) ? null : emailClaim);
+            var success = await _services.DealerContractService.SendOtpAsync(dealerId, string.IsNullOrWhiteSpace(emailClaim) ? null : emailClaim);
             if (!success) return BadRequest(ApiResponse<string>.CreateFail("Failed to send OTP", null, 400));
             return Ok(ApiResponse<string>.CreateSuccess("OTP sent"));
         }
 
         [HttpPost("{dealerId}/verify-otp")]
         [Authorize]
-        public async Task<IActionResult> VerifyOtp(Guid dealerId, [FromBody] EVMManagement.BLL.DTOs.Request.DealerContract.DealerOtpVerifyRequestDto dto)
+        public async Task<IActionResult> VerifyOtp(Guid dealerId, [FromBody] DealerOtpVerifyRequestDto dto)
         {
             if (!ModelState.IsValid) return BadRequest(ApiResponse<string>.CreateFail("Invalid request", null, 400));
 
@@ -113,7 +96,7 @@ namespace EVMManagement.API.Controllers
                 signerAccountId = accId;
             }
 
-            var valid = await _service.VerifyOtpAsync(dealerId, dto.Otp, signerAccountId);
+            var valid = await _services.DealerContractService.VerifyOtpAsync(dealerId, dto.Otp, signerAccountId);
             if (!valid) return BadRequest(ApiResponse<string>.CreateFail("OTP is invalid or expired", null, 400));
 
             return Ok(ApiResponse<string>.CreateSuccess("OTP verified"));

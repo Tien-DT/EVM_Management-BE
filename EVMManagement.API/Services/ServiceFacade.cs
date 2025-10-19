@@ -10,6 +10,7 @@ namespace EVMManagement.API.Services
         public IOrderDetailService OrderDetailService { get; }
         public IInvoiceService InvoiceService { get; }
         public IContractService ContractService { get; }
+    public IDealerContractService DealerContractService { get; }
         public IQuotationService QuotationService { get; }
         public IQuotationDetailService QuotationDetailService { get; }
         public IDealerService DealerService { get; }
@@ -45,6 +46,7 @@ namespace EVMManagement.API.Services
             IVehicleTimeSlotService vehicleTimeSlotService,
             IMasterTimeSlotService masterTimeSlotService,
             IAvailableSlotService availableSlotService,
+            IDealerContractService dealerContractService,
             ITestDriveBookingService testDriveBookingService,
             IEmailService emailService,
             IStorageService storageService)
@@ -67,6 +69,7 @@ namespace EVMManagement.API.Services
             VehicleTimeSlotService = vehicleTimeSlotService;
             MasterTimeSlotService = masterTimeSlotService;
             AvailableSlotService = availableSlotService;
+            DealerContractService = dealerContractService;
             TestDriveBookingService = testDriveBookingService;
             EmailService = emailService;
             StorageService = storageService;
