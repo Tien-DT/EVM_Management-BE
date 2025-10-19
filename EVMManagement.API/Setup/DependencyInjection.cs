@@ -34,6 +34,7 @@ namespace EVMManagement.API.Setup
             services.AddScoped<IMasterTimeSlotRepository, MasterTimeSlotRepository>();
             services.AddScoped<IAvailableSlotRepository, AvailableSlotRepository>();
             services.AddScoped<ITestDriveBookingRepository, TestDriveBookingRepository>();
+            services.AddScoped<IDigitalSignatureRepository, DigitalSignatureRepository>();
 
             services.AddScoped<IUserProfileService, UserProfileService>();
             services.AddScoped<IVehicleVariantService, VehicleVariantService>();
@@ -56,6 +57,7 @@ namespace EVMManagement.API.Setup
             services.AddScoped<IContractService, ContractService>();
             services.AddScoped<IInvoiceService, InvoiceService>();
             services.AddScoped<IQuotationService, QuotationService>();
+            services.AddScoped<IDigitalSignatureService, DigitalSignatureService>();
 
             services.AddScoped<IServiceFacade, ServiceFacade>();
 

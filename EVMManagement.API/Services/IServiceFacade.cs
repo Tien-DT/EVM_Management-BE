@@ -25,5 +25,6 @@ namespace EVMManagement.API.Services
     ITestDriveBookingService TestDriveBookingService { get; }
         IEmailService EmailService { get; }
         IStorageService StorageService { get; }
+        IDigitalSignatureService DigitalSignatureService { get; }
     }
 }

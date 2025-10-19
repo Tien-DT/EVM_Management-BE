@@ -33,6 +33,7 @@ namespace EVMManagement.DAL.UnitOfWork
         private IAvailableSlotRepository? _availableSlots;
     private ITestDriveBookingRepository? _testDriveBookings;
         private IInvoiceRepository? _invoices;
+        private IDigitalSignatureRepository? _digitalSignatures;
 
         public UnitOfWork(AppDbContext context)
         {
@@ -59,6 +60,7 @@ namespace EVMManagement.DAL.UnitOfWork
     public IAvailableSlotRepository AvailableSlots => _availableSlots ??= new AvailableSlotRepository(_context);
     public ITestDriveBookingRepository TestDriveBookings => _testDriveBookings ??= new Repositories.Class.TestDriveBookingRepository(_context);
     public IInvoiceRepository Invoices => _invoices ??= new InvoiceRepository(_context);
+        public IDigitalSignatureRepository DigitalSignatures => _digitalSignatures ??= new DigitalSignatureRepository(_context);
 
         public async Task<int> SaveChangesAsync()
         {
