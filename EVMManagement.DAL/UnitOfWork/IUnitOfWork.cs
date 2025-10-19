@@ -27,6 +27,7 @@ namespace EVMManagement.DAL.UnitOfWork
         IDealerContractRepository DealerContracts { get; }
         ITestDriveBookingRepository TestDriveBookings { get; }
         IInvoiceRepository Invoices { get; }
+        IDigitalSignatureRepository DigitalSignatures { get; }
 
         Task<int> SaveChangesAsync();
         Task BeginTransactionAsync();

@@ -1,3 +1,4 @@
+using System;
 using System.Threading.Tasks;
 
 namespace EVMManagement.BLL.Services.Interface
@@ -6,5 +7,6 @@ namespace EVMManagement.BLL.Services.Interface
     {
         Task SendEmailAsync(string toEmail, string subject, string body, bool isHtml = true);
         Task SendEmailWithAttachmentAsync(string toEmail, string subject, string body, string attachmentPath);
+        Task SendOtpEmailAsync(string toEmail, string otpCode, DateTime expiresAt);
     }
 }
