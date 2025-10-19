@@ -38,6 +38,15 @@ namespace EVMManagement.DAL.Repositories.Class
                 .Where(u => u.DealerId == dealerId);
         }
 
+        public async Task<UserProfile?> GetManagerByDealerIdAsync(Guid dealerId)
+        {
+            return await _dbSet
+                .Include(u => u.Account)
+                .Include(u => u.Dealer)
+                .Where(u => u.DealerId == dealerId && u.Account.Role == AccountRole.DEALER_MANAGER && u.Account.IsActive)
+                .FirstOrDefaultAsync();
+        }
+
         public async Task<UserProfile?> GetByAccountIdAsync(Guid accountId)
         {
             return await _dbSet

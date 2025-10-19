@@ -47,6 +47,7 @@ namespace EVMManagement.API.Setup
             services.AddScoped<IVehicleTimeSlotService, VehicleTimeSlotService>();
             services.AddScoped<IMasterTimeSlotService, MasterTimeSlotService>();
             services.AddScoped<IAvailableSlotService, AvailableSlotService>();
+            services.AddScoped<IDealerContractService, DealerContractService>();
             services.AddScoped<ITestDriveBookingService, TestDriveBookingService>();
             services.AddScoped<IEmailService, GmailApiService>();
             services.AddScoped<IStorageService, SupabaseStorageService>();

@@ -24,7 +24,8 @@ namespace EVMManagement.DAL.UnitOfWork
         IVehicleTimeSlotRepository VehicleTimeSlots { get; }
         IMasterTimeSlotRepository MasterTimeSlots { get; }
         IAvailableSlotRepository AvailableSlots { get; }
-    ITestDriveBookingRepository TestDriveBookings { get; }
+        IDealerContractRepository DealerContracts { get; }
+        ITestDriveBookingRepository TestDriveBookings { get; }
         IInvoiceRepository Invoices { get; }
         IDigitalSignatureRepository DigitalSignatures { get; }
 
