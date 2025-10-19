@@ -14,5 +14,6 @@ namespace EVMManagement.BLL.Services.Interface
         Task<DigitalSignatureResponse?> GetByIdAsync(Guid id);
         Task<List<DigitalSignatureResponse>> GetByContractIdAsync(Guid contractId);
         Task<List<DigitalSignatureResponse>> GetByHandoverRecordIdAsync(Guid handoverRecordId);
+        Task<List<DigitalSignatureResponse>> GetByDealerContractIdAsync(Guid dealerContractId);
     }
 }

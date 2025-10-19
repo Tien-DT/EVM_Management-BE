@@ -10,6 +10,7 @@ namespace EVMManagement.DAL.Repositories.Interface
     {
         Task<List<DigitalSignature>> GetByContractIdAsync(Guid contractId);
         Task<List<DigitalSignature>> GetByHandoverRecordIdAsync(Guid handoverRecordId);
-        Task<DigitalSignature?> GetPendingOtpAsync(string email, SignatureEntityType entityType, Guid? contractId, Guid? handoverRecordId);
+        Task<List<DigitalSignature>> GetByDealerContractIdAsync(Guid dealerContractId);
+        Task<DigitalSignature?> GetPendingOtpAsync(string email, SignatureEntityType entityType, Guid? contractId, Guid? handoverRecordId, Guid? dealerContractId);
     }
 }
