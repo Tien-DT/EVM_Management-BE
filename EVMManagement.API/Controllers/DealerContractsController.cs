@@ -15,10 +15,12 @@ namespace EVMManagement.API.Controllers
     public class DealerContractsController : ControllerBase
     {
         private readonly IDealerContractService _service;
+        private readonly EVMManagement.BLL.Services.Interface.IUserProfileService _userProfileService;
 
-        public DealerContractsController(IDealerContractService service)
+        public DealerContractsController(IDealerContractService service, EVMManagement.BLL.Services.Interface.IUserProfileService userProfileService)
         {
             _service = service;
+            _userProfileService = userProfileService;
         }
 
         [HttpGet]
@@ -48,8 +50,8 @@ namespace EVMManagement.API.Controllers
         }
 
         [HttpPost]
-        [Authorize(Roles = "EVM_ADMIN,DEALER_ADMIN")]
-    public async Task<IActionResult> Create([FromBody] DealerContractCreateDto dto)
+        [Authorize(Roles = "EVM_ADMIN")]
+        public async Task<IActionResult> Create([FromBody] DealerContractCreateDto dto)
         {
             if (!ModelState.IsValid)
             {
@@ -57,24 +59,61 @@ namespace EVMManagement.API.Controllers
                 return BadRequest(ApiResponse<DealerContractResponseDto>.CreateFail("Validation failed", errors, 400));
             }
 
-            var created = await _service.CreateAsync(dto);
+            // If caller is EVM_ADMIN, allow create-and-sign by passing account id
+            Guid? evmSignerAccountId = null;
+            var accountIdClaim = User.FindFirst("Id")?.Value;
+            if (User.IsInRole("EVM_ADMIN") && !string.IsNullOrWhiteSpace(accountIdClaim) && Guid.TryParse(accountIdClaim, out var aid))
+            {
+                evmSignerAccountId = aid;
+            }
+
+            var created = await _service.CreateAsync(dto, evmSignerAccountId, signAsEvm: evmSignerAccountId.HasValue);
             return CreatedAtAction(nameof(GetById), new { id = created.Id }, ApiResponse<DealerContractResponseDto>.CreateSuccess(created));
         }
 
-        [HttpPost("{dealerId}/send-otp")]
-        public async Task<IActionResult> SendOtp(Guid dealerId)
+        [HttpPost("send-otp")]
+        [Authorize]
+        public async Task<IActionResult> SendOtp()
         {
-            var success = await _service.SendOtpAsync(dealerId);
+            // Read account id and email from JWT claims
+            var accountIdClaim = User.FindFirst("Id")?.Value;
+            string? emailClaim = User.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Email)?.Value
+                                 ?? User.FindFirst("Email")?.Value;
+
+            if (string.IsNullOrWhiteSpace(accountIdClaim) || !Guid.TryParse(accountIdClaim, out var accountId))
+            {
+                return Unauthorized(ApiResponse<string>.CreateFail("Account claim missing or invalid", null, 401));
+            }
+
+            // Resolve user's profile to get dealerId (if any)
+            var profile = await _userProfileService.GetByAccountIdAsync(accountId);
+            if (profile == null || !profile.DealerId.HasValue)
+            {
+                return BadRequest(ApiResponse<string>.CreateFail("User is not associated with a dealer", null, 400));
+            }
+
+            var dealerId = profile.DealerId.Value;
+
+            var success = await _service.SendOtpAsync(dealerId, string.IsNullOrWhiteSpace(emailClaim) ? null : emailClaim);
             if (!success) return BadRequest(ApiResponse<string>.CreateFail("Failed to send OTP", null, 400));
             return Ok(ApiResponse<string>.CreateSuccess("OTP sent"));
         }
 
         [HttpPost("{dealerId}/verify-otp")]
+        [Authorize]
         public async Task<IActionResult> VerifyOtp(Guid dealerId, [FromBody] EVMManagement.BLL.DTOs.Request.DealerContract.DealerOtpVerifyRequestDto dto)
         {
             if (!ModelState.IsValid) return BadRequest(ApiResponse<string>.CreateFail("Invalid request", null, 400));
 
-            var valid = await _service.VerifyOtpAsync(dealerId, dto.Otp);
+            // Try to get signer account id from JWT (if caller is authenticated)
+            Guid? signerAccountId = null;
+            var accountIdClaim = User.FindFirst("Id")?.Value;
+            if (!string.IsNullOrWhiteSpace(accountIdClaim) && Guid.TryParse(accountIdClaim, out var accId))
+            {
+                signerAccountId = accId;
+            }
+
+            var valid = await _service.VerifyOtpAsync(dealerId, dto.Otp, signerAccountId);
             if (!valid) return BadRequest(ApiResponse<string>.CreateFail("OTP is invalid or expired", null, 400));
 
             return Ok(ApiResponse<string>.CreateSuccess("OTP verified"));

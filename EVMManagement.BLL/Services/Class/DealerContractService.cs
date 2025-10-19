@@ -9,6 +9,7 @@ using Microsoft.Extensions.Caching.Distributed;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using EVMManagement.DAL.Models.Enums;
 
 namespace EVMManagement.BLL.Services.Class
 {
@@ -27,7 +28,7 @@ namespace EVMManagement.BLL.Services.Class
             _userProfileService = userProfileService;
         }
 
-        public async Task<DealerContractResponseDto> CreateAsync(DealerContractCreateDto dto)
+        public async Task<DealerContractResponseDto> CreateAsync(DealerContractCreateDto dto, Guid? evmSignerAccountId = null, bool signAsEvm = false)
         {
             var entity = new DealerContract
             {
@@ -37,10 +38,24 @@ namespace EVMManagement.BLL.Services.Class
                 Status = dto.Status,
                 EffectiveDate = dto.EffectiveDate,
                 ExpirationDate = dto.ExpirationDate,
-                SignedByDealerUserId = dto.SignedByDealerUserId,
-                SignedByEvmUserId = dto.SignedByEvmUserId,
+                // Do not trust client-provided signer ids. EVM signer (if requested) will be resolved server-side.
+                SignedByDealerUserId = null,
+                SignedByEvmUserId = null,
                 ContractLink = dto.ContractLink
             };
+
+            // If caller requested to sign as EVM admin, resolve account -> userProfile and set SignedByEvmUserId
+            if (signAsEvm && evmSignerAccountId.HasValue)
+            {
+                var signerProfile = await _userProfileService.GetByAccountIdAsync(evmSignerAccountId.Value);
+                if (signerProfile != null)
+                {
+                    entity.SignedByEvmUserId = signerProfile.Id;
+                    entity.SignedAt = DateTime.UtcNow;
+                    // Also consider setting status to ACTIVE if appropriate
+                    entity.Status = EVMManagement.DAL.Models.Enums.DealerContractStatus.ACTIVE;
+                }
+            }
 
             await _unitOfWork.DealerContracts.AddAsync(entity);
             await _unitOfWork.SaveChangesAsync();
@@ -48,43 +63,48 @@ namespace EVMManagement.BLL.Services.Class
             return MapToDto(entity);
         }
 
-        public async Task<bool> SendOtpAsync(Guid dealerId)
+        public async Task<bool> SendOtpAsync(Guid accountId, string? recipientEmail = null)
         {
-            // Get dealer
+            // Resolve user profile and dealerId from caller's accountId
+            var profile = await _userProfileService.GetByAccountIdAsync(accountId);
+            if (profile == null || !profile.DealerId.HasValue) return false;
+
+            var dealerId = profile.DealerId.Value;
             var dealer = await _unitOfWork.Dealers.GetByIdAsync(dealerId);
             if (dealer == null) return false;
 
-            // Try find dealer manager via service (service will handle fallback logic)
             var manager = await _userProfileService.GetManagerByDealerIdAsync(dealerId);
+            string recipientName = dealer.Name ?? string.Empty;
 
-            string? recipientEmail = null;
-            string recipientName = dealer.Name;
-
-            if (manager != null && manager.Account != null && !string.IsNullOrWhiteSpace(manager.Account.Email))
+            if (string.IsNullOrWhiteSpace(recipientEmail))
             {
-                recipientEmail = manager.Account.Email;
-                recipientName = manager.FullName ?? manager.Account.Email;
+                if (manager != null && manager.Account != null && !string.IsNullOrWhiteSpace(manager.Account.Email))
+                {
+                    recipientEmail = manager.Account.Email;
+                    recipientName = manager.FullName ?? manager.Account.Email;
+                }
+                else if (!string.IsNullOrWhiteSpace(dealer.Email))
+                {
+                    recipientEmail = dealer.Email;
+                    recipientName = dealer.Name ?? dealer.Email;
+                }
             }
-            else if (!string.IsNullOrWhiteSpace(dealer.Email))
+            else
             {
-                recipientEmail = dealer.Email;
+                recipientName = manager?.FullName ?? dealer.Name ?? recipientEmail;
             }
 
             if (string.IsNullOrWhiteSpace(recipientEmail)) return false;
 
-            // Generate 6-digit OTP
             var rng = new System.Random();
             var otp = rng.Next(100000, 999999).ToString();
 
-            // Cache OTP for 5 minutes keyed by dealerId (Redis/IDistributedCache)
             var cacheKey = $"DealerOtp:{dealerId}";
             var options = new Microsoft.Extensions.Caching.Distributed.DistributedCacheEntryOptions
             {
                 AbsoluteExpirationRelativeToNow = System.TimeSpan.FromMinutes(5)
             };
             await _distributedCache.SetStringAsync(cacheKey, otp, options);
-
-            // Compose email body using template
             var subject = Templates.EmailTemplates.Subjects.Otp;
             var body = Templates.EmailTemplates.OtpEmail(recipientName, otp, 5);
 
@@ -95,22 +115,52 @@ namespace EVMManagement.BLL.Services.Class
             }
             catch
             {
-                // On failure, remove cached OTP
                 await _distributedCache.RemoveAsync(cacheKey);
                 return false;
             }
         }
 
-        public async Task<bool> VerifyOtpAsync(Guid dealerId, string otp)
+    public async Task<bool> VerifyOtpAsync(Guid dealerId, string otp, Guid? signerAccountId = null)
         {
             var cacheKey = $"DealerOtp:{dealerId}";
             var stored = await _distributedCache.GetStringAsync(cacheKey);
-            if (string.IsNullOrWhiteSpace(stored)) return false; // expired or not exists
+            if (string.IsNullOrWhiteSpace(stored)) return false; 
 
             if (stored == otp)
             {
-                // correct, remove key and return true
                 await _distributedCache.RemoveAsync(cacheKey);
+                var contract = await _unitOfWork.DealerContracts.GetQueryable()
+                    .Where(d => d.DealerId == dealerId)
+                    .OrderByDescending(d => d.CreatedDate)
+                    .FirstOrDefaultAsync();
+
+                if (contract != null)
+                {
+                    contract.Status = DealerContractStatus.ACTIVE;
+                    contract.SignedAt = DateTime.UtcNow;
+                    if (signerAccountId.HasValue)
+                    {
+                        var signerProfile = await _userProfileService.GetByAccountIdAsync(signerAccountId.Value);
+                            if (signerProfile != null)
+                            {
+                                contract.SignedByDealerUserId = signerProfile.Id;
+                            }
+                    }
+                }
+
+                    // Fallback: assign dealer signer (manager) because OTP was sent to dealer manager's email
+                    if (!contract.SignedByDealerUserId.HasValue)
+                    {
+                            var managerProfile = await _userProfileService.GetManagerByDealerIdAsync(dealerId);
+                            if (managerProfile != null)
+                            {
+                                contract.SignedByDealerUserId = managerProfile.Id;
+                            }
+                    }
+                    _unitOfWork.DealerContracts.Update(contract);
+                    await _unitOfWork.SaveChangesAsync();
+                
+
                 return true;
             }
 
