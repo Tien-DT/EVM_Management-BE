@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.Mvc;
-using EVMManagement.BLL.Services.Interface;
 using EVMManagement.BLL.DTOs.Request.Warehouse;
 using EVMManagement.BLL.DTOs.Response;
 using EVMManagement.BLL.DTOs.Response.Warehouse;
@@ -7,6 +6,7 @@ using EVMManagement.DAL.Models.Entities;
 using System.Threading.Tasks;
 using System;
 using System.Linq;
+using EVMManagement.API.Services;
 
 namespace EVMManagement.API.Controllers
 {
@@ -14,11 +14,11 @@ namespace EVMManagement.API.Controllers
     [ApiController]
     public class WarehousesController : ControllerBase
     {
-        private readonly IWarehouseService _service;
+        private readonly IServiceFacade _services;
 
-        public WarehousesController(IWarehouseService service)
+        public WarehousesController(IServiceFacade services)
         {
-            _service = service;
+            _services = services;
         }
 
         [HttpGet]
@@ -29,7 +29,7 @@ namespace EVMManagement.API.Controllers
                 return BadRequest(ApiResponse<string>.CreateFail("PageNumber and PageSize must be greater than 0", null, 400));
             }
 
-            var result = await _service.GetAllWarehousesAsync(pageNumber, pageSize);
+            var result = await _services.WarehouseService.GetAllWarehousesAsync(pageNumber, pageSize);
             return Ok(ApiResponse<PagedResult<WarehouseResponseDto>>.CreateSuccess(result));
         }
 
@@ -41,14 +41,14 @@ namespace EVMManagement.API.Controllers
                 return BadRequest(ApiResponse<string>.CreateFail("PageNumber and PageSize must be greater than 0", null, 400));
             }
 
-            var result = await _service.GetWarehousesByDealerIdAsync(dealerId, pageNumber, pageSize);
+            var result = await _services.WarehouseService.GetWarehousesByDealerIdAsync(dealerId, pageNumber, pageSize);
             return Ok(ApiResponse<PagedResult<WarehouseResponseDto>>.CreateSuccess(result));
         }
 
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(Guid id)
         {
-            var item = await _service.GetWarehouseByIdAsync(id);
+            var item = await _services.WarehouseService.GetWarehouseByIdAsync(id);
             if (item == null) return NotFound(ApiResponse<WarehouseResponseDto>.CreateFail("Warehouse not found", null, 404));
             return Ok(ApiResponse<WarehouseResponseDto>.CreateSuccess(item));
         }
@@ -62,7 +62,7 @@ namespace EVMManagement.API.Controllers
                 return BadRequest(ApiResponse<Warehouse>.CreateFail("Validation failed", errors, 400));
             }
 
-            var created = await _service.CreateWarehouseAsync(dto);
+            var created = await _services.WarehouseService.CreateWarehouseAsync(dto);
             return CreatedAtAction(nameof(GetById), new { id = created.Id }, ApiResponse<WarehouseResponseDto>.CreateSuccess(created));
         }
 
@@ -75,7 +75,7 @@ namespace EVMManagement.API.Controllers
                 return BadRequest(ApiResponse<WarehouseResponseDto>.CreateFail("Validation failed", errors, 400));
             }
 
-            var updated = await _service.UpdateWarehouseAsync(id, dto);
+            var updated = await _services.WarehouseService.UpdateWarehouseAsync(id, dto);
             if (updated == null) return NotFound(ApiResponse<WarehouseResponseDto>.CreateFail("Warehouse not found", null, 404));
             return Ok(ApiResponse<WarehouseResponseDto>.CreateSuccess(updated));
         }
@@ -83,7 +83,7 @@ namespace EVMManagement.API.Controllers
         [HttpPatch("{id}")]
         public async Task<IActionResult> UpdateIsDeleted(Guid id, [FromQuery] bool isDeleted)
         {
-            var updated = await _service.UpdateIsDeletedAsync(id, isDeleted);
+            var updated = await _services.WarehouseService.UpdateIsDeletedAsync(id, isDeleted);
             if (updated == null) return NotFound(ApiResponse<WarehouseResponseDto>.CreateFail("Warehouse not found", null, 404));
             return Ok(ApiResponse<WarehouseResponseDto>.CreateSuccess(updated));
         }

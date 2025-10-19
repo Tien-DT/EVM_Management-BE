@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.Mvc;
-using EVMManagement.BLL.Services.Interface;
 using EVMManagement.BLL.DTOs.Request.QuotationDetail;
 using EVMManagement.BLL.DTOs.Response;
 using EVMManagement.BLL.DTOs.Response.QuotationDetail;
@@ -7,6 +6,7 @@ using EVMManagement.DAL.Models.Entities;
 using System.Threading.Tasks;
 using System;
 using System.Linq;
+using EVMManagement.API.Services;
 
 namespace EVMManagement.API.Controllers
 {
@@ -14,11 +14,11 @@ namespace EVMManagement.API.Controllers
     [ApiController]
     public class QuotationDetailsController : ControllerBase
     {
-        private readonly IQuotationDetailService _service;
+        private readonly IServiceFacade _services;
 
-        public QuotationDetailsController(IQuotationDetailService service)
+        public QuotationDetailsController(IServiceFacade services)
         {
-            _service = service;
+            _services = services;
         }
 
         [HttpGet]
@@ -29,14 +29,14 @@ namespace EVMManagement.API.Controllers
                 return BadRequest(ApiResponse<string>.CreateFail("PageNumber and PageSize must be greater than 0", null, 400));
             }
 
-            var result = await _service.GetAllAsync(pageNumber, pageSize);
+            var result = await _services.QuotationDetailService.GetAllAsync(pageNumber, pageSize);
             return Ok(ApiResponse<PagedResult<QuotationDetailResponse>>.CreateSuccess(result));
         }
 
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(Guid id)
         {
-            var item = await _service.GetByIdAsync(id);
+            var item = await _services.QuotationDetailService.GetByIdAsync(id);
             if (item == null) return NotFound(ApiResponse<QuotationDetailResponse>.CreateFail("QuotationDetail not found", null, 404));
             return Ok(ApiResponse<QuotationDetailResponse>.CreateSuccess(item));
         }
@@ -50,7 +50,7 @@ namespace EVMManagement.API.Controllers
                 return BadRequest(ApiResponse<QuotationDetail>.CreateFail("Validation failed", errors, 400));
             }
 
-            var created = await _service.CreateQuotationDetailAsync(dto);
+            var created = await _services.QuotationDetailService.CreateQuotationDetailAsync(dto);
             return CreatedAtAction(nameof(GetById), new { id = created.Id }, ApiResponse<QuotationDetail>.CreateSuccess(created));
         }
 
@@ -63,7 +63,7 @@ namespace EVMManagement.API.Controllers
                 return BadRequest(ApiResponse<QuotationDetailResponse>.CreateFail("Validation failed", errors, 400));
             }
 
-            var updated = await _service.UpdateAsync(id, dto);
+            var updated = await _services.QuotationDetailService.UpdateAsync(id, dto);
             if (updated == null) return NotFound(ApiResponse<QuotationDetailResponse>.CreateFail("QuotationDetail not found", null, 404));
             return Ok(ApiResponse<QuotationDetailResponse>.CreateSuccess(updated));
         }
@@ -77,7 +77,7 @@ namespace EVMManagement.API.Controllers
                 return BadRequest(ApiResponse<QuotationDetailResponse>.CreateFail("Validation failed", errors, 400));
             }
 
-            var updated = await _service.UpdateAsync(id, dto);
+            var updated = await _services.QuotationDetailService.UpdateAsync(id, dto);
             if (updated == null) return NotFound(ApiResponse<QuotationDetailResponse>.CreateFail("QuotationDetail not found", null, 404));
             return Ok(ApiResponse<QuotationDetailResponse>.CreateSuccess(updated));
         }
@@ -85,7 +85,7 @@ namespace EVMManagement.API.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(Guid id)
         {
-            var deleted = await _service.DeleteAsync(id);
+            var deleted = await _services.QuotationDetailService.DeleteAsync(id);
             if (!deleted) return NotFound(ApiResponse<string>.CreateFail("QuotationDetail not found", null, 404));
             return Ok(ApiResponse<string>.CreateSuccess("Deleted"));
         }

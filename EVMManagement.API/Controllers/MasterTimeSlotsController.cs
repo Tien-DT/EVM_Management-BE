@@ -1,11 +1,11 @@
 using Microsoft.AspNetCore.Mvc;
-using EVMManagement.BLL.Services.Interface;
 using EVMManagement.BLL.DTOs.Request.MasterTimeSlot;
 using EVMManagement.BLL.DTOs.Response;
 using EVMManagement.BLL.DTOs.Response.MasterTimeSlot;
 using System;
 using System.Threading.Tasks;
 using System.Linq;
+using EVMManagement.API.Services;
 
 namespace EVMManagement.API.Controllers
 {
@@ -13,11 +13,11 @@ namespace EVMManagement.API.Controllers
     [ApiController]
     public class MasterTimeSlotsController : ControllerBase
     {
-        private readonly IMasterTimeSlotService _service;
+        private readonly IServiceFacade _services;
 
-        public MasterTimeSlotsController(IMasterTimeSlotService service)
+        public MasterTimeSlotsController(IServiceFacade services)
         {
-            _service = service;
+            _services = services;
         }
 
         [HttpPost]
@@ -29,7 +29,7 @@ namespace EVMManagement.API.Controllers
                 return BadRequest(ApiResponse<MasterTimeSlotResponseDto>.CreateFail("Validation failed", errors, 400));
             }
 
-            var created = await _service.CreateMasterTimeSlotAsync(dto);
+            var created = await _services.MasterTimeSlotService.CreateMasterTimeSlotAsync(dto);
             return CreatedAtAction(nameof(GetById), new { id = created.Id }, ApiResponse<MasterTimeSlotResponseDto>.CreateSuccess(created));
         }
 
@@ -41,14 +41,14 @@ namespace EVMManagement.API.Controllers
                 return BadRequest(ApiResponse<string>.CreateFail("PageNumber and PageSize must be greater than 0", null, 400));
             }
 
-            var result = await _service.GetAllAsync(pageNumber, pageSize);
+            var result = await _services.MasterTimeSlotService.GetAllAsync(pageNumber, pageSize);
             return Ok(ApiResponse<PagedResult<MasterTimeSlotResponseDto>>.CreateSuccess(result));
         }
 
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(Guid id)
         {
-            var item = await _service.GetByIdAsync(id);
+            var item = await _services.MasterTimeSlotService.GetByIdAsync(id);
             if (item == null) return NotFound(ApiResponse<MasterTimeSlotResponseDto>.CreateFail("MasterTimeSlot not found", null, 404));
             return Ok(ApiResponse<MasterTimeSlotResponseDto>.CreateSuccess(item));
         }
@@ -61,7 +61,7 @@ namespace EVMManagement.API.Controllers
                 return BadRequest(ApiResponse<string>.CreateFail("PageNumber and PageSize must be greater than 0", null, 400));
             }
 
-            var result = await _service.GetActiveAsync(pageNumber, pageSize);
+            var result = await _services.MasterTimeSlotService.GetActiveAsync(pageNumber, pageSize);
             return Ok(ApiResponse<PagedResult<MasterTimeSlotResponseDto>>.CreateSuccess(result));
         }
 
@@ -74,7 +74,7 @@ namespace EVMManagement.API.Controllers
                 return BadRequest(ApiResponse<MasterTimeSlotResponseDto>.CreateFail("Validation failed", errors, 400));
             }
 
-            var updated = await _service.UpdateAsync(id, dto);
+            var updated = await _services.MasterTimeSlotService.UpdateAsync(id, dto);
             if (updated == null) return NotFound(ApiResponse<MasterTimeSlotResponseDto>.CreateFail("MasterTimeSlot not found", null, 404));
             return Ok(ApiResponse<MasterTimeSlotResponseDto>.CreateSuccess(updated));
         }
@@ -82,7 +82,7 @@ namespace EVMManagement.API.Controllers
         [HttpPatch("{id}/is-active")]
         public async Task<IActionResult> UpdateIsActive(Guid id, [FromQuery] bool isActive)
         {
-            var updated = await _service.UpdateIsActiveAsync(id, isActive);
+            var updated = await _services.MasterTimeSlotService.UpdateIsActiveAsync(id, isActive);
             if (updated == null) return NotFound(ApiResponse<MasterTimeSlotResponseDto>.CreateFail("MasterTimeSlot not found", null, 404));
             return Ok(ApiResponse<MasterTimeSlotResponseDto>.CreateSuccess(updated));
         }
@@ -90,7 +90,7 @@ namespace EVMManagement.API.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(Guid id)
         {
-            var deleted = await _service.DeleteAsync(id);
+            var deleted = await _services.MasterTimeSlotService.DeleteAsync(id);
             if (!deleted) return NotFound(ApiResponse<string>.CreateFail("MasterTimeSlot not found", null, 404));
             return Ok(ApiResponse<string>.CreateSuccess("Deleted"));
         }

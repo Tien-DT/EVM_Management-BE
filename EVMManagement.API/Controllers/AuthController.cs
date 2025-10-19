@@ -5,8 +5,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using EVMManagement.BLL.DTOs.Request.Auth;
-using EVMManagement.BLL.Services.Interface;
 using EVMManagement.BLL.DTOs.Response;
+using EVMManagement.API.Services;
 
 namespace EVMManagement.API.Controllers
 {
@@ -14,18 +14,18 @@ namespace EVMManagement.API.Controllers
     [Route("api/v1/[controller]")]
     public class AuthController : ControllerBase
     {
-        private readonly IAuthService _authService;
+        private readonly IServiceFacade _services;
 
-        public AuthController(IAuthService authService)
+        public AuthController(IServiceFacade services)
         {
-            _authService = authService;
+            _services = services;
         }
 
         [HttpPost("login")]
         [AllowAnonymous]
         public async Task<IActionResult> Login([FromBody] LoginRequestDto request, CancellationToken cancellationToken)
         {
-            var result = await _authService.LoginAsync(request, cancellationToken);
+            var result = await _services.AuthService.LoginAsync(request, cancellationToken);
             if (result.Success)
             {
                 return Ok(result);
@@ -49,7 +49,7 @@ namespace EVMManagement.API.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> RegisterDealer([FromBody] RegisterDealerRequestDto request, CancellationToken cancellationToken)
         {
-            var result = await _authService.RegisterDealerAsync(request, cancellationToken);
+            var result = await _services.AuthService.RegisterDealerAsync(request, cancellationToken);
             if (result.Success)
             {
                 return Ok(result);
@@ -68,7 +68,7 @@ namespace EVMManagement.API.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> CreateAccount([FromBody] CreateAccountRequestDto request, CancellationToken cancellationToken)
         {
-            var result = await _authService.CreateAccountAsync(request, cancellationToken);
+            var result = await _services.AuthService.CreateAccountAsync(request, cancellationToken);
             if (result.Success)
             {
                 return Ok(result);
@@ -87,7 +87,7 @@ namespace EVMManagement.API.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequestDto request, CancellationToken cancellationToken)
         {
-            var result = await _authService.RefreshTokenAsync(request, cancellationToken);
+            var result = await _services.AuthService.RefreshTokenAsync(request, cancellationToken);
             if (result.Success)
             {
                 return Ok(result);
@@ -111,7 +111,7 @@ namespace EVMManagement.API.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequestDto request, CancellationToken cancellationToken)
         {
-            var result = await _authService.ForgotPasswordAsync(request, cancellationToken);
+            var result = await _services.AuthService.ForgotPasswordAsync(request, cancellationToken);
             if (result.Success)
             {
                 return Ok(result);
@@ -125,7 +125,7 @@ namespace EVMManagement.API.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequestDto request, CancellationToken cancellationToken)
         {
-            var result = await _authService.ResetPasswordAsync(request, cancellationToken);
+            var result = await _services.AuthService.ResetPasswordAsync(request, cancellationToken);
             if (result.Success)
             {
                 return Ok(result);
@@ -150,7 +150,7 @@ namespace EVMManagement.API.Controllers
                 return Unauthorized(ApiResponse<string>.CreateFail("Không tìm thấy thông tin tài khoản.", errorCode: 401));
             }
 
-            var result = await _authService.ChangePasswordAsync(accountId, request, cancellationToken);
+            var result = await _services.AuthService.ChangePasswordAsync(accountId, request, cancellationToken);
             if (result.Success)
             {
                 return Ok(result);

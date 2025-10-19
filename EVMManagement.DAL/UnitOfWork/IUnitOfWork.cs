@@ -24,7 +24,9 @@ namespace EVMManagement.DAL.UnitOfWork
         IVehicleTimeSlotRepository VehicleTimeSlots { get; }
         IMasterTimeSlotRepository MasterTimeSlots { get; }
         IAvailableSlotRepository AvailableSlots { get; }
-    IDealerContractRepository DealerContracts { get; }
+        IDealerContractRepository DealerContracts { get; }
+        ITestDriveBookingRepository TestDriveBookings { get; }
+        IInvoiceRepository Invoices { get; }
 
         Task<int> SaveChangesAsync();
         Task BeginTransactionAsync();

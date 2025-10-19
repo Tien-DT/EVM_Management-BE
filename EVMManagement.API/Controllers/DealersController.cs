@@ -1,11 +1,11 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using EVMManagement.BLL.Services.Interface;
 using EVMManagement.BLL.DTOs.Request.Dealer;
 using EVMManagement.BLL.DTOs.Response;
 using EVMManagement.BLL.DTOs.Response.Dealer;
 using EVMManagement.DAL.Models.Entities;
 using EVMManagement.DAL.Models.Enums;
+using EVMManagement.API.Services;
 using System.Threading.Tasks;
 using System;
 using System.Linq;
@@ -17,11 +17,11 @@ namespace EVMManagement.API.Controllers
     [Authorize]
     public class DealersController : ControllerBase
     {
-        private readonly IDealerService _service;
+        private readonly IServiceFacade _services;
 
-        public DealersController(IDealerService service)
+        public DealersController(IServiceFacade services)
         {
-            _service = service;
+            _services = services;
         }
 
         /// <summary>
@@ -39,7 +39,7 @@ namespace EVMManagement.API.Controllers
                 return BadRequest(ApiResponse<string>.CreateFail("PageNumber and PageSize must be greater than 0", null, 400));
             }
 
-            var result = await _service.GetAllAsync(pageNumber, pageSize, search, isActive);
+            var result = await _services.DealerService.GetAllAsync(pageNumber, pageSize, search, isActive);
             return Ok(ApiResponse<PagedResult<DealerResponseDto>>.CreateSuccess(result));
         }
 
@@ -49,7 +49,7 @@ namespace EVMManagement.API.Controllers
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(Guid id)
         {
-            var item = await _service.GetByIdAsync(id);
+            var item = await _services.DealerService.GetByIdAsync(id);
             if (item == null) return NotFound(ApiResponse<DealerResponseDto>.CreateFail("Dealer not found", null, 404));
             return Ok(ApiResponse<DealerResponseDto>.CreateSuccess(item));
         }
@@ -67,7 +67,7 @@ namespace EVMManagement.API.Controllers
                 return BadRequest(ApiResponse<Dealer>.CreateFail("Validation failed", errors, 400));
             }
 
-            var created = await _service.CreateDealerAsync(dto);
+            var created = await _services.DealerService.CreateDealerAsync(dto);
             return CreatedAtAction(nameof(GetById), new { id = created.Id }, ApiResponse<Dealer>.CreateSuccess(created));
         }
 
@@ -84,7 +84,7 @@ namespace EVMManagement.API.Controllers
                 return BadRequest(ApiResponse<DealerResponseDto>.CreateFail("Validation failed", errors, 400));
             }
 
-            var updated = await _service.UpdateAsync(id, dto);
+            var updated = await _services.DealerService.UpdateAsync(id, dto);
             if (updated == null) return NotFound(ApiResponse<DealerResponseDto>.CreateFail("Dealer not found", null, 404));
             return Ok(ApiResponse<DealerResponseDto>.CreateSuccess(updated));
         }
@@ -96,7 +96,7 @@ namespace EVMManagement.API.Controllers
         [Authorize(Roles = "EVM_ADMIN")]
         public async Task<IActionResult> UpdateIsDeleted(Guid id, [FromQuery] bool isDeleted)
         {
-            var updated = await _service.UpdateIsDeletedAsync(id, isDeleted);
+            var updated = await _services.DealerService.UpdateIsDeletedAsync(id, isDeleted);
             if (updated == null) return NotFound(ApiResponse<DealerResponseDto>.CreateFail("Dealer not found", null, 404));
             return Ok(ApiResponse<DealerResponseDto>.CreateSuccess(updated));
         }
@@ -108,7 +108,7 @@ namespace EVMManagement.API.Controllers
         [Authorize(Roles = "EVM_ADMIN")]
         public async Task<IActionResult> Delete(Guid id)
         {
-            var deleted = await _service.DeleteAsync(id);
+            var deleted = await _services.DealerService.DeleteAsync(id);
             if (!deleted) return NotFound(ApiResponse<string>.CreateFail("Dealer not found", null, 404));
             return Ok(ApiResponse<string>.CreateSuccess("Deleted"));
         }

@@ -14,6 +14,11 @@ namespace EVMManagement.BLL.DTOs.Response.VehicleTimeSlot
         public DateTime CreatedDate { get; set; }
         public DateTime? ModifiedDate { get; set; }
         public bool IsDeleted { get; set; }
+
+        // nested
+        public EVMManagement.BLL.DTOs.Response.Vehicle.VehicleResponseDto? Vehicle { get; set; }
+        public EVMManagement.BLL.DTOs.Response.Dealer.DealerResponseDto? Dealer { get; set; }
+        public EVMManagement.BLL.DTOs.Response.MasterTimeSlot.MasterTimeSlotResponseDto? MasterSlot { get; set; }
     }
 }
 

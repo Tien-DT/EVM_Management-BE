@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.Mvc;
-using EVMManagement.BLL.Services.Interface;
 using EVMManagement.BLL.DTOs.Request.VehicleTimeSlot;
 using EVMManagement.BLL.DTOs.Response;
 using EVMManagement.BLL.DTOs.Response.VehicleTimeSlot;
@@ -7,6 +6,7 @@ using EVMManagement.DAL.Models.Enums;
 using System;
 using System.Threading.Tasks;
 using System.Linq;
+using EVMManagement.API.Services;
 
 namespace EVMManagement.API.Controllers
 {
@@ -14,11 +14,11 @@ namespace EVMManagement.API.Controllers
     [ApiController]
     public class VehicleTimeSlotsController : ControllerBase
     {
-        private readonly IVehicleTimeSlotService _service;
+        private readonly IServiceFacade _services;
 
-        public VehicleTimeSlotsController(IVehicleTimeSlotService service)
+        public VehicleTimeSlotsController(IServiceFacade services)
         {
-            _service = service;
+            _services = services;
         }
 
         [HttpPost]
@@ -30,7 +30,7 @@ namespace EVMManagement.API.Controllers
                 return BadRequest(ApiResponse<VehicleTimeSlotResponseDto>.CreateFail("Validation failed", errors, 400));
             }
 
-            var created = await _service.CreateVehicleTimeSlotAsync(dto);
+            var created = await _services.VehicleTimeSlotService.CreateVehicleTimeSlotAsync(dto);
             return CreatedAtAction(nameof(GetById), new { id = created.Id }, ApiResponse<VehicleTimeSlotResponseDto>.CreateSuccess(created));
         }
 
@@ -42,14 +42,14 @@ namespace EVMManagement.API.Controllers
                 return BadRequest(ApiResponse<string>.CreateFail("PageNumber and PageSize must be greater than 0", null, 400));
             }
 
-            var result = await _service.GetAllAsync(pageNumber, pageSize);
+            var result = await _services.VehicleTimeSlotService.GetAllAsync(pageNumber, pageSize);
             return Ok(ApiResponse<PagedResult<VehicleTimeSlotResponseDto>>.CreateSuccess(result));
         }
 
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(Guid id)
         {
-            var item = await _service.GetByIdAsync(id);
+            var item = await _services.VehicleTimeSlotService.GetByIdAsync(id);
             if (item == null) return NotFound(ApiResponse<VehicleTimeSlotResponseDto>.CreateFail("VehicleTimeSlot not found", null, 404));
             return Ok(ApiResponse<VehicleTimeSlotResponseDto>.CreateSuccess(item));
         }
@@ -62,7 +62,7 @@ namespace EVMManagement.API.Controllers
                 return BadRequest(ApiResponse<string>.CreateFail("PageNumber and PageSize must be greater than 0", null, 400));
             }
 
-            var result = await _service.GetByVehicleIdAsync(vehicleId, pageNumber, pageSize);
+            var result = await _services.VehicleTimeSlotService.GetByVehicleIdAsync(vehicleId, pageNumber, pageSize);
             return Ok(ApiResponse<PagedResult<VehicleTimeSlotResponseDto>>.CreateSuccess(result));
         }
 
@@ -74,7 +74,7 @@ namespace EVMManagement.API.Controllers
                 return BadRequest(ApiResponse<string>.CreateFail("PageNumber and PageSize must be greater than 0", null, 400));
             }
 
-            var result = await _service.GetByDealerIdAsync(dealerId, pageNumber, pageSize);
+            var result = await _services.VehicleTimeSlotService.GetByDealerIdAsync(dealerId, pageNumber, pageSize);
             return Ok(ApiResponse<PagedResult<VehicleTimeSlotResponseDto>>.CreateSuccess(result));
         }
 
@@ -86,7 +86,7 @@ namespace EVMManagement.API.Controllers
                 return BadRequest(ApiResponse<string>.CreateFail("PageNumber and PageSize must be greater than 0", null, 400));
             }
 
-            var result = await _service.GetByStatusAsync(status, pageNumber, pageSize);
+            var result = await _services.VehicleTimeSlotService.GetByStatusAsync(status, pageNumber, pageSize);
             return Ok(ApiResponse<PagedResult<VehicleTimeSlotResponseDto>>.CreateSuccess(result));
         }
 
@@ -99,7 +99,7 @@ namespace EVMManagement.API.Controllers
                 return BadRequest(ApiResponse<VehicleTimeSlotResponseDto>.CreateFail("Validation failed", errors, 400));
             }
 
-            var updated = await _service.UpdateAsync(id, dto);
+            var updated = await _services.VehicleTimeSlotService.UpdateAsync(id, dto);
             if (updated == null) return NotFound(ApiResponse<VehicleTimeSlotResponseDto>.CreateFail("VehicleTimeSlot not found", null, 404));
             return Ok(ApiResponse<VehicleTimeSlotResponseDto>.CreateSuccess(updated));
         }
@@ -107,7 +107,7 @@ namespace EVMManagement.API.Controllers
         [HttpPatch("{id}/status")]
         public async Task<IActionResult> UpdateStatus(Guid id, [FromQuery] TimeSlotStatus status)
         {
-            var updated = await _service.UpdateStatusAsync(id, status);
+            var updated = await _services.VehicleTimeSlotService.UpdateStatusAsync(id, status);
             if (updated == null) return NotFound(ApiResponse<VehicleTimeSlotResponseDto>.CreateFail("VehicleTimeSlot not found", null, 404));
             return Ok(ApiResponse<VehicleTimeSlotResponseDto>.CreateSuccess(updated));
         }
@@ -115,7 +115,7 @@ namespace EVMManagement.API.Controllers
         [HttpPatch("{id}/is-deleted")]
         public async Task<IActionResult> UpdateIsDeleted(Guid id, [FromQuery] bool isDeleted)
         {
-            var updated = await _service.UpdateIsDeletedAsync(id, isDeleted);
+            var updated = await _services.VehicleTimeSlotService.UpdateIsDeletedAsync(id, isDeleted);
             if (updated == null) return NotFound(ApiResponse<VehicleTimeSlotResponseDto>.CreateFail("VehicleTimeSlot not found", null, 404));
             return Ok(ApiResponse<VehicleTimeSlotResponseDto>.CreateSuccess(updated));
         }
@@ -123,7 +123,7 @@ namespace EVMManagement.API.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(Guid id)
         {
-            var deleted = await _service.DeleteAsync(id);
+            var deleted = await _services.VehicleTimeSlotService.DeleteAsync(id);
             if (!deleted) return NotFound(ApiResponse<string>.CreateFail("VehicleTimeSlot not found", null, 404));
             return Ok(ApiResponse<string>.CreateSuccess("Deleted"));
         }

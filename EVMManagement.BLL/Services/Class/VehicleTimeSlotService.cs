@@ -22,6 +22,23 @@ namespace EVMManagement.BLL.Services.Class
 
         public async Task<VehicleTimeSlotResponseDto> CreateVehicleTimeSlotAsync(VehicleTimeSlotCreateDto dto)
         {
+            if (dto.Status == TimeSlotStatus.BOOKED)
+            {
+                var availableSlot = _unitOfWork.AvailableSlots.GetQueryable()
+                    .FirstOrDefault(x => x.VehicleId == dto.VehicleId
+                                      && x.DealerId == dto.DealerId
+                                      && x.MasterSlotId == dto.MasterSlotId
+                                      && x.SlotDate.Date == dto.SlotDate.Date
+                                      && x.IsAvailable);
+
+                if (availableSlot != null)
+                {
+                    availableSlot.IsAvailable = false;
+                    availableSlot.ModifiedDate = DateTime.UtcNow;
+                    _unitOfWork.AvailableSlots.Update(availableSlot);
+                }
+            }
+
             var vehicleTimeSlot = new VehicleTimeSlot
             {
                 VehicleId = dto.VehicleId,
@@ -205,6 +222,32 @@ namespace EVMManagement.BLL.Services.Class
             var entity = await _unitOfWork.VehicleTimeSlots.GetByIdAsync(id);
             if (entity == null) return null;
 
+            var oldStatus = entity.Status;
+
+            var availableSlot = _unitOfWork.AvailableSlots.GetQueryable()
+                .FirstOrDefault(x => x.VehicleId == entity.VehicleId
+                                  && x.DealerId == entity.DealerId
+                                  && x.MasterSlotId == entity.MasterSlotId
+                                  && x.SlotDate.Date == entity.SlotDate.Date);
+
+            if (availableSlot != null)
+            {
+                if ((oldStatus == TimeSlotStatus.BOOKED || oldStatus == TimeSlotStatus.PENDING) 
+                    && (status == TimeSlotStatus.CANCELED || status == TimeSlotStatus.COMPLETED))
+                {
+                    availableSlot.IsAvailable = true;
+                    availableSlot.ModifiedDate = DateTime.UtcNow;
+                    _unitOfWork.AvailableSlots.Update(availableSlot);
+                }
+                else if ((oldStatus == TimeSlotStatus.CANCELED || oldStatus == TimeSlotStatus.COMPLETED) 
+                         && status == TimeSlotStatus.BOOKED)
+                {
+                    availableSlot.IsAvailable = false;
+                    availableSlot.ModifiedDate = DateTime.UtcNow;
+                    _unitOfWork.AvailableSlots.Update(availableSlot);
+                }
+            }
+
             entity.Status = status;
             entity.ModifiedDate = DateTime.UtcNow;
 
@@ -219,10 +262,36 @@ namespace EVMManagement.BLL.Services.Class
             var entity = await _unitOfWork.VehicleTimeSlots.GetByIdAsync(id);
             if (entity == null) return null;
 
+            var availableSlot = _unitOfWork.AvailableSlots.GetQueryable()
+                .FirstOrDefault(x => x.VehicleId == entity.VehicleId
+                                  && x.DealerId == entity.DealerId
+                                  && x.MasterSlotId == entity.MasterSlotId
+                                  && x.SlotDate.Date == entity.SlotDate.Date);
+
+            if (availableSlot != null)
+            {
+                if (isDeleted && (entity.Status == TimeSlotStatus.BOOKED || entity.Status == TimeSlotStatus.PENDING))
+                {
+                    availableSlot.IsAvailable = true;
+                    availableSlot.ModifiedDate = DateTime.UtcNow;
+                    _unitOfWork.AvailableSlots.Update(availableSlot);
+                }
+                else if (!isDeleted && (entity.Status == TimeSlotStatus.BOOKED || entity.Status == TimeSlotStatus.PENDING))
+                {
+                    availableSlot.IsAvailable = false;
+                    availableSlot.ModifiedDate = DateTime.UtcNow;
+                    _unitOfWork.AvailableSlots.Update(availableSlot);
+                }
+            }
+
             entity.IsDeleted = isDeleted;
             if (isDeleted)
             {
                 entity.DeletedDate = DateTime.UtcNow;
+            }
+            else
+            {
+                entity.DeletedDate = null;
             }
             entity.ModifiedDate = DateTime.UtcNow;
 
@@ -236,6 +305,19 @@ namespace EVMManagement.BLL.Services.Class
         {
             var entity = await _unitOfWork.VehicleTimeSlots.GetByIdAsync(id);
             if (entity == null) return false;
+
+            var availableSlot = _unitOfWork.AvailableSlots.GetQueryable()
+                .FirstOrDefault(x => x.VehicleId == entity.VehicleId
+                                  && x.DealerId == entity.DealerId
+                                  && x.MasterSlotId == entity.MasterSlotId
+                                  && x.SlotDate.Date == entity.SlotDate.Date);
+
+            if (availableSlot != null && (entity.Status == TimeSlotStatus.BOOKED || entity.Status == TimeSlotStatus.PENDING))
+            {
+                availableSlot.IsAvailable = true;
+                availableSlot.ModifiedDate = DateTime.UtcNow;
+                _unitOfWork.AvailableSlots.Update(availableSlot);
+            }
 
             _unitOfWork.VehicleTimeSlots.Delete(entity);
             await _unitOfWork.SaveChangesAsync();
