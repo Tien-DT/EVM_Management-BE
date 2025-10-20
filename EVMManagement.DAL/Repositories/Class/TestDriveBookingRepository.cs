@@ -16,7 +16,7 @@ namespace EVMManagement.DAL.Repositories.Class
         {
             return _dbSet
                 .Include(x => x.Customer)
-                .Include(x => x.VehicleTimeSlot).ThenInclude(vts => vts.Vehicle)
+                .Include(x => x.VehicleTimeSlot).ThenInclude(vts => vts.Vehicle).ThenInclude(v => v.VehicleVariant).ThenInclude(vv => vv.VehicleModel)
                 .Include(x => x.VehicleTimeSlot).ThenInclude(vts => vts.Dealer)
                 .Include(x => x.VehicleTimeSlot).ThenInclude(vts => vts.MasterSlot);
         }

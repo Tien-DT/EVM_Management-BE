@@ -17,10 +17,6 @@ namespace EVMManagement.BLL.DTOs.Request.TestDriveBooking
         [Required]
         public TestDriveBookingStatus Status { get; set; }
 
-        public DateTime? CheckinAt { get; set; }
-
-        public DateTime? CheckoutAt { get; set; }
-
         public string? Note { get; set; }
     }
 }

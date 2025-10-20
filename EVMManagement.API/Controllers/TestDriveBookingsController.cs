@@ -107,5 +107,20 @@ namespace EVMManagement.API.Controllers
 
             return Ok(ApiResponse<TestDriveBookingResponseDto>.CreateSuccess(item));
         }
+
+        [HttpPost("{id}/send-reminder")]
+        public async Task<IActionResult> SendReminder(Guid id)
+        {
+            try
+            {
+                await _services.TestDriveBookingService.SendReminderEmailAsync(id);
+                return Ok(ApiResponse<string>.CreateSuccess("Reminder email sent successfully", "Email sent at " + DateTime.UtcNow));
+            }
+            catch (Exception ex)
+            {
+                var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
+                return BadRequest(ApiResponse<string>.CreateFail("Failed to send reminder email", errors, 400));
+            }
+        }
     }
 }

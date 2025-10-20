@@ -17,6 +17,9 @@ namespace EVMManagement.BLL.DTOs.Response.TestDriveBooking
         public string? Note { get; set; }
         public CustomerResponse? Customer { get; set; }
         public VehicleTimeSlotResponseDto? VehicleTimeSlot { get; set; }
+        public string? VehicleModelName { get; set; }
+        public string? VehicleColor { get; set; }
+        public string? VehicleEngine { get; set; }
         public DateTime CreatedDate { get; set; }
         public DateTime? ModifiedDate { get; set; }
         public bool IsDeleted { get; set; }
