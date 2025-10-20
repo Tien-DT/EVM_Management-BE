@@ -1,0 +1,155 @@
+using AutoMapper;
+using EVMManagement.BLL.DTOs.Request.AvailableSlot;
+using EVMManagement.BLL.DTOs.Request.Contract;
+using EVMManagement.BLL.DTOs.Request.Customer;
+using EVMManagement.BLL.DTOs.Request.Dealer;
+using EVMManagement.BLL.DTOs.Request.DealerContract;
+using EVMManagement.BLL.DTOs.Request.Invoice;
+using EVMManagement.BLL.DTOs.Request.MasterTimeSlot;
+using EVMManagement.BLL.DTOs.Request.Order;
+using EVMManagement.BLL.DTOs.Request.OrderDetail;
+using EVMManagement.BLL.DTOs.Request.Promotion;
+using EVMManagement.BLL.DTOs.Request.Quotation;
+using EVMManagement.BLL.DTOs.Request.QuotationDetail;
+using EVMManagement.BLL.DTOs.Request.TestDriveBooking;
+using EVMManagement.BLL.DTOs.Request.User;
+using EVMManagement.BLL.DTOs.Request.Vehicle;
+using EVMManagement.BLL.DTOs.Request.VehicleTimeSlot;
+using EVMManagement.BLL.DTOs.Request.Warehouse;
+using EVMManagement.BLL.DTOs.Response.AvailableSlot;
+using EVMManagement.BLL.DTOs.Response.Contract;
+using EVMManagement.BLL.DTOs.Response.Customer;
+using EVMManagement.BLL.DTOs.Response.Dealer;
+using EVMManagement.BLL.DTOs.Response.DealerContract;
+using EVMManagement.BLL.DTOs.Response.Invoice;
+using EVMManagement.BLL.DTOs.Response.MasterTimeSlot;
+using EVMManagement.BLL.DTOs.Response.Order;
+using EVMManagement.BLL.DTOs.Response.OrderDetail;
+using EVMManagement.BLL.DTOs.Response.Promotion;
+using EVMManagement.BLL.DTOs.Response.Quotation;
+using EVMManagement.BLL.DTOs.Response.QuotationDetail;
+using EVMManagement.BLL.DTOs.Response.TestDriveBooking;
+using EVMManagement.BLL.DTOs.Response.User;
+using EVMManagement.BLL.DTOs.Response.Vehicle;
+using EVMManagement.BLL.DTOs.Response.VehicleTimeSlot;
+using EVMManagement.BLL.DTOs.Response.Warehouse;
+using EVMManagement.DAL.Models.Entities;
+
+namespace EVMManagement.BLL.Mappings
+{
+    public class MappingProfile : Profile
+    {
+        public MappingProfile()
+        {
+            // MasterTimeSlot Mappings
+            CreateMap<MasterTimeSlotCreateDto, MasterTimeSlot>();
+            CreateMap<MasterTimeSlotUpdateDto, MasterTimeSlot>()
+                .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
+            CreateMap<MasterTimeSlot, MasterTimeSlotResponseDto>();
+
+            // VehicleModel Mappings
+            CreateMap<VehicleModelCreateDto, VehicleModel>();
+            CreateMap<VehicleModelUpdateDto, VehicleModel>();
+            CreateMap<VehicleModel, VehicleModelResponseDto>();
+
+            // Vehicle Mappings
+            CreateMap<VehicleCreateDto, Vehicle>();
+            CreateMap<VehicleUpdateDto, Vehicle>()
+                .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
+            CreateMap<Vehicle, VehicleResponseDto>();
+
+            // VehicleVariant Mappings
+            CreateMap<VehicleVariantCreateDto, VehicleVariant>();
+            CreateMap<VehicleVariantUpdateDto, VehicleVariant>()
+                .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
+            CreateMap<VehicleVariant, VehicleVariantResponse>();
+
+            // Warehouse Mappings
+            CreateMap<WarehouseCreateDto, Warehouse>();
+            CreateMap<WarehouseUpdateDto, Warehouse>()
+                .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
+            CreateMap<Warehouse, WarehouseResponseDto>();
+
+            // Customer Mappings
+            CreateMap<CustomerCreateDto, Customer>();
+            CreateMap<CustomerUpdateDto, Customer>()
+                .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
+            CreateMap<Customer, CustomerResponse>();
+
+            // Dealer Mappings
+            CreateMap<CreateDealerDto, Dealer>();
+            CreateMap<UpdateDealerDto, Dealer>()
+                .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
+            CreateMap<Dealer, DealerResponseDto>();
+
+            // Promotion Mappings
+            CreateMap<PromotionCreateDto, Promotion>();
+            CreateMap<PromotionUpdateDto, Promotion>()
+                .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
+            CreateMap<Promotion, PromotionResponseDto>();
+
+            // VehicleTimeSlot Mappings
+            CreateMap<VehicleTimeSlotCreateDto, VehicleTimeSlot>();
+            CreateMap<VehicleTimeSlotUpdateDto, VehicleTimeSlot>()
+                .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
+            CreateMap<VehicleTimeSlot, VehicleTimeSlotResponseDto>();
+
+            // AvailableSlot Mappings
+            CreateMap<AvailableSlotCreateDto, AvailableSlot>();
+            CreateMap<AvailableSlotUpdateDto, AvailableSlot>()
+                .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
+            CreateMap<AvailableSlot, AvailableSlotResponseDto>();
+
+            // TestDriveBooking Mappings
+            CreateMap<TestDriveBookingCreateDto, TestDriveBooking>();
+            CreateMap<TestDriveBookingUpdateDto, TestDriveBooking>()
+                .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
+            CreateMap<TestDriveBooking, TestDriveBookingResponseDto>();
+
+            // Order Mappings
+            CreateMap<OrderCreateDto, Order>();
+            CreateMap<OrderUpdateDto, Order>()
+                .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
+            CreateMap<Order, OrderResponse>();
+
+            // OrderDetail Mappings
+            CreateMap<OrderDetailCreateDto, OrderDetail>();
+            CreateMap<OrderDetailUpdateDto, OrderDetail>()
+                .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
+            CreateMap<OrderDetail, OrderDetailResponse>();
+
+            // Quotation Mappings
+            CreateMap<CreateQuotationDto, Quotation>();
+            CreateMap<UpdateQuotationDto, Quotation>()
+                .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
+            CreateMap<Quotation, QuotationResponseDto>();
+
+            // QuotationDetail Mappings
+            CreateMap<QuotationDetailCreateDto, QuotationDetail>();
+            CreateMap<QuotationDetailUpdateDto, QuotationDetail>()
+                .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
+            CreateMap<QuotationDetail, QuotationDetailResponse>();
+
+            // Contract Mappings
+            CreateMap<ContractCreateDto, Contract>();
+            CreateMap<ContractUpdateDto, Contract>()
+                .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
+            CreateMap<Contract, ContractResponse>();
+
+            // Invoice Mappings
+            CreateMap<InvoiceCreateDto, Invoice>();
+            CreateMap<InvoiceUpdateDto, Invoice>()
+                .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
+            CreateMap<Invoice, InvoiceResponse>();
+
+            // DealerContract Mappings
+            CreateMap<DealerContractCreateDto, DealerContract>();
+            CreateMap<DealerContract, DealerContractResponseDto>();
+
+            // UserProfile Mappings
+            CreateMap<UserProfileUpdateDto, UserProfile>()
+                .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
+            CreateMap<UserProfile, UserProfileResponse>();
+        }
+    }
+}

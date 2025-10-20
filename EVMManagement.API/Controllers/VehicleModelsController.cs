@@ -44,6 +44,14 @@ namespace EVMManagement.API.Controllers
             return Ok(ApiResponse<PagedResult<VehicleModelResponseDto>>.CreateSuccess(result));
         }
 
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetById([FromRoute] Guid id)
+        {
+            var result = await _services.VehicleModelService.GetByIdAsync(id);
+            if (result == null) return NotFound(ApiResponse<VehicleModelResponseDto>.CreateFail("VehicleModel not found", null, 404));
+            return Ok(ApiResponse<VehicleModelResponseDto>.CreateSuccess(result));
+        }
+
         [HttpGet("by-ranking")]
         public async Task<IActionResult> GetByRanking([FromQuery] VehicleModelRanking ranking, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
         {

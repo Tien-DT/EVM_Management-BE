@@ -3,6 +3,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using EVMManagement.DAL.UnitOfWork;
 using EVMManagement.BLL.Options;
+using EVMManagement.BLL.Mappings;
 using EVMManagement.DAL.Repositories.Interface;
 using EVMManagement.DAL.Repositories.Class;
 using EVMManagement.BLL.Services.Interface;
@@ -18,6 +19,8 @@ namespace EVMManagement.API.Setup
             IConfiguration configuration)
         {
             services.AddScoped<IUnitOfWork, UnitOfWork>();
+
+            services.AddAutoMapper(typeof(MappingProfile));
 
             services.Configure<JwtSettings>(configuration.GetSection(JwtSettings.SectionName));
             services.Configure<GmailApiSettings>(configuration.GetSection(GmailApiSettings.SectionName));

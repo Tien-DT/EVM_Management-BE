@@ -1,3 +1,4 @@
+using AutoMapper;
 using EVMManagement.BLL.DTOs.Request.Vehicle;
 using EVMManagement.BLL.DTOs.Response;
 using EVMManagement.BLL.Services.Interface;
@@ -14,28 +15,22 @@ namespace EVMManagement.BLL.Services.Class
     public class VehicleModelService : IVehicleModelService
     {
         private readonly IUnitOfWork _unitOfWork;
+        private readonly IMapper _mapper;
 
-        public VehicleModelService(IUnitOfWork unitOfWork)
+        public VehicleModelService(IUnitOfWork unitOfWork, IMapper mapper)
         {
             _unitOfWork = unitOfWork;
+            _mapper = mapper;
         }
 
     public async Task<VehicleModelResponseDto> CreateVehicleModelAsync(VehicleModelCreateDto dto)
         {
-            var model = new VehicleModel
-            {
-                Code = dto.Code,
-                Name = dto.Name,
-                LaunchDate = dto.LaunchDate,
-                Description = dto.Description,
-                Status = dto.Status ?? true,
-                Ranking = dto.Ranking
-            };
+            var model = _mapper.Map<VehicleModel>(dto);
 
             await _unitOfWork.VehicleModels.AddAsync(model);
             await _unitOfWork.SaveChangesAsync();
 
-            return MapToDto(model);
+            return _mapper.Map<VehicleModelResponseDto>(model);
         }
 
         public async Task<PagedResult<VehicleModelResponseDto>> GetAllAsync(int pageNumber = 1, int pageSize = 10)
@@ -50,9 +45,16 @@ namespace EVMManagement.BLL.Services.Class
                 .Take(pageSize)
                 .ToListAsync();
 
-            var responses = items.Select(MapToDto).ToList();
+            var responses = _mapper.Map<List<VehicleModelResponseDto>>(items);
 
             return PagedResult<VehicleModelResponseDto>.Create(responses, totalCount, pageNumber, pageSize);
+        }
+
+        public async Task<VehicleModelResponseDto?> GetByIdAsync(Guid id)
+        {
+            var model = await _unitOfWork.VehicleModels.GetByIdAsync(id);
+            if (model == null) return null;
+            return _mapper.Map<VehicleModelResponseDto>(model);
         }
 
         public async Task<PagedResult<VehicleModelResponseDto>> GetByRankingAsync(VehicleModelRanking ranking, int pageNumber = 1, int pageSize = 10)
@@ -66,7 +68,7 @@ namespace EVMManagement.BLL.Services.Class
                 .Take(pageSize)
                 .ToListAsync();
 
-            var responses = items.Select(MapToDto).ToList();
+            var responses = _mapper.Map<List<VehicleModelResponseDto>>(items);
 
             return PagedResult<VehicleModelResponseDto>.Create(responses, totalCount, pageNumber, pageSize);
         }
@@ -79,15 +81,10 @@ namespace EVMManagement.BLL.Services.Class
             var existing = await _unitOfWork.VehicleModels.GetByIdAsync(id);
             if (existing == null) return null;
 
-            existing.Code = dto.Code;
-            existing.Name = dto.Name;
-            existing.LaunchDate = dto.LaunchDate;
-            existing.Description = dto.Description;
-            existing.Status = dto.Status;
-            existing.Ranking = dto.Ranking;
+            _mapper.Map(dto, existing);
             _unitOfWork.VehicleModels.Update(existing);
             await _unitOfWork.SaveChangesAsync();
-            return MapToDto(existing);
+            return _mapper.Map<VehicleModelResponseDto>(existing);
         }
 
         public async Task<VehicleModelResponseDto?> UpdateIsDeletedAsync(Guid id, bool isDeleted)
@@ -99,7 +96,7 @@ namespace EVMManagement.BLL.Services.Class
             existing.DeletedDate = isDeleted ? DateTime.UtcNow : null;
             _unitOfWork.VehicleModels.Update(existing);
             await _unitOfWork.SaveChangesAsync();
-            return MapToDto(existing);
+            return _mapper.Map<VehicleModelResponseDto>(existing);
         }
 
 
@@ -117,28 +114,12 @@ namespace EVMManagement.BLL.Services.Class
                 .Take(pageSize)
                 .ToListAsync();
 
-            var responses = items.Select(MapToDto).ToList();
+            var responses = _mapper.Map<List<VehicleModelResponseDto>>(items);
 
             return PagedResult<VehicleModelResponseDto>.Create(responses, totalCount, pageNumber, pageSize);
             
         }
 
-        private VehicleModelResponseDto MapToDto(VehicleModel model)
-        {
-            return new VehicleModelResponseDto
-            {
-                Id = model.Id,
-                Code = model.Code,
-                Name = model.Name,
-                LaunchDate = model.LaunchDate,
-                Description = model.Description,
-                Status = model.Status,
-                Ranking = model.Ranking,
-                CreatedDate = model.CreatedDate,
-                ModifiedDate = model.ModifiedDate,
-                DeletedDate = model.DeletedDate,
-                IsDeleted = model.IsDeleted
-            };
-        }
+
     }
 }
