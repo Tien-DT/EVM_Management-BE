@@ -33,6 +33,7 @@ namespace EVMManagement.DAL.UnitOfWork
         private IAvailableSlotRepository? _availableSlots;
         private IDealerContractRepository? _dealerContracts;
         private ITestDriveBookingRepository? _testDriveBookings;
+    private IHandoverRecordRepository? _handoverRecords;
         private IInvoiceRepository? _invoices;
         private IDigitalSignatureRepository? _digitalSignatures;
         private ITransactionRepository? _transactions;
@@ -62,7 +63,8 @@ namespace EVMManagement.DAL.UnitOfWork
         public IMasterTimeSlotRepository MasterTimeSlots => _masterTimeSlots ??= new MasterTimeSlotRepository(_context);
         public IAvailableSlotRepository AvailableSlots => _availableSlots ??= new AvailableSlotRepository(_context);
         public IDealerContractRepository DealerContracts => _dealerContracts ??= new DealerContractRepository(_context);
-        public ITestDriveBookingRepository TestDriveBookings => _testDriveBookings ??= new Repositories.Class.TestDriveBookingRepository(_context);
+        public ITestDriveBookingRepository TestDriveBookings => _testDriveBookings ??= new TestDriveBookingRepository(_context);
+        public IHandoverRecordRepository HandoverRecords => _handoverRecords ??= new HandoverRecordRepository(_context);
         public IInvoiceRepository Invoices => _invoices ??= new InvoiceRepository(_context);
         public IDigitalSignatureRepository DigitalSignatures => _digitalSignatures ??= new DigitalSignatureRepository(_context);
         public ITransactionRepository Transactions => _transactions ??= new TransactionRepository(_context);
