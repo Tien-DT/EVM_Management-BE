@@ -24,6 +24,7 @@ namespace EVMManagement.API.Setup
 
             services.Configure<JwtSettings>(configuration.GetSection(JwtSettings.SectionName));
             services.Configure<GmailApiSettings>(configuration.GetSection(GmailApiSettings.SectionName));
+            services.Configure<VnPaySettings>(configuration.GetSection(VnPaySettings.SectionName));
 
             services.AddScoped<IUserProfileRepository, UserProfileRepository>();
             services.AddScoped<IVehicleVariantRepository, VehicleVariantRepository>();
@@ -38,6 +39,8 @@ namespace EVMManagement.API.Setup
             services.AddScoped<IAvailableSlotRepository, AvailableSlotRepository>();
             services.AddScoped<ITestDriveBookingRepository, TestDriveBookingRepository>();
             services.AddScoped<IDigitalSignatureRepository, DigitalSignatureRepository>();
+            services.AddScoped<ITransactionRepository, TransactionRepository>();
+            services.AddScoped<IDepositRepository, DepositRepository>();
 
             services.AddScoped<IUserProfileService, UserProfileService>();
             services.AddScoped<IVehicleVariantService, VehicleVariantService>();
@@ -62,6 +65,7 @@ namespace EVMManagement.API.Setup
             services.AddScoped<IInvoiceService, InvoiceService>();
             services.AddScoped<IQuotationService, QuotationService>();
             services.AddScoped<IDigitalSignatureService, DigitalSignatureService>();
+            services.AddScoped<IVnPayService, VnPayService>();
 
             services.AddScoped<IServiceFacade, ServiceFacade>();
 
