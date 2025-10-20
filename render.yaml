@@ -83,6 +83,37 @@ services:
       
       - key: SupabaseSettings__BucketName
         value: evmmanagement-files
+      
+      # VNPay Settings
+      - key: VnPaySettings__TmnCode
+        sync: false # Set this in Render dashboard (get from VNPay sandbox registration)
+      
+      - key: VnPaySettings__HashSecret
+        sync: false # Set this in Render dashboard (get from VNPay sandbox registration)
+      
+      - key: VnPaySettings__PaymentUrl
+        value: https://sandbox.vnpayment.vn/paymentv2/vpcpay.html
+      
+      - key: VnPaySettings__ApiUrl
+        value: https://sandbox.vnpayment.vn/merchant_webapi/api/transaction
+      
+      - key: VnPaySettings__ReturnUrl
+        sync: false # Set this in Render dashboard (your frontend URL)
+      
+      - key: VnPaySettings__IpnUrl
+        sync: false # Set this in Render dashboard (your API domain + /api/v1/payments/vnpay/callback)
+      
+      - key: VnPaySettings__Version
+        value: "2.1.0"
+      
+      - key: VnPaySettings__Command
+        value: pay
+      
+      - key: VnPaySettings__CurrCode
+        value: VND
+      
+      - key: VnPaySettings__Locale
+        value: vn
 
 # Optional: Add a Redis instance
 # databases:

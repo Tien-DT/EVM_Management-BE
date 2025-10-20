@@ -28,6 +28,8 @@ namespace EVMManagement.DAL.UnitOfWork
         ITestDriveBookingRepository TestDriveBookings { get; }
         IInvoiceRepository Invoices { get; }
         IDigitalSignatureRepository DigitalSignatures { get; }
+        ITransactionRepository Transactions { get; }
+        IDepositRepository Deposits { get; }
 
         Task<int> SaveChangesAsync();
         Task BeginTransactionAsync();
