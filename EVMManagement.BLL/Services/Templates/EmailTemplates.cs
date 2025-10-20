@@ -296,5 +296,175 @@ namespace EVMManagement.BLL.Services.Templates
                 </html>
             ";
         }
+
+        public static string TestDriveBookingConfirmationEmail(string customerName, DateTime slotDate, string vehicleInfo, string dealerName, string dealerPhone)
+        {
+            return $@"
+                <!DOCTYPE html>
+                <html lang='vi'>
+                <head>
+                    <meta charset='UTF-8'>
+                    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+                    <title>Xác Nhận Lịch Lái Thử</title>
+                </head>
+                <body style='font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;'>
+                    <div style='background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%); padding: 30px; border-radius: 10px 10px 0 0; text-align: center;'>
+                        <h1 style='color: white; margin: 0; font-size: 28px;'>🚗 Xác Nhận Lịch Lái Thử</h1>
+                    </div>
+                    
+                    <div style='background-color: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px;'>
+                        <p style='font-size: 16px; margin-bottom: 20px;'>Xin chào <strong style='color: #1976D2;'>{customerName}</strong>,</p>
+                        
+                        <p style='font-size: 16px; margin-bottom: 25px;'>
+                            Cảm ơn bạn đã đặt lịch lái thử. Dưới đây là chi tiết lịch hẹn của bạn:
+                        </p>
+                        
+                        <div style='background-color: white; padding: 25px; border-radius: 8px; margin: 25px 0; box-shadow: 0 2px 4px rgba(0,0,0,0.1);'>
+                            <h3 style='margin-top: 0; color: #1976D2;'>📋 Chi Tiết Lịch Lái Thử</h3>
+                            <table style='width: 100%; border-collapse: collapse;'>
+                                <tr>
+                                    <td style='padding: 12px 0; border-bottom: 1px solid #eee; font-weight: bold;'>Ngày Lái Thử:</td>
+                                    <td style='padding: 12px 0; border-bottom: 1px solid #eee; color: #1976D2;'>{slotDate:dd/MM/yyyy HH:mm}</td>
+                                </tr>
+                                <tr>
+                                    <td style='padding: 12px 0; border-bottom: 1px solid #eee; font-weight: bold;'>🚗 Xe:</td>
+                                    <td style='padding: 12px 0; border-bottom: 1px solid #eee; color: #1976D2;'>{vehicleInfo}</td>
+                                </tr>
+                                <tr>
+                                    <td style='padding: 12px 0; border-bottom: 1px solid #eee; font-weight: bold;'>Đại Lý:</td>
+                                    <td style='padding: 12px 0; border-bottom: 1px solid #eee; color: #1976D2;'>{dealerName}</td>
+                                </tr>
+                                <tr>
+                                    <td style='padding: 12px 0; font-weight: bold;'>Liên Hệ:</td>
+                                    <td style='padding: 12px 0; color: #1976D2;'>{dealerPhone}</td>
+                                </tr>
+                            </table>
+                        </div>
+                        
+                        <div style='background-color: #d4edda; border-left: 4px solid #28a745; padding: 15px; margin: 25px 0; border-radius: 4px;'>
+                            <p style='margin: 0; font-size: 14px; color: #155724;'>
+                                ✓ Lịch hẹn của bạn đã được xác nhận. Vui lòng đến đúng giờ.
+                            </p>
+                        </div>
+                        
+                        <div style='background-color: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 25px 0; border-radius: 4px;'>
+                            <p style='margin: 0; font-size: 14px; color: #856404;'>
+                                📌 <strong>Lưu ý:</strong> Nếu bạn cần hủy hoặc thay đổi lịch hẹn, vui lòng liên hệ với đại lý ít nhất 24 giờ trước.
+                            </p>
+                        </div>
+                        
+                        <p style='font-size: 14px; color: #666; margin-top: 30px;'>
+                            Nếu bạn gặp bất kỳ vấn đề nào, vui lòng liên hệ với bộ phận hỗ trợ của chúng tôi.
+                        </p>
+                        
+                        <hr style='border: none; border-top: 1px solid #ddd; margin: 30px 0;'>
+                        
+                        <p style='font-size: 14px; color: #666; margin: 0;'>
+                            Trân trọng,<br>
+                            <strong style='color: #1976D2;'>Hệ Thống Quản Lý EVM</strong>
+                        </p>
+                    </div>
+                    
+                    <div style='text-align: center; padding: 20px; font-size: 12px; color: #999;'>
+                        <p style='margin: 5px 0;'>© 2025 EVM Management System. All rights reserved.</p>
+                        <p style='margin: 5px 0;'>Email này được gửi tự động, vui lòng không trả lời.</p>
+                    </div>
+                </body>
+                </html>
+            ";
+        }
+
+        public static string TestDriveReminderEmail(string customerName, DateTime slotDate, string vehicleInfo, string dealerName, string dealerPhone, string dealerAddress)
+        {
+            var timeUntilAppointment = Math.Round((slotDate - DateTime.UtcNow).TotalHours);
+            return $@"
+                <!DOCTYPE html>
+                <html lang='vi'>
+                <head>
+                    <meta charset='UTF-8'>
+                    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+                    <title>Nhắc Nhở Lịch Lái Thử</title>
+                </head>
+                <body style='font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;'>
+                    <div style='background: linear-gradient(135deg, #FF9800 0%, #F57C00 100%); padding: 30px; border-radius: 10px 10px 0 0; text-align: center;'>
+                        <h1 style='color: white; margin: 0; font-size: 28px;'>📍 Nhắc Nhở: Lịch Lái Thử Sắp Diễn Ra</h1>
+                    </div>
+                    
+                    <div style='background-color: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px;'>
+                        <p style='font-size: 16px; margin-bottom: 20px;'>Xin chào <strong style='color: #F57C00;'>{customerName}</strong>,</p>
+                        
+                        <p style='font-size: 16px; margin-bottom: 25px;'>
+                            Đây là email nhắc nhở rằng lịch lái thử của bạn sắp diễn ra trong vòng <strong>24 giờ tới</strong>. Vui lòng kiểm tra chi tiết dưới đây:
+                        </p>
+                        
+                        <div style='background-color: white; padding: 25px; border-radius: 8px; margin: 25px 0; box-shadow: 0 2px 4px rgba(0,0,0,0.1); border-left: 5px solid #FF9800;'>
+                            <h3 style='margin-top: 0; color: #F57C00;'>📋 Chi Tiết Lịch Lái Thử</h3>
+                            <table style='width: 100%; border-collapse: collapse;'>
+                                <tr>
+                                    <td style='padding: 12px 0; border-bottom: 1px solid #eee; font-weight: bold;'>⏰ Ngày Lái Thử:</td>
+                                    <td style='padding: 12px 0; border-bottom: 1px solid #eee; color: #F57C00; font-weight: bold;'>{slotDate:dd/MM/yyyy HH:mm}</td>
+                                </tr>
+                                <tr>
+                                    <td style='padding: 12px 0; border-bottom: 1px solid #eee; font-weight: bold;'>🚗 Xe:</td>
+                                    <td style='padding: 12px 0; border-bottom: 1px solid #eee; color: #F57C00;'>{vehicleInfo}</td>
+                                </tr>
+                                <tr>
+                                    <td style='padding: 12px 0; border-bottom: 1px solid #eee; font-weight: bold;'>🏢 Đại Lý:</td>
+                                    <td style='padding: 12px 0; border-bottom: 1px solid #eee; color: #F57C00;'>{dealerName}</td>
+                                </tr>
+                                <tr>
+                                    <td style='padding: 12px 0; border-bottom: 1px solid #eee; font-weight: bold;'>📍 Địa Chỉ:</td>
+                                    <td style='padding: 12px 0; border-bottom: 1px solid #eee; color: #F57C00;'>{dealerAddress}</td>
+                                </tr>
+                                <tr>
+                                    <td style='padding: 12px 0; font-weight: bold;'>☎️ Liên Hệ:</td>
+                                    <td style='padding: 12px 0; color: #F57C00;'>{dealerPhone}</td>
+                                </tr>
+                            </table>
+                        </div>
+                        
+                        <div style='background-color: #fce4ec; border-left: 4px solid #FF1744; padding: 15px; margin: 25px 0; border-radius: 4px;'>
+                            <p style='margin: 0; font-size: 14px; color: #C2185B;'>
+                                ⏳ <strong>Cảnh báo:</strong> Lịch lái thử của bạn sẽ diễn ra trong khoảng {timeUntilAppointment} giờ nữa. Vui lòng không bỏ lỡ!
+                            </p>
+                        </div>
+                        
+                        <div style='background-color: #e8f5e9; border-left: 4px solid #4CAF50; padding: 15px; margin: 25px 0; border-radius: 4px;'>
+                            <p style='margin: 0; font-size: 14px; color: #2E7D32;'>
+                                ✓ <strong>Hãy chuẩn bị:</strong>
+                            </p>
+                            <ul style='margin: 10px 0 0 0; padding-left: 20px; font-size: 14px; color: #2E7D32;'>
+                                <li>Mang theo CMND/Hộ chiếu</li>
+                                <li>Mang theo bằng lái xe (nếu có)</li>
+                                <li>Đến đúng giờ (nên sớm 15 phút)</li>
+                            </ul>
+                        </div>
+                        
+                        <div style='background-color: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 25px 0; border-radius: 4px;'>
+                            <p style='margin: 0; font-size: 14px; color: #856404;'>
+                                📌 <strong>Lưu ý:</strong> Nếu bạn cần hủy hoặc thay đổi lịch hẹn, vui lòng liên hệ với đại lý <strong>ít nhất 2 giờ trước</strong> thời gian lái thử.
+                            </p>
+                        </div>
+                        
+                        <p style='font-size: 14px; color: #666; margin-top: 30px;'>
+                            Nếu bạn gặp bất kỳ vấn đề nào hoặc cần thay đổi lịch hẹn, vui lòng liên hệ ngay với bộ phận hỗ trợ của chúng tôi.
+                        </p>
+                        
+                        <hr style='border: none; border-top: 1px solid #ddd; margin: 30px 0;'>
+                        
+                        <p style='font-size: 14px; color: #666; margin: 0;'>
+                            Trân trọng,<br>
+                            <strong style='color: #F57C00;'>Hệ Thống Quản Lý EVM</strong>
+                        </p>
+                    </div>
+                    
+                    <div style='text-align: center; padding: 20px; font-size: 12px; color: #999;'>
+                        <p style='margin: 5px 0;'>© 2025 EVM Management System. All rights reserved.</p>
+                        <p style='margin: 5px 0;'>Email này được gửi tự động, vui lòng không trả lời.</p>
+                    </div>
+                </body>
+                </html>
+            ";
+        }
     }
 }

@@ -16,5 +16,6 @@ namespace EVMManagement.BLL.Services.Interface
         Task<TestDriveBookingResponseDto?> UpdateAsync(Guid id, TestDriveBookingUpdateDto dto);
         Task<TestDriveBookingResponseDto?> UpdateIsDeletedAsync(Guid id, bool isDeleted);
         Task<bool> DeleteAsync(Guid id);
+        Task SendReminderEmailAsync(Guid bookingId);
     }
 }
