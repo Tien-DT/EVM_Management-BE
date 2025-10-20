@@ -35,6 +35,8 @@ namespace EVMManagement.DAL.UnitOfWork
         private ITestDriveBookingRepository? _testDriveBookings;
         private IInvoiceRepository? _invoices;
         private IDigitalSignatureRepository? _digitalSignatures;
+        private ITransactionRepository? _transactions;
+        private IDepositRepository? _deposits;
 
         public UnitOfWork(AppDbContext context)
         {
@@ -63,6 +65,8 @@ namespace EVMManagement.DAL.UnitOfWork
         public ITestDriveBookingRepository TestDriveBookings => _testDriveBookings ??= new Repositories.Class.TestDriveBookingRepository(_context);
         public IInvoiceRepository Invoices => _invoices ??= new InvoiceRepository(_context);
         public IDigitalSignatureRepository DigitalSignatures => _digitalSignatures ??= new DigitalSignatureRepository(_context);
+        public ITransactionRepository Transactions => _transactions ??= new TransactionRepository(_context);
+        public IDepositRepository Deposits => _deposits ??= new DepositRepository(_context);
 
         public async Task<int> SaveChangesAsync()
         {

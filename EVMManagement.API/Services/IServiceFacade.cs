@@ -27,5 +27,6 @@ namespace EVMManagement.API.Services
         IEmailService EmailService { get; }
         IStorageService StorageService { get; }
         IDigitalSignatureService DigitalSignatureService { get; }
+        IVnPayService VnPayService { get; }
     }
 }
