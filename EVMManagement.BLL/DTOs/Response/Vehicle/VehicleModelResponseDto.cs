@@ -10,6 +10,7 @@ namespace EVMManagement.BLL.DTOs.Response.Vehicle
         public string Name { get; set; } = string.Empty;
         public DateTime? LaunchDate { get; set; }
         public string? Description { get; set; }
+        public string? ImageUrl { get; set; }
         public bool Status { get; set; }
         public VehicleModelRanking? Ranking { get; set; }
         public DateTime CreatedDate { get; set; }

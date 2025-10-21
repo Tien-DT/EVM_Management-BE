@@ -22,6 +22,9 @@ namespace EVMManagement.DAL.Models.Entities
 
         [Required]
         public VehiclePurpose Purpose { get; set; } = VehiclePurpose.FOR_SALE;
+
+        [MaxLength(500)]
+        public string? ImageUrl { get; set; }
         public virtual VehicleVariant VehicleVariant { get; set; } = null!;
         public virtual Warehouse Warehouse { get; set; } = null!;
         public virtual ICollection<OrderDetail> OrderDetails { get; set; } = new HashSet<OrderDetail>();

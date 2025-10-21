@@ -33,7 +33,8 @@ namespace EVMManagement.BLL.Services.Class
                 WarehouseId = dto.WarehouseId,
                 Vin = dto.Vin,
                 Status = dto.Status,
-                Purpose = dto.Purpose
+                Purpose = dto.Purpose,
+                ImageUrl = dto.ImageUrl
             };
 
             await _unitOfWork.Vehicles.AddAsync(entity);
@@ -89,6 +90,7 @@ namespace EVMManagement.BLL.Services.Class
             if (!string.IsNullOrWhiteSpace(dto.Vin)) entity.Vin = dto.Vin!;
             if (dto.Status.HasValue) entity.Status = dto.Status.Value;
             if (dto.Purpose.HasValue) entity.Purpose = dto.Purpose.Value;
+            if (dto.ImageUrl != null) entity.ImageUrl = dto.ImageUrl;
 
             _unitOfWork.Vehicles.Update(entity);
             await _unitOfWork.SaveChangesAsync();
