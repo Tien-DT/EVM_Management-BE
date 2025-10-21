@@ -1,6 +1,9 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using AutoMapper;
+using AutoMapper.QueryableExtensions;
 using Microsoft.EntityFrameworkCore;
 using EVMManagement.BLL.DTOs.Request.Quotation;
 using EVMManagement.BLL.DTOs.Response;
@@ -15,10 +18,12 @@ namespace EVMManagement.BLL.Services.Class
     public class QuotationService : IQuotationService
     {
         private readonly IUnitOfWork _unitOfWork;
+        private readonly IMapper _mapper;
 
-        public QuotationService(IUnitOfWork unitOfWork)
+        public QuotationService(IUnitOfWork unitOfWork, IMapper mapper)
         {
             _unitOfWork = unitOfWork;
+            _mapper = mapper;
         }
 
         public async Task<QuotationResponseDto> CreateQuotationAsync(CreateQuotationDto dto)
@@ -61,18 +66,14 @@ namespace EVMManagement.BLL.Services.Class
             return (await GetByIdAsync(quotation.Id))!;
         }
 
-        public Task<PagedResult<QuotationResponseDto>> GetAllAsync(int pageNumber = 1, int pageSize = 10, string? search = null, QuotationStatus? status = null)
+        public async Task<PagedResult<QuotationResponseDto>> GetAllAsync(int pageNumber = 1, int pageSize = 10, string? search = null, QuotationStatus? status = null)
         {
-            IQueryable<Quotation> query = _unitOfWork.Quotations.GetQueryable()
-                .Include(q => q.Customer)
-                .Include(q => q.CreatedByUser)
-                .Include(q => q.QuotationDetails)
-                    .ThenInclude(qd => qd.VehicleVariant)
-                        .ThenInclude(vv => vv.VehicleModel);
+            var query = _unitOfWork.Quotations.GetQueryable()
+                .Where(x => !x.IsDeleted);
 
             if (!string.IsNullOrWhiteSpace(search))
             {
-                query = query.Where(x => x.Code.Contains(search) || 
+                query = query.Where(x => x.Code.Contains(search) ||
                                          (x.Customer != null && x.Customer.FullName != null && x.Customer.FullName.Contains(search)));
             }
 
@@ -81,95 +82,34 @@ namespace EVMManagement.BLL.Services.Class
                 query = query.Where(x => x.Status == status.Value);
             }
 
-            query = query.Where(x => !x.IsDeleted);
+            var totalCount = await query.CountAsync();
 
-            var totalCount = query.Count();
-
-            var items = query
+            var items = await query
                 .OrderByDescending(x => x.CreatedDate)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
-                .Select(x => new QuotationResponseDto
-                {
-                    Id = x.Id,
-                    Code = x.Code,
-                    CustomerId = x.CustomerId,
-                    CustomerName = x.Customer != null ? x.Customer.FullName : null,
-                    CustomerPhone = x.Customer != null ? x.Customer.Phone : null,
-                    CreatedByUserId = x.CreatedByUserId,
-                    CreatedByUserName = x.CreatedByUser.FullName,
-                    Note = x.Note,
-                    Subtotal = x.Subtotal,
-                    Tax = x.Tax,
-                    Total = x.Total,
-                    Status = x.Status,
-                    ValidUntil = x.ValidUntil,
-                    CreatedDate = x.CreatedDate,
-                    ModifiedDate = x.ModifiedDate,
-                    IsDeleted = x.IsDeleted,
-                    QuotationDetails = x.QuotationDetails.Select(qd => new QuotationDetailResponseDto
-                    {
-                        Id = qd.Id,
-                        QuotationId = qd.QuotationId,
-                        VehicleVariantId = qd.VehicleVariantId,
-                        VehicleVariantColor = qd.VehicleVariant.Color,
-                        VehicleModelName = qd.VehicleVariant.VehicleModel.Name,
-                        Quantity = qd.Quantity,
-                        UnitPrice = qd.UnitPrice,
-                        DiscountPercent = qd.DiscountPercent,
-                        LineTotal = qd.UnitPrice * qd.Quantity * (1 - qd.DiscountPercent / 100m),
-                        Note = qd.Note
-                    }).ToList()
-                })
-                .ToList();
+                .ProjectTo<QuotationResponseDto>(_mapper.ConfigurationProvider)
+                .ToListAsync();
 
-            return Task.FromResult(PagedResult<QuotationResponseDto>.Create(items, totalCount, pageNumber, pageSize));
+            return PagedResult<QuotationResponseDto>.Create(items, totalCount, pageNumber, pageSize);
+        }
+
+        public async Task<IList<QuotationResponseDto>> GetByCustomerIdAsync(Guid customerId)
+        {
+            var query = _unitOfWork.Quotations.GetByCustomerId(customerId);
+
+            return await query
+                .OrderByDescending(x => x.CreatedDate)
+                .ProjectTo<QuotationResponseDto>(_mapper.ConfigurationProvider)
+                .ToListAsync();
         }
 
         public async Task<QuotationResponseDto?> GetByIdAsync(Guid id)
         {
-            var entity = await _unitOfWork.Quotations.GetQueryable()
-                .Include(q => q.Customer)
-                .Include(q => q.CreatedByUser)
-                .Include(q => q.QuotationDetails)
-                    .ThenInclude(qd => qd.VehicleVariant)
-                        .ThenInclude(vv => vv.VehicleModel)
-                .FirstOrDefaultAsync(q => q.Id == id);
-
-            if (entity == null) return null;
-
-            return new QuotationResponseDto
-            {
-                Id = entity.Id,
-                Code = entity.Code,
-                CustomerId = entity.CustomerId,
-                CustomerName = entity.Customer?.FullName,
-                CustomerPhone = entity.Customer?.Phone,
-                CreatedByUserId = entity.CreatedByUserId,
-                CreatedByUserName = entity.CreatedByUser.FullName,
-                Note = entity.Note,
-                Subtotal = entity.Subtotal,
-                Tax = entity.Tax,
-                Total = entity.Total,
-                Status = entity.Status,
-                ValidUntil = entity.ValidUntil,
-                CreatedDate = entity.CreatedDate,
-                ModifiedDate = entity.ModifiedDate,
-                IsDeleted = entity.IsDeleted,
-                QuotationDetails = entity.QuotationDetails.Select(qd => new QuotationDetailResponseDto
-                {
-                    Id = qd.Id,
-                    QuotationId = qd.QuotationId,
-                    VehicleVariantId = qd.VehicleVariantId,
-                    VehicleVariantColor = qd.VehicleVariant.Color,
-                    VehicleModelName = qd.VehicleVariant.VehicleModel.Name,
-                    Quantity = qd.Quantity,
-                    UnitPrice = qd.UnitPrice,
-                    DiscountPercent = qd.DiscountPercent,
-                    LineTotal = qd.UnitPrice * qd.Quantity * (1 - qd.DiscountPercent / 100m),
-                    Note = qd.Note
-                }).ToList()
-            };
+            return await _unitOfWork.Quotations.GetQueryable()
+                .Where(q => q.Id == id)
+                .ProjectTo<QuotationResponseDto>(_mapper.ConfigurationProvider)
+                .FirstOrDefaultAsync();
         }
 
         public async Task<QuotationResponseDto?> UpdateAsync(Guid id, UpdateQuotationDto dto)
