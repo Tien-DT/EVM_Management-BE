@@ -50,16 +50,48 @@ namespace EVMManagement.API.Controllers
         [Authorize(Roles = "EVM_ADMIN,DEALER_MANAGER")]
         public async Task<IActionResult> RegisterDealer([FromBody] RegisterDealerRequestDto request, CancellationToken cancellationToken)
         {
-            var currentRole = GetCurrentRole() ?? AccountRole.EVM_ADMIN;
-            var currentUserDealerId = await GetCurrentUserDealerIdAsync();
+            // Lấy role của user hiện tại từ 
+            var currentRole = GetCurrentRole();
+            if (!currentRole.HasValue)
+            {
+                return Unauthorized(ApiResponse<string>.CreateFail("Không tìm thấy thông tin role của tài khoản.", errorCode: 401));
+            }
+
+            // Lấy DealerId của user hiện tại nếu là DEALER_MANAGER
+            Guid? currentUserDealerId = null;
+            if (currentRole.Value == AccountRole.DEALER_MANAGER)
+            {
+                currentUserDealerId = await GetCurrentUserDealerIdAsync();
+                if (!currentUserDealerId.HasValue)
+                {
+                    return BadRequest(ApiResponse<string>.CreateFail("Không tìm thấy thông tin dealer của bạn. Vui lòng liên hệ admin.", errorCode: 400));
+                }
+            }
+
+            var result = await _services.AuthService.RegisterDealerAsync(request, currentRole.Value, currentUserDealerId, cancellationToken);
             
-            var result = await _services.AuthService.RegisterDealerAsync(request, currentRole, currentUserDealerId, cancellationToken);
             if (result.Success)
             {
                 return Ok(result);
             }
 
             var statusCode = result.ErrorCode ?? StatusCodes.Status400BadRequest;
+            
+            if (statusCode == StatusCodes.Status401Unauthorized)
+            {
+                return Unauthorized(result);
+            }
+
+            if (statusCode == StatusCodes.Status403Forbidden)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, result);
+            }
+
+            if (statusCode == StatusCodes.Status404NotFound)
+            {
+                return NotFound(result);
+            }
+
             if (statusCode == StatusCodes.Status409Conflict)
             {
                 return Conflict(result);
