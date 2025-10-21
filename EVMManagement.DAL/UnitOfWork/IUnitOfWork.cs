@@ -21,7 +21,8 @@ namespace EVMManagement.DAL.UnitOfWork
         IQuotationDetailRepository QuotationDetails { get; }
         IVehicleTimeSlotRepository VehicleTimeSlots { get; }
         IMasterTimeSlotRepository MasterTimeSlots { get; }
-        IAvailableSlotRepository AvailableSlots { get; }
+        // IAvailableSlotRepository AvailableSlots { get; } // Removed - now using VehicleTimeSlots with Status = AVAILABLE
+        // Additional repositories will be added as they are implemented
 
         Task<int> SaveChangesAsync();
         Task BeginTransactionAsync();
