@@ -1,6 +1,8 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using AutoMapper;
+using AutoMapper.QueryableExtensions;
 using EVMManagement.BLL.DTOs.Request.Dealer;
 using EVMManagement.BLL.DTOs.Response;
 using EVMManagement.BLL.DTOs.Response.Dealer;
@@ -13,10 +15,12 @@ namespace EVMManagement.BLL.Services.Class
     public class DealerService : IDealerService
     {
         private readonly IUnitOfWork _unitOfWork;
+        private readonly IMapper _mapper;
 
-        public DealerService(IUnitOfWork unitOfWork)
+        public DealerService(IUnitOfWork unitOfWork, IMapper mapper)
         {
             _unitOfWork = unitOfWork;
+            _mapper = mapper;
         }
 
         public async Task<Dealer> CreateDealerAsync(CreateDealerDto dto)
@@ -58,19 +62,7 @@ namespace EVMManagement.BLL.Services.Class
                 .OrderByDescending(x => x.CreatedDate)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
-                .Select(x => new DealerResponseDto
-                {
-                    Id = x.Id,
-                    Name = x.Name,
-                    Address = x.Address,
-                    Phone = x.Phone,
-                    Email = x.Email,
-                    EstablishedAt = x.EstablishedAt,
-                    IsActive = x.IsActive,
-                    CreatedDate = x.CreatedDate,
-                    ModifiedDate = x.ModifiedDate,
-                    IsDeleted = x.IsDeleted
-                })
+                .ProjectTo<DealerResponseDto>(_mapper.ConfigurationProvider)
                 .ToList();
 
             return Task.FromResult(PagedResult<DealerResponseDto>.Create(items, totalCount, pageNumber, pageSize));
@@ -81,19 +73,7 @@ namespace EVMManagement.BLL.Services.Class
             var entity = await _unitOfWork.Dealers.GetByIdAsync(id);
             if (entity == null) return null;
 
-            return new DealerResponseDto
-            {
-                Id = entity.Id,
-                Name = entity.Name,
-                Address = entity.Address,
-                Phone = entity.Phone,
-                Email = entity.Email,
-                EstablishedAt = entity.EstablishedAt,
-                IsActive = entity.IsActive,
-                CreatedDate = entity.CreatedDate,
-                ModifiedDate = entity.ModifiedDate,
-                IsDeleted = entity.IsDeleted
-            };
+            return _mapper.Map<DealerResponseDto>(entity);
         }
 
         public async Task<DealerResponseDto?> UpdateAsync(Guid id, UpdateDealerDto dto)

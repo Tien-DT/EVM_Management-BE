@@ -1,22 +1,27 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using AutoMapper;
+using AutoMapper.QueryableExtensions;
 using EVMManagement.BLL.DTOs.Request.QuotationDetail;
 using EVMManagement.BLL.DTOs.Response;
 using EVMManagement.BLL.DTOs.Response.QuotationDetail;
 using EVMManagement.BLL.Services.Interface;
 using EVMManagement.DAL.Models.Entities;
 using EVMManagement.DAL.UnitOfWork;
+using Microsoft.EntityFrameworkCore;
 
 namespace EVMManagement.BLL.Services.Class
 {
     public class QuotationDetailService : IQuotationDetailService
     {
         private readonly IUnitOfWork _unitOfWork;
+        private readonly IMapper _mapper;
 
-        public QuotationDetailService(IUnitOfWork unitOfWork)
+        public QuotationDetailService(IUnitOfWork unitOfWork, IMapper mapper)
         {
             _unitOfWork = unitOfWork;
+            _mapper = mapper;
         }
 
         public async Task<QuotationDetail> CreateQuotationDetailAsync(QuotationDetailCreateDto dto)
@@ -42,24 +47,12 @@ namespace EVMManagement.BLL.Services.Class
             var query = _unitOfWork.QuotationDetails.GetQueryable();
             var totalCount = await _unitOfWork.QuotationDetails.CountAsync();
 
-            var items = query
+            var items = await query
                 .OrderByDescending(x => x.CreatedDate)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
-                .Select(x => new QuotationDetailResponse
-                {
-                    Id = x.Id,
-                    QuotationId = x.QuotationId,
-                    VehicleVariantId = x.VehicleVariantId,
-                    Quantity = x.Quantity,
-                    UnitPrice = x.UnitPrice,
-                    DiscountPercent = x.DiscountPercent,
-                    Note = x.Note,
-                    CreatedDate = x.CreatedDate,
-                    ModifiedDate = x.ModifiedDate,
-                    IsDeleted = x.IsDeleted
-                })
-                .ToList();
+                .ProjectTo<QuotationDetailResponse>(_mapper.ConfigurationProvider)
+                .ToListAsync();
 
             return PagedResult<QuotationDetailResponse>.Create(items, totalCount, pageNumber, pageSize);
         }
@@ -69,19 +62,7 @@ namespace EVMManagement.BLL.Services.Class
             var entity = await _unitOfWork.QuotationDetails.GetByIdAsync(id);
             if (entity == null) return null;
 
-            return new QuotationDetailResponse
-            {
-                Id = entity.Id,
-                QuotationId = entity.QuotationId,
-                VehicleVariantId = entity.VehicleVariantId,
-                Quantity = entity.Quantity,
-                UnitPrice = entity.UnitPrice,
-                DiscountPercent = entity.DiscountPercent,
-                Note = entity.Note,
-                CreatedDate = entity.CreatedDate,
-                ModifiedDate = entity.ModifiedDate,
-                IsDeleted = entity.IsDeleted
-            };
+            return _mapper.Map<QuotationDetailResponse>(entity);
         }
 
         public async Task<QuotationDetailResponse?> UpdateAsync(Guid id, QuotationDetailUpdateDto dto)

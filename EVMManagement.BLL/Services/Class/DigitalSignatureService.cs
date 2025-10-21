@@ -4,6 +4,7 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
+using AutoMapper;
 using EVMManagement.BLL.DTOs.Request.DigitalSignature;
 using EVMManagement.BLL.DTOs.Response.DigitalSignature;
 using EVMManagement.BLL.Services.Interface;
@@ -17,11 +18,13 @@ namespace EVMManagement.BLL.Services.Class
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly IEmailService _emailService;
+        private readonly IMapper _mapper;
 
-        public DigitalSignatureService(IUnitOfWork unitOfWork, IEmailService emailService)
+        public DigitalSignatureService(IUnitOfWork unitOfWork, IEmailService emailService, IMapper mapper)
         {
             _unitOfWork = unitOfWork;
             _emailService = emailService;
+            _mapper = mapper;
         }
 
         public async Task<OtpRequestResponse> RequestOtpAsync(RequestOtpDto dto, string ipAddress, string userAgent)
@@ -128,7 +131,7 @@ namespace EVMManagement.BLL.Services.Class
             _unitOfWork.DigitalSignatures.Update(signature);
             await _unitOfWork.SaveChangesAsync();
 
-            return MapToResponse(signature);
+            return _mapper.Map<DigitalSignatureResponse>(signature);
         }
 
         public async Task<DigitalSignatureResponse> CompleteSignatureAsync(CompleteSignatureDto dto)
@@ -156,31 +159,31 @@ namespace EVMManagement.BLL.Services.Class
             _unitOfWork.DigitalSignatures.Update(signature);
             await _unitOfWork.SaveChangesAsync();
 
-            return MapToResponse(signature);
+            return _mapper.Map<DigitalSignatureResponse>(signature);
         }
 
         public async Task<DigitalSignatureResponse?> GetByIdAsync(Guid id)
         {
             var entity = await _unitOfWork.DigitalSignatures.GetByIdAsync(id);
-            return entity == null ? null : MapToResponse(entity);
+            return entity == null ? null : _mapper.Map<DigitalSignatureResponse>(entity);
         }
 
         public async Task<List<DigitalSignatureResponse>> GetByContractIdAsync(Guid contractId)
         {
             var signatures = await _unitOfWork.DigitalSignatures.GetByContractIdAsync(contractId);
-            return signatures.Select(MapToResponse).ToList();
+            return signatures.Select(s => _mapper.Map<DigitalSignatureResponse>(s)).ToList();
         }
 
         public async Task<List<DigitalSignatureResponse>> GetByHandoverRecordIdAsync(Guid handoverRecordId)
         {
             var signatures = await _unitOfWork.DigitalSignatures.GetByHandoverRecordIdAsync(handoverRecordId);
-            return signatures.Select(MapToResponse).ToList();
+            return signatures.Select(s => _mapper.Map<DigitalSignatureResponse>(s)).ToList();
         }
 
         public async Task<List<DigitalSignatureResponse>> GetByDealerContractIdAsync(Guid dealerContractId)
         {
             var signatures = await _unitOfWork.DigitalSignatures.GetByDealerContractIdAsync(dealerContractId);
-            return signatures.Select(MapToResponse).ToList();
+            return signatures.Select(s => _mapper.Map<DigitalSignatureResponse>(s)).ToList();
         }
 
         private string GenerateOtpCode()
@@ -204,28 +207,6 @@ namespace EVMManagement.BLL.Services.Class
             var bytes = Encoding.UTF8.GetBytes(data);
             var hash = sha256.ComputeHash(bytes);
             return Convert.ToBase64String(hash);
-        }
-
-        private DigitalSignatureResponse MapToResponse(DigitalSignature entity)
-        {
-            return new DigitalSignatureResponse
-            {
-                Id = entity.Id,
-                SignerEmail = entity.SignerEmail,
-                SignerName = entity.SignerName,
-                IpAddress = entity.IpAddress,
-                UserAgent = entity.UserAgent,
-                EntityType = entity.EntityType,
-                ContractId = entity.ContractId,
-                HandoverRecordId = entity.HandoverRecordId,
-                DealerContractId = entity.DealerContractId,
-                Status = entity.Status,
-                SignedAt = entity.SignedAt,
-                FileUrl = entity.FileUrl,
-                Notes = entity.Notes,
-                CreatedDate = entity.CreatedDate,
-                ModifiedDate = entity.ModifiedDate
-            };
         }
     }
 }

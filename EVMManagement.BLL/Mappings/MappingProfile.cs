@@ -4,6 +4,7 @@ using EVMManagement.BLL.DTOs.Request.Contract;
 using EVMManagement.BLL.DTOs.Request.Customer;
 using EVMManagement.BLL.DTOs.Request.Dealer;
 using EVMManagement.BLL.DTOs.Request.DealerContract;
+using EVMManagement.BLL.DTOs.Request.HandoverRecord;
 using EVMManagement.BLL.DTOs.Request.Invoice;
 using EVMManagement.BLL.DTOs.Request.MasterTimeSlot;
 using EVMManagement.BLL.DTOs.Request.Order;
@@ -21,6 +22,8 @@ using EVMManagement.BLL.DTOs.Response.Contract;
 using EVMManagement.BLL.DTOs.Response.Customer;
 using EVMManagement.BLL.DTOs.Response.Dealer;
 using EVMManagement.BLL.DTOs.Response.DealerContract;
+using EVMManagement.BLL.DTOs.Response.DigitalSignature;
+using EVMManagement.BLL.DTOs.Response.HandoverRecord;
 using EVMManagement.BLL.DTOs.Response.Invoice;
 using EVMManagement.BLL.DTOs.Response.MasterTimeSlot;
 using EVMManagement.BLL.DTOs.Response.Order;
@@ -164,6 +167,15 @@ namespace EVMManagement.BLL.Mappings
             CreateMap<UserProfileUpdateDto, UserProfile>()
                 .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
             CreateMap<UserProfile, UserProfileResponse>();
+
+            // HandoverRecord Mappings
+            CreateMap<HandoverRecordCreateDto, HandoverRecord>();
+            CreateMap<HandoverRecordUpdateDto, HandoverRecord>()
+                .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
+            CreateMap<HandoverRecord, HandoverRecordResponseDto>();
+
+            // DigitalSignature Mappings
+            CreateMap<DigitalSignature, DigitalSignatureResponse>();
         }
     }
 }

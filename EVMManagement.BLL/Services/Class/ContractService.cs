@@ -1,6 +1,8 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using AutoMapper;
+using AutoMapper.QueryableExtensions;
 using EVMManagement.BLL.DTOs.Request.Contract;
 using EVMManagement.BLL.DTOs.Response;
 using EVMManagement.BLL.DTOs.Response.Contract;
@@ -13,10 +15,12 @@ namespace EVMManagement.BLL.Services.Class
     public class ContractService : IContractService
     {
         private readonly IUnitOfWork _unitOfWork;
+        private readonly IMapper _mapper;
 
-        public ContractService(IUnitOfWork unitOfWork)
+        public ContractService(IUnitOfWork unitOfWork, IMapper mapper)
         {
             _unitOfWork = unitOfWork;
+            _mapper = mapper;
         }
 
         public async Task<Contract> CreateContractAsync(ContractCreateDto dto)
@@ -48,21 +52,7 @@ namespace EVMManagement.BLL.Services.Class
                 .OrderByDescending(x => x.CreatedDate)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
-                .Select(x => new ContractResponse
-                {
-                    Id = x.Id,
-                    Code = x.Code,
-                    OrderId = x.OrderId,
-                    CustomerId = x.CustomerId,
-                    CreatedByUserId = x.CreatedByUserId,
-                    Terms = x.Terms,
-                    Status = x.Status,
-                    SignedAt = x.SignedAt,
-                    ContractLink = x.ContractLink,
-                    CreatedDate = x.CreatedDate,
-                    ModifiedDate = x.ModifiedDate,
-                    IsDeleted = x.IsDeleted
-                })
+                .ProjectTo<ContractResponse>(_mapper.ConfigurationProvider)
                 .ToList();
 
             return PagedResult<ContractResponse>.Create(items, totalCount, pageNumber, pageSize);
@@ -73,21 +63,7 @@ namespace EVMManagement.BLL.Services.Class
             var entity = await _unitOfWork.Contracts.GetByIdAsync(id);
             if (entity == null) return null;
 
-            return new ContractResponse
-            {
-                Id = entity.Id,
-                Code = entity.Code,
-                OrderId = entity.OrderId,
-                CustomerId = entity.CustomerId,
-                CreatedByUserId = entity.CreatedByUserId,
-                Terms = entity.Terms,
-                Status = entity.Status,
-                SignedAt = entity.SignedAt,
-                ContractLink = entity.ContractLink,
-                CreatedDate = entity.CreatedDate,
-                ModifiedDate = entity.ModifiedDate,
-                IsDeleted = entity.IsDeleted
-            };
+            return _mapper.Map<ContractResponse>(entity);
         }
 
         public async Task<ContractResponse?> UpdateAsync(Guid id, ContractUpdateDto dto)
