@@ -164,7 +164,7 @@ namespace EVMManagement.BLL.Services.Class
             await _cache.SetStringAsync(cacheKey, payload, options, cancellationToken);
         }
 
-        public async Task<ApiResponse<string>> RegisterDealerAsync(RegisterDealerRequestDto request, CancellationToken cancellationToken = default)
+        public async Task<ApiResponse<string>> RegisterDealerAsync(RegisterDealerRequestDto request, AccountRole currentUserRole, Guid? currentUserDealerId = null, CancellationToken cancellationToken = default)
         {
             try
             {
@@ -187,6 +187,38 @@ namespace EVMManagement.BLL.Services.Class
                 if (request.Role != AccountRole.DEALER_MANAGER && request.Role != AccountRole.DEALER_STAFF)
                 {
                     return ApiResponse<string>.CreateFail("Role không hợp lệ cho đại lý.");
+                }
+
+                // Validate DealerId dựa trên role của user hiện tại
+                if (currentUserRole == AccountRole.DEALER_MANAGER)
+                {
+                    // DEALER_MANAGER chỉ được tạo account cho dealer của mình
+                    if (!currentUserDealerId.HasValue)
+                    {
+                        return ApiResponse<string>.CreateFail("Không tìm thấy thông tin dealer của bạn.", errorCode: 403);
+                    }
+
+                    if (request.DealerId != currentUserDealerId.Value)
+                    {
+                        return ApiResponse<string>.CreateFail("Bạn chỉ có thể tạo tài khoản cho dealer của mình.", errorCode: 403);
+                    }
+                }
+
+                // Kiểm tra dealer có tồn tại không
+                var dealer = await _unitOfWork.Dealers.GetByIdAsync(request.DealerId);
+                if (dealer == null)
+                {
+                    return ApiResponse<string>.CreateFail("Dealer không tồn tại.", errorCode: 404);
+                }
+
+                if (dealer.IsDeleted)
+                {
+                    return ApiResponse<string>.CreateFail("Dealer đã bị xóa.", errorCode: 400);
+                }
+
+                if (!dealer.IsActive)
+                {
+                    return ApiResponse<string>.CreateFail("Dealer chưa được kích hoạt.", errorCode: 400);
                 }
 
                 var existed = await _unitOfWork.Accounts.GetByEmailAsync(request.Email);
@@ -229,11 +261,15 @@ namespace EVMManagement.BLL.Services.Class
                     _logger.LogError(emailEx, "Lỗi khi gửi email đến {Email}", request.Email);
                 }
 
+                _logger.LogInformation("Tài khoản dealer {Role} được tạo thành công bởi {CurrentUserRole} cho dealer {DealerId}: {Email}", 
+                    request.Role, currentUserRole, request.DealerId, request.Email);
+
                 return ApiResponse<string>.CreateSuccess(account.Id.ToString(), "Tạo tài khoản đại lý thành công.");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Lỗi khi đăng ký tài khoản đại lý");
+                _logger.LogError(ex, "Lỗi khi đăng ký tài khoản đại lý. CurrentUserRole: {CurrentUserRole}, DealerId: {DealerId}", 
+                    currentUserRole, request?.DealerId);
                 return ApiResponse<string>.CreateFail(ex);
             }
         }
