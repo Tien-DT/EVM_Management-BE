@@ -46,7 +46,7 @@ namespace EVMManagement.API.Controllers
         }
 
         [HttpPost("register-dealer")]
-        [AllowAnonymous]
+        [Authorize(Roles = "EVM_ADMIN,DEALER_MANAGER")]
         public async Task<IActionResult> RegisterDealer([FromBody] RegisterDealerRequestDto request, CancellationToken cancellationToken)
         {
             var result = await _services.AuthService.RegisterDealerAsync(request, cancellationToken);
@@ -65,7 +65,7 @@ namespace EVMManagement.API.Controllers
         }
 
         [HttpPost("accounts")]
-        [AllowAnonymous]
+        [Authorize(Roles = "EVM_ADMIN")]
         public async Task<IActionResult> CreateAccount([FromBody] CreateAccountRequestDto request, CancellationToken cancellationToken)
         {
             var result = await _services.AuthService.CreateAccountAsync(request, cancellationToken);

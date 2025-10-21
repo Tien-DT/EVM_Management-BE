@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using EVMManagement.BLL.DTOs.Request.Warehouse;
 using EVMManagement.BLL.DTOs.Response;
@@ -12,6 +13,7 @@ namespace EVMManagement.API.Controllers
 {
     [Route("api/v1/[controller]")]
     [ApiController]
+    [Authorize]
     public class WarehousesController : ControllerBase
     {
         private readonly IServiceFacade _services;
@@ -54,6 +56,7 @@ namespace EVMManagement.API.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "DEALER_MANAGER,EVM_ADMIN")]
         public async Task<IActionResult> Create([FromBody] WarehouseCreateDto dto)
         {
             if (!ModelState.IsValid)
@@ -67,6 +70,7 @@ namespace EVMManagement.API.Controllers
         }
 
         [HttpPut("{id}")]
+        [Authorize(Roles = "DEALER_MANAGER,EVM_ADMIN")]
         public async Task<IActionResult> Update(Guid id, [FromBody] WarehouseUpdateDto dto)
         {
             if (!ModelState.IsValid)
@@ -81,6 +85,7 @@ namespace EVMManagement.API.Controllers
         }
 
         [HttpPatch("{id}")]
+        [Authorize(Roles = "DEALER_MANAGER,EVM_ADMIN")]
         public async Task<IActionResult> UpdateIsDeleted(Guid id, [FromQuery] bool isDeleted)
         {
             var updated = await _services.WarehouseService.UpdateIsDeletedAsync(id, isDeleted);
