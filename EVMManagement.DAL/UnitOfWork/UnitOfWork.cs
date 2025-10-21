@@ -30,10 +30,10 @@ namespace EVMManagement.DAL.UnitOfWork
 
         private IVehicleTimeSlotRepository? _vehicleTimeSlots;
         private IMasterTimeSlotRepository? _masterTimeSlots;
-        private IAvailableSlotRepository? _availableSlots;
+        // private IAvailableSlotRepository? _availableSlots; // Removed - now using VehicleTimeSlots with Status = AVAILABLE
         private IDealerContractRepository? _dealerContracts;
         private ITestDriveBookingRepository? _testDriveBookings;
-    private IHandoverRecordRepository? _handoverRecords;
+        private IHandoverRecordRepository? _handoverRecords;
         private IInvoiceRepository? _invoices;
         private IDigitalSignatureRepository? _digitalSignatures;
         private ITransactionRepository? _transactions;
@@ -61,7 +61,7 @@ namespace EVMManagement.DAL.UnitOfWork
         public IVehicleRepository Vehicles => _vehicles ??= new VehicleRepository(_context);
         public IVehicleTimeSlotRepository VehicleTimeSlots => _vehicleTimeSlots ??= new VehicleTimeSlotRepository(_context);
         public IMasterTimeSlotRepository MasterTimeSlots => _masterTimeSlots ??= new MasterTimeSlotRepository(_context);
-        public IAvailableSlotRepository AvailableSlots => _availableSlots ??= new AvailableSlotRepository(_context);
+        // public IAvailableSlotRepository AvailableSlots => _availableSlots ??= new AvailableSlotRepository(_context); // Removed - now using VehicleTimeSlots with Status = AVAILABLE
         public IDealerContractRepository DealerContracts => _dealerContracts ??= new DealerContractRepository(_context);
         public ITestDriveBookingRepository TestDriveBookings => _testDriveBookings ??= new TestDriveBookingRepository(_context);
         public IHandoverRecordRepository HandoverRecords => _handoverRecords ??= new HandoverRecordRepository(_context);

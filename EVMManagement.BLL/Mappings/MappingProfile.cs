@@ -1,5 +1,4 @@
 using AutoMapper;
-using EVMManagement.BLL.DTOs.Request.AvailableSlot;
 using EVMManagement.BLL.DTOs.Request.Contract;
 using EVMManagement.BLL.DTOs.Request.Customer;
 using EVMManagement.BLL.DTOs.Request.Dealer;
@@ -16,7 +15,6 @@ using EVMManagement.BLL.DTOs.Request.User;
 using EVMManagement.BLL.DTOs.Request.Vehicle;
 using EVMManagement.BLL.DTOs.Request.VehicleTimeSlot;
 using EVMManagement.BLL.DTOs.Request.Warehouse;
-using EVMManagement.BLL.DTOs.Response.AvailableSlot;
 using EVMManagement.BLL.DTOs.Response.Contract;
 using EVMManagement.BLL.DTOs.Response.Customer;
 using EVMManagement.BLL.DTOs.Response.Dealer;
@@ -100,11 +98,7 @@ namespace EVMManagement.BLL.Mappings
                 .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
             CreateMap<VehicleTimeSlot, VehicleTimeSlotResponseDto>();
 
-            // AvailableSlot Mappings
-            CreateMap<AvailableSlotCreateDto, AvailableSlot>();
-            CreateMap<AvailableSlotUpdateDto, AvailableSlot>()
-                .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
-            CreateMap<AvailableSlot, AvailableSlotResponseDto>();
+            // AvailableSlot Mappings removed - now using VehicleTimeSlot with Status = AVAILABLE
 
             // TestDriveBooking Mappings
             CreateMap<TestDriveBookingCreateDto, TestDriveBooking>();

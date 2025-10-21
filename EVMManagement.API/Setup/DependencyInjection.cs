@@ -36,7 +36,6 @@ namespace EVMManagement.API.Setup
             services.AddScoped<IPromotionRepository, PromotionRepository>();
             services.AddScoped<IVehicleTimeSlotRepository, VehicleTimeSlotRepository>();
             services.AddScoped<IMasterTimeSlotRepository, MasterTimeSlotRepository>();
-            services.AddScoped<IAvailableSlotRepository, AvailableSlotRepository>();
             services.AddScoped<ITestDriveBookingRepository, TestDriveBookingRepository>();
             services.AddScoped<IHandoverRecordRepository, HandoverRecordRepository>();
             services.AddScoped<IDigitalSignatureRepository, DigitalSignatureRepository>();
@@ -53,7 +52,6 @@ namespace EVMManagement.API.Setup
             services.AddScoped<IPromotionService, PromotionService>();
             services.AddScoped<IVehicleTimeSlotService, VehicleTimeSlotService>();
             services.AddScoped<IMasterTimeSlotService, MasterTimeSlotService>();
-            services.AddScoped<IAvailableSlotService, AvailableSlotService>();
             services.AddScoped<IDealerContractService, DealerContractService>();
             services.AddScoped<ITestDriveBookingService, TestDriveBookingService>();
             services.AddScoped<IEmailService, GmailApiService>();

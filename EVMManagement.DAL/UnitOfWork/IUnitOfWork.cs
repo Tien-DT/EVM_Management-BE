@@ -22,7 +22,7 @@ namespace EVMManagement.DAL.UnitOfWork
         IVehicleRepository Vehicles { get; }
         IVehicleTimeSlotRepository VehicleTimeSlots { get; }
         IMasterTimeSlotRepository MasterTimeSlots { get; }
-        IAvailableSlotRepository AvailableSlots { get; }
+        // IAvailableSlotRepository AvailableSlots { get; } // Removed - now using VehicleTimeSlots with Status = AVAILABLE
         IDealerContractRepository DealerContracts { get; }
         ITestDriveBookingRepository TestDriveBookings { get; }
         IHandoverRecordRepository HandoverRecords { get; }
