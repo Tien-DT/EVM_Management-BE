@@ -50,7 +50,10 @@ namespace EVMManagement.API.Controllers
         [Authorize(Roles = "EVM_ADMIN,DEALER_MANAGER")]
         public async Task<IActionResult> RegisterDealer([FromBody] RegisterDealerRequestDto request, CancellationToken cancellationToken)
         {
-            var result = await _services.AuthService.RegisterDealerAsync(request, cancellationToken);
+            var currentRole = GetCurrentRole() ?? AccountRole.EVM_ADMIN;
+            var currentUserDealerId = await GetCurrentUserDealerIdAsync();
+            
+            var result = await _services.AuthService.RegisterDealerAsync(request, currentRole, currentUserDealerId, cancellationToken);
             if (result.Success)
             {
                 return Ok(result);
