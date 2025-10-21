@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using EVMManagement.DAL.Models.Enums;
 
@@ -34,5 +35,6 @@ namespace EVMManagement.DAL.Models.Entities
         public virtual Dealer Dealer { get; set; } = null!;
         public virtual UserProfile? SignedByDealerUser { get; set; }
         public virtual UserProfile? SignedByEvmUser { get; set; }
+        public virtual ICollection<DigitalSignature> DigitalSignatures { get; set; } = new List<DigitalSignature>();
     }
 }

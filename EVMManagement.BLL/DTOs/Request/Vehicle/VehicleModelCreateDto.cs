@@ -19,6 +19,9 @@ namespace EVMManagement.BLL.DTOs.Request.Vehicle
         [MaxLength(1000)]
         public string? Description { get; set; }
 
+        [MaxLength(500)]
+        public string? ImageUrl { get; set; }
+
         public bool? Status { get; set; }
 
         public VehicleModelRanking? Ranking { get; set; }

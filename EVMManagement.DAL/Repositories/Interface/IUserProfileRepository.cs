@@ -10,6 +10,7 @@ namespace EVMManagement.DAL.Repositories.Interface
     {
         IQueryable<UserProfile> GetByRoleAndStatusAsync(AccountRole role, bool? isActive);
         IQueryable<UserProfile> GetByDealerIdAsync(Guid dealerId);
+        Task<UserProfile?> GetManagerByDealerIdAsync(Guid dealerId);
         Task<UserProfile?> GetByAccountIdAsync(Guid accountId);
         IQueryable<UserProfile> GetAllAsync();
         Task<UserProfile?> GetByIdAsync(Guid id);

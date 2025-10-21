@@ -54,6 +54,8 @@ namespace EVMManagement.DAL.Data
         // AvailableSlot removed - now using VehicleTimeSlot with Status = AVAILABLE
         public DbSet<TestDriveBooking> TestDriveBookings { get; set; }
 
+        public DbSet<DigitalSignature> DigitalSignatures { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -442,6 +444,26 @@ namespace EVMManagement.DAL.Data
                     .WithMany(u => u.AssistedTestDriveBookings)
                     .HasForeignKey(e => e.DealerStaffId)
                     .OnDelete(DeleteBehavior.SetNull);
+            });
+
+            modelBuilder.Entity<DigitalSignature>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.HasIndex(e => e.VerificationCode);
+                entity.HasIndex(e => new { e.SignerEmail, e.Status, e.OtpExpiresAt });
+                entity.HasIndex(e => new { e.ContractId, e.HandoverRecordId, e.DealerContractId });
+                entity.HasOne(e => e.Contract)
+                    .WithMany(c => c.DigitalSignatures)
+                    .HasForeignKey(e => e.ContractId)
+                    .OnDelete(DeleteBehavior.Cascade);
+                entity.HasOne(e => e.HandoverRecord)
+                    .WithMany(h => h.DigitalSignatures)
+                    .HasForeignKey(e => e.HandoverRecordId)
+                    .OnDelete(DeleteBehavior.Cascade);
+                entity.HasOne(e => e.DealerContract)
+                    .WithMany(dc => dc.DigitalSignatures)
+                    .HasForeignKey(e => e.DealerContractId)
+                    .OnDelete(DeleteBehavior.Cascade);
             });
         }
     }

@@ -64,6 +64,50 @@ namespace EVMManagement.DAL.Migrations
                     b.ToTable("Accounts");
                 });
 
+            modelBuilder.Entity("EVMManagement.DAL.Models.Entities.AvailableSlot", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("DealerId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("DeletedDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsAvailable")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid>("MasterSlotId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ModifiedDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("SlotDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("VehicleId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DealerId");
+
+                    b.HasIndex("MasterSlotId");
+
+                    b.HasIndex("VehicleId");
+
+                    b.ToTable("AvailableSlots");
+                });
+
             modelBuilder.Entity("EVMManagement.DAL.Models.Entities.BankAccount", b =>
                 {
                     b.Property<Guid>("Id")
@@ -392,6 +436,98 @@ namespace EVMManagement.DAL.Migrations
                     b.HasIndex("ReceivedByUserId");
 
                     b.ToTable("Deposits");
+                });
+
+            modelBuilder.Entity("EVMManagement.DAL.Models.Entities.DigitalSignature", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("ContractId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("DealerContractId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("DeletedDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("EntityType")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("FileUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<Guid?>("HandoverRecordId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("IpAddress")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime?>("ModifiedDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("text");
+
+                    b.Property<int>("OtpAttemptCount")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("OtpCode")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.Property<DateTime?>("OtpExpiresAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("SignatureData")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("SignedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("SignerEmail")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.Property<string>("SignerName")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("UserAgent")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("VerificationCode")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DealerContractId");
+
+                    b.HasIndex("HandoverRecordId");
+
+                    b.HasIndex("VerificationCode");
+
+                    b.HasIndex("ContractId", "HandoverRecordId", "DealerContractId");
+
+                    b.HasIndex("SignerEmail", "Status", "OtpExpiresAt");
+
+                    b.ToTable("DigitalSignatures");
                 });
 
             modelBuilder.Entity("EVMManagement.DAL.Models.Entities.HandoverRecord", b =>
@@ -940,6 +1076,14 @@ namespace EVMManagement.DAL.Migrations
                     b.Property<decimal>("Amount")
                         .HasColumnType("decimal(18,2)");
 
+                    b.Property<string>("BankCode")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("CardType")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
                     b.Property<DateTime>("CreatedDate")
                         .HasColumnType("timestamp with time zone");
 
@@ -966,11 +1110,35 @@ namespace EVMManagement.DAL.Migrations
                     b.Property<DateTime?>("ModifiedDate")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("PaymentGateway")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("ResponseCode")
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)");
+
+                    b.Property<string>("SecureHash")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
                     b.Property<int>("Status")
                         .HasColumnType("integer");
 
+                    b.Property<string>("TransactionInfo")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
                     b.Property<DateTime>("TransactionTime")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("VnpayTransactionCode")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("VnpayTransactionNo")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
 
                     b.HasKey("Id");
 
@@ -1131,6 +1299,10 @@ namespace EVMManagement.DAL.Migrations
                     b.Property<DateTime?>("DeletedDate")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("ImageUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
@@ -1185,6 +1357,10 @@ namespace EVMManagement.DAL.Migrations
 
                     b.Property<string>("Description")
                         .HasColumnType("text");
+
+                    b.Property<string>("ImageUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
@@ -1416,6 +1592,33 @@ namespace EVMManagement.DAL.Migrations
                     b.ToTable("Warehouses");
                 });
 
+            modelBuilder.Entity("EVMManagement.DAL.Models.Entities.AvailableSlot", b =>
+                {
+                    b.HasOne("EVMManagement.DAL.Models.Entities.Dealer", "Dealer")
+                        .WithMany()
+                        .HasForeignKey("DealerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("EVMManagement.DAL.Models.Entities.MasterTimeSlot", "MasterSlot")
+                        .WithMany()
+                        .HasForeignKey("MasterSlotId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("EVMManagement.DAL.Models.Entities.Vehicle", "Vehicle")
+                        .WithMany()
+                        .HasForeignKey("VehicleId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Dealer");
+
+                    b.Navigation("MasterSlot");
+
+                    b.Navigation("Vehicle");
+                });
+
             modelBuilder.Entity("EVMManagement.DAL.Models.Entities.BankAccount", b =>
                 {
                     b.HasOne("EVMManagement.DAL.Models.Entities.Dealer", "Dealer")
@@ -1494,6 +1697,30 @@ namespace EVMManagement.DAL.Migrations
                     b.Navigation("Order");
 
                     b.Navigation("ReceivedByUser");
+                });
+
+            modelBuilder.Entity("EVMManagement.DAL.Models.Entities.DigitalSignature", b =>
+                {
+                    b.HasOne("EVMManagement.DAL.Models.Entities.Contract", "Contract")
+                        .WithMany("DigitalSignatures")
+                        .HasForeignKey("ContractId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.HasOne("EVMManagement.DAL.Models.Entities.DealerContract", "DealerContract")
+                        .WithMany("DigitalSignatures")
+                        .HasForeignKey("DealerContractId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.HasOne("EVMManagement.DAL.Models.Entities.HandoverRecord", "HandoverRecord")
+                        .WithMany("DigitalSignatures")
+                        .HasForeignKey("HandoverRecordId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.Navigation("Contract");
+
+                    b.Navigation("DealerContract");
+
+                    b.Navigation("HandoverRecord");
                 });
 
             modelBuilder.Entity("EVMManagement.DAL.Models.Entities.HandoverRecord", b =>
@@ -1836,6 +2063,11 @@ namespace EVMManagement.DAL.Migrations
                     b.Navigation("UserProfile");
                 });
 
+            modelBuilder.Entity("EVMManagement.DAL.Models.Entities.Contract", b =>
+                {
+                    b.Navigation("DigitalSignatures");
+                });
+
             modelBuilder.Entity("EVMManagement.DAL.Models.Entities.Customer", b =>
                 {
                     b.Navigation("Contracts");
@@ -1862,9 +2094,19 @@ namespace EVMManagement.DAL.Migrations
                     b.Navigation("Warehouses");
                 });
 
+            modelBuilder.Entity("EVMManagement.DAL.Models.Entities.DealerContract", b =>
+                {
+                    b.Navigation("DigitalSignatures");
+                });
+
             modelBuilder.Entity("EVMManagement.DAL.Models.Entities.Deposit", b =>
                 {
                     b.Navigation("Transactions");
+                });
+
+            modelBuilder.Entity("EVMManagement.DAL.Models.Entities.HandoverRecord", b =>
+                {
+                    b.Navigation("DigitalSignatures");
                 });
 
             modelBuilder.Entity("EVMManagement.DAL.Models.Entities.InstallmentPayment", b =>

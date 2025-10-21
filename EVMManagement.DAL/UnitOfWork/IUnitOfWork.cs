@@ -19,10 +19,17 @@ namespace EVMManagement.DAL.UnitOfWork
         IOrderDetailRepository OrderDetails { get; }
         IQuotationRepository Quotations { get; }
         IQuotationDetailRepository QuotationDetails { get; }
+        IVehicleRepository Vehicles { get; }
         IVehicleTimeSlotRepository VehicleTimeSlots { get; }
         IMasterTimeSlotRepository MasterTimeSlots { get; }
         // IAvailableSlotRepository AvailableSlots { get; } // Removed - now using VehicleTimeSlots with Status = AVAILABLE
-        // Additional repositories will be added as they are implemented
+        IDealerContractRepository DealerContracts { get; }
+        ITestDriveBookingRepository TestDriveBookings { get; }
+        IHandoverRecordRepository HandoverRecords { get; }
+        IInvoiceRepository Invoices { get; }
+        IDigitalSignatureRepository DigitalSignatures { get; }
+        ITransactionRepository Transactions { get; }
+        IDepositRepository Deposits { get; }
 
         Task<int> SaveChangesAsync();
         Task BeginTransactionAsync();

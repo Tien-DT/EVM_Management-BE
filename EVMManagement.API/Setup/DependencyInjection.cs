@@ -3,11 +3,12 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using EVMManagement.DAL.UnitOfWork;
 using EVMManagement.BLL.Options;
-using EVMManagement.BLL.Services;
+using EVMManagement.BLL.Mappings;
 using EVMManagement.DAL.Repositories.Interface;
 using EVMManagement.DAL.Repositories.Class;
 using EVMManagement.BLL.Services.Interface;
 using EVMManagement.BLL.Services.Class;
+using EVMManagement.API.Services;
 
 namespace EVMManagement.API.Setup
 {
@@ -19,13 +20,15 @@ namespace EVMManagement.API.Setup
         {
             services.AddScoped<IUnitOfWork, UnitOfWork>();
 
+            services.AddAutoMapper(typeof(MappingProfile));
+
             services.Configure<JwtSettings>(configuration.GetSection(JwtSettings.SectionName));
             services.Configure<GmailApiSettings>(configuration.GetSection(GmailApiSettings.SectionName));
-
-            services.AddBLLServices();
+            services.Configure<VnPaySettings>(configuration.GetSection(VnPaySettings.SectionName));
 
             services.AddScoped<IUserProfileRepository, UserProfileRepository>();
             services.AddScoped<IVehicleVariantRepository, VehicleVariantRepository>();
+            services.AddScoped<IVehicleRepository, VehicleRepository>();
             services.AddScoped<IVehicleModelRepository, VehicleModelRepository>();
             services.AddScoped<IWarehouseRepository, WarehouseRepository>();
             services.AddScoped<ICustomerRepository, CustomerRepository>();
@@ -33,9 +36,15 @@ namespace EVMManagement.API.Setup
             services.AddScoped<IPromotionRepository, PromotionRepository>();
             services.AddScoped<IVehicleTimeSlotRepository, VehicleTimeSlotRepository>();
             services.AddScoped<IMasterTimeSlotRepository, MasterTimeSlotRepository>();
+            services.AddScoped<ITestDriveBookingRepository, TestDriveBookingRepository>();
+            services.AddScoped<IHandoverRecordRepository, HandoverRecordRepository>();
+            services.AddScoped<IDigitalSignatureRepository, DigitalSignatureRepository>();
+            services.AddScoped<ITransactionRepository, TransactionRepository>();
+            services.AddScoped<IDepositRepository, DepositRepository>();
 
             services.AddScoped<IUserProfileService, UserProfileService>();
             services.AddScoped<IVehicleVariantService, VehicleVariantService>();
+            services.AddScoped<IVehicleService, VehicleService>();
             services.AddScoped<IVehicleModelService, VehicleModelService>();
             services.AddScoped<IWarehouseService, WarehouseService>();
             services.AddScoped<ICustomerService, CustomerService>();
@@ -43,6 +52,23 @@ namespace EVMManagement.API.Setup
             services.AddScoped<IPromotionService, PromotionService>();
             services.AddScoped<IVehicleTimeSlotService, VehicleTimeSlotService>();
             services.AddScoped<IMasterTimeSlotService, MasterTimeSlotService>();
+            services.AddScoped<IDealerContractService, DealerContractService>();
+            services.AddScoped<ITestDriveBookingService, TestDriveBookingService>();
+            services.AddScoped<IEmailService, GmailApiService>();
+            services.AddScoped<IStorageService, SupabaseStorageService>();
+            services.AddScoped<IAuthService, AuthService>();
+            services.AddScoped<IOrderService, OrderService>();
+            services.AddScoped<IOrderDetailService, OrderDetailService>();
+            services.AddScoped<IQuotationDetailService, QuotationDetailService>();
+            services.AddScoped<IContractService, ContractService>();
+            services.AddScoped<IInvoiceService, InvoiceService>();
+            services.AddScoped<IQuotationService, QuotationService>();
+            services.AddScoped<IDigitalSignatureService, DigitalSignatureService>();
+            services.AddScoped<IVnPayService, VnPayService>();
+
+            services.AddScoped<IHandoverRecordService, HandoverRecordService>();
+
+            services.AddScoped<IServiceFacade, ServiceFacade>();
 
             // add JWT auth
             AddJwtAuthentication(services, configuration);

@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using AutoMapper;
 using EVMManagement.BLL.DTOs.Request.MasterTimeSlot;
 using EVMManagement.BLL.DTOs.Response;
 using EVMManagement.BLL.DTOs.Response.MasterTimeSlot;
@@ -13,33 +14,22 @@ namespace EVMManagement.BLL.Services.Class
     public class MasterTimeSlotService : IMasterTimeSlotService
     {
         private readonly IUnitOfWork _unitOfWork;
+        private readonly IMapper _mapper;
 
-        public MasterTimeSlotService(IUnitOfWork unitOfWork)
+        public MasterTimeSlotService(IUnitOfWork unitOfWork, IMapper mapper)
         {
             _unitOfWork = unitOfWork;
+            _mapper = mapper;
         }
 
         public async Task<MasterTimeSlotResponseDto> CreateMasterTimeSlotAsync(MasterTimeSlotCreateDto dto)
         {
-            var masterTimeSlot = new MasterTimeSlot
-            {
-                Code = dto.Code,
-                StartOffsetMinutes = dto.StartOffsetMinutes,
-                DurationMinutes = dto.DurationMinutes,
-                IsActive = dto.IsActive
-            };
+            var masterTimeSlot = _mapper.Map<MasterTimeSlot>(dto);
 
             await _unitOfWork.MasterTimeSlots.AddAsync(masterTimeSlot);
             await _unitOfWork.SaveChangesAsync();
 
-            return new MasterTimeSlotResponseDto
-            {
-                Id = masterTimeSlot.Id,
-                Code = masterTimeSlot.Code,
-                StartOffsetMinutes = masterTimeSlot.StartOffsetMinutes,
-                DurationMinutes = masterTimeSlot.DurationMinutes,
-                IsActive = masterTimeSlot.IsActive
-            };
+            return _mapper.Map<MasterTimeSlotResponseDto>(masterTimeSlot);
         }
 
         public Task<PagedResult<MasterTimeSlotResponseDto>> GetAllAsync(int pageNumber = 1, int pageSize = 10)
@@ -51,17 +41,11 @@ namespace EVMManagement.BLL.Services.Class
                 .OrderBy(x => x.StartOffsetMinutes)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
-                .Select(x => new MasterTimeSlotResponseDto
-                {
-                    Id = x.Id,
-                    Code = x.Code,
-                    StartOffsetMinutes = x.StartOffsetMinutes,
-                    DurationMinutes = x.DurationMinutes,
-                    IsActive = x.IsActive
-                })
                 .ToList();
 
-            return Task.FromResult(PagedResult<MasterTimeSlotResponseDto>.Create(items, totalCount, pageNumber, pageSize));
+            var responses = _mapper.Map<List<MasterTimeSlotResponseDto>>(items);
+
+            return Task.FromResult(PagedResult<MasterTimeSlotResponseDto>.Create(responses, totalCount, pageNumber, pageSize));
         }
 
         public async Task<MasterTimeSlotResponseDto?> GetByIdAsync(Guid id)
@@ -69,14 +53,7 @@ namespace EVMManagement.BLL.Services.Class
             var entity = await _unitOfWork.MasterTimeSlots.GetByIdAsync(id);
             if (entity == null) return null;
 
-            return new MasterTimeSlotResponseDto
-            {
-                Id = entity.Id,
-                Code = entity.Code,
-                StartOffsetMinutes = entity.StartOffsetMinutes,
-                DurationMinutes = entity.DurationMinutes,
-                IsActive = entity.IsActive
-            };
+            return _mapper.Map<MasterTimeSlotResponseDto>(entity);
         }
 
         public Task<PagedResult<MasterTimeSlotResponseDto>> GetActiveAsync(int pageNumber = 1, int pageSize = 10)
@@ -90,17 +67,11 @@ namespace EVMManagement.BLL.Services.Class
                 .OrderBy(x => x.StartOffsetMinutes)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
-                .Select(x => new MasterTimeSlotResponseDto
-                {
-                    Id = x.Id,
-                    Code = x.Code,
-                    StartOffsetMinutes = x.StartOffsetMinutes,
-                    DurationMinutes = x.DurationMinutes,
-                    IsActive = x.IsActive
-                })
                 .ToList();
 
-            return Task.FromResult(PagedResult<MasterTimeSlotResponseDto>.Create(items, totalCount, pageNumber, pageSize));
+            var responses = _mapper.Map<List<MasterTimeSlotResponseDto>>(items);
+
+            return Task.FromResult(PagedResult<MasterTimeSlotResponseDto>.Create(responses, totalCount, pageNumber, pageSize));
         }
 
         public async Task<MasterTimeSlotResponseDto?> UpdateAsync(Guid id, MasterTimeSlotUpdateDto dto)
@@ -108,15 +79,12 @@ namespace EVMManagement.BLL.Services.Class
             var entity = await _unitOfWork.MasterTimeSlots.GetByIdAsync(id);
             if (entity == null) return null;
 
-            if (dto.Code != null) entity.Code = dto.Code;
-            if (dto.StartOffsetMinutes.HasValue) entity.StartOffsetMinutes = dto.StartOffsetMinutes;
-            if (dto.DurationMinutes.HasValue) entity.DurationMinutes = dto.DurationMinutes;
-            if (dto.IsActive.HasValue) entity.IsActive = dto.IsActive.Value;
+            _mapper.Map(dto, entity);
 
             _unitOfWork.MasterTimeSlots.Update(entity);
             await _unitOfWork.SaveChangesAsync();
 
-            return await GetByIdAsync(id);
+            return _mapper.Map<MasterTimeSlotResponseDto>(entity);
         }
 
         public async Task<MasterTimeSlotResponseDto?> UpdateIsActiveAsync(Guid id, bool isActive)

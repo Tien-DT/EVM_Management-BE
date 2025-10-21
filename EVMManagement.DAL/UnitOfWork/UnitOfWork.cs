@@ -25,10 +25,19 @@ namespace EVMManagement.DAL.UnitOfWork
         private IOrderDetailRepository? _orderDetails;
         private IQuotationRepository? _quotations;
         private IQuotationDetailRepository? _quotationDetails;
+       
+        private IVehicleRepository? _vehicles;
+
         private IVehicleTimeSlotRepository? _vehicleTimeSlots;
         private IMasterTimeSlotRepository? _masterTimeSlots;
         // private IAvailableSlotRepository? _availableSlots; // Removed - now using VehicleTimeSlots with Status = AVAILABLE
-        // Additional repository fields will be added as they are implemented
+        private IDealerContractRepository? _dealerContracts;
+        private ITestDriveBookingRepository? _testDriveBookings;
+        private IHandoverRecordRepository? _handoverRecords;
+        private IInvoiceRepository? _invoices;
+        private IDigitalSignatureRepository? _digitalSignatures;
+        private ITransactionRepository? _transactions;
+        private IDepositRepository? _deposits;
 
         public UnitOfWork(AppDbContext context)
         {
@@ -48,10 +57,18 @@ namespace EVMManagement.DAL.UnitOfWork
         public IOrderDetailRepository OrderDetails => _orderDetails ??= new OrderDetailRepository(_context);
         public IQuotationRepository Quotations => _quotations ??= new QuotationRepository(_context);
         public IQuotationDetailRepository QuotationDetails => _quotationDetails ??= new QuotationDetailRepository(_context);
+       
+        public IVehicleRepository Vehicles => _vehicles ??= new VehicleRepository(_context);
         public IVehicleTimeSlotRepository VehicleTimeSlots => _vehicleTimeSlots ??= new VehicleTimeSlotRepository(_context);
         public IMasterTimeSlotRepository MasterTimeSlots => _masterTimeSlots ??= new MasterTimeSlotRepository(_context);
         // public IAvailableSlotRepository AvailableSlots => _availableSlots ??= new AvailableSlotRepository(_context); // Removed - now using VehicleTimeSlots with Status = AVAILABLE
-        // Additional repository properties will be added as they are implemented
+        public IDealerContractRepository DealerContracts => _dealerContracts ??= new DealerContractRepository(_context);
+        public ITestDriveBookingRepository TestDriveBookings => _testDriveBookings ??= new TestDriveBookingRepository(_context);
+        public IHandoverRecordRepository HandoverRecords => _handoverRecords ??= new HandoverRecordRepository(_context);
+        public IInvoiceRepository Invoices => _invoices ??= new InvoiceRepository(_context);
+        public IDigitalSignatureRepository DigitalSignatures => _digitalSignatures ??= new DigitalSignatureRepository(_context);
+        public ITransactionRepository Transactions => _transactions ??= new TransactionRepository(_context);
+        public IDepositRepository Deposits => _deposits ??= new DepositRepository(_context);
 
         public async Task<int> SaveChangesAsync()
         {
