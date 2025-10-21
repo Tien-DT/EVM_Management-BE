@@ -122,13 +122,21 @@ namespace EVMManagement.BLL.Mappings
             CreateMap<CreateQuotationDto, Quotation>();
             CreateMap<UpdateQuotationDto, Quotation>()
                 .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
-            CreateMap<Quotation, QuotationResponseDto>();
+            CreateMap<Quotation, QuotationResponseDto>()
+                .ForMember(dest => dest.CustomerName, opt => opt.MapFrom(src => src.Customer != null ? src.Customer.FullName : null))
+                .ForMember(dest => dest.CustomerPhone, opt => opt.MapFrom(src => src.Customer != null ? src.Customer.Phone : null))
+                .ForMember(dest => dest.CreatedByUserName, opt => opt.MapFrom(src => src.CreatedByUser != null ? src.CreatedByUser.FullName : null))
+                .ForMember(dest => dest.QuotationDetails, opt => opt.MapFrom(src => src.QuotationDetails));
 
             // QuotationDetail Mappings
             CreateMap<QuotationDetailCreateDto, QuotationDetail>();
             CreateMap<QuotationDetailUpdateDto, QuotationDetail>()
                 .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
             CreateMap<QuotationDetail, QuotationDetailResponse>();
+            CreateMap<QuotationDetail, QuotationDetailResponseDto>()
+                .ForMember(dest => dest.VehicleVariantColor, opt => opt.MapFrom(src => src.VehicleVariant != null ? src.VehicleVariant.Color : null))
+                .ForMember(dest => dest.VehicleModelName, opt => opt.MapFrom(src => src.VehicleVariant != null && src.VehicleVariant.VehicleModel != null ? src.VehicleVariant.VehicleModel.Name : null))
+                .ForMember(dest => dest.LineTotal, opt => opt.MapFrom(src => src.UnitPrice * src.Quantity * (1m - src.DiscountPercent / 100m)));
 
             // Contract Mappings
             CreateMap<ContractCreateDto, Contract>();
