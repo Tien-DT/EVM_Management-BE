@@ -8,33 +8,95 @@ using EVMManagement.BLL.Services.Interface;
 using EVMManagement.DAL.UnitOfWork;
 using EVMManagement.DAL.Models.Entities;
 using EVMManagement.DAL.Models.Enums;
+using Microsoft.Extensions.Logging;
 
 namespace EVMManagement.BLL.Services.Class
 {
     public class WarehouseService : IWarehouseService
     {
         private readonly IUnitOfWork _unitOfWork;
+        private readonly ILogger<WarehouseService> _logger;
 
-        public WarehouseService(IUnitOfWork unitOfWork)
+        public WarehouseService(IUnitOfWork unitOfWork, ILogger<WarehouseService> logger)
         {
             _unitOfWork = unitOfWork;
+            _logger = logger;
         }
 
-        public async Task<WarehouseResponseDto> CreateWarehouseAsync(WarehouseCreateDto dto)
+        public async Task<ApiResponse<WarehouseResponseDto>> CreateWarehouseAsync(WarehouseCreateDto dto, AccountRole currentUserRole, Guid? currentUserDealerId = null)
         {
-            var entity = new Warehouse
+            try
             {
-                DealerId = dto.DealerId,
-                Name = dto.Name,
-                Address = dto.Address,
-                Capacity = dto.Capacity,
-                Type = dto.Type
-            };
+                if (dto == null)
+                {
+                    return ApiResponse<WarehouseResponseDto>.CreateFail("Yêu cầu không hợp lệ.");
+                }
 
-            await _unitOfWork.Warehouses.AddAsync(entity);
-            await _unitOfWork.SaveChangesAsync();
+                if (string.IsNullOrWhiteSpace(dto.Name))
+                {
+                    return ApiResponse<WarehouseResponseDto>.CreateFail("Tên kho là bắt buộc.");
+                }
 
-            return MapToDto(entity);
+                if (!dto.DealerId.HasValue)
+                {
+                    return ApiResponse<WarehouseResponseDto>.CreateFail("DealerId là bắt buộc.", errorCode: 400);
+                }
+
+                if (currentUserRole == AccountRole.DEALER_MANAGER)
+                {
+                    // DEALER_MANAGER chỉ được tạo warehouse cho dealer của mình
+                    if (!currentUserDealerId.HasValue)
+                    {
+                        return ApiResponse<WarehouseResponseDto>.CreateFail("Không tìm thấy thông tin dealer của bạn.", errorCode: 403);
+                    }
+
+                    if (dto.DealerId.Value != currentUserDealerId.Value)
+                    {
+                        return ApiResponse<WarehouseResponseDto>.CreateFail("Bạn chỉ có thể tạo kho hàng cho dealer của mình.", errorCode: 403);
+                    }
+                }
+
+                // validate dealer tồn tại 
+                var dealer = await _unitOfWork.Dealers.GetByIdAsync(dto.DealerId.Value);
+                if (dealer == null)
+                {
+                    return ApiResponse<WarehouseResponseDto>.CreateFail("Dealer không tồn tại.", errorCode: 404);
+                }
+
+                if (dealer.IsDeleted)
+                {
+                    return ApiResponse<WarehouseResponseDto>.CreateFail("Dealer đã bị xóa.", errorCode: 400);
+                }
+
+                if (!dealer.IsActive)
+                {
+                    return ApiResponse<WarehouseResponseDto>.CreateFail("Dealer chưa được kích hoạt.", errorCode: 400);
+                }
+
+                var entity = new Warehouse
+                {
+                    DealerId = dto.DealerId.Value,
+                    Name = dto.Name,
+                    Address = dto.Address,
+                    Capacity = dto.Capacity,
+                    Type = dto.Type
+                };
+
+                await _unitOfWork.Warehouses.AddAsync(entity);
+                await _unitOfWork.SaveChangesAsync();
+
+                _logger.LogInformation("Warehouse được tạo thành công bởi {CurrentUserRole} cho dealer {DealerId}: {WarehouseName}",
+                    currentUserRole, dto.DealerId, dto.Name);
+
+                var result = MapToDto(entity);
+                return ApiResponse<WarehouseResponseDto>.CreateSuccess(result, "Tạo kho hàng thành công.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi tạo warehouse. CurrentUserRole: {CurrentUserRole}, DealerId: {DealerId}",
+                    currentUserRole, dto?.DealerId);
+                return ApiResponse<WarehouseResponseDto>.CreateFail(ex);
+            }
         }
 
         public async Task<PagedResult<WarehouseResponseDto>> GetAllWarehousesAsync(int pageNumber = 1, int pageSize = 10)
