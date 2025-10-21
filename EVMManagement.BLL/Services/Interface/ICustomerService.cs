@@ -11,6 +11,7 @@ namespace EVMManagement.BLL.Services.Interface
     {
         Task<Customer> CreateCustomerAsync(CustomerCreateDto dto);
         Task<PagedResult<CustomerResponse>> GetAllAsync(int pageNumber = 1, int pageSize = 10);
+        Task<PagedResult<CustomerResponse>> GetByDealerIdAsync(Guid dealerId, int pageNumber = 1, int pageSize = 10);
         Task<CustomerResponse?> GetByIdAsync(Guid id);
         Task<CustomerResponse?> UpdateAsync(Guid id, CustomerUpdateDto dto);
         Task<CustomerResponse?> UpdateIsDeletedAsync(Guid id, bool isDeleted);

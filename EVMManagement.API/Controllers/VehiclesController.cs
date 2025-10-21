@@ -4,6 +4,7 @@ using EVMManagement.BLL.DTOs.Response.Vehicle;
 using EVMManagement.BLL.DTOs.Response;
 using System;
 using System.Linq;
+using System.Threading.Tasks;
 using EVMManagement.DAL.Models.Enums;
 using EVMManagement.API.Services;
 
@@ -30,6 +31,18 @@ namespace EVMManagement.API.Controllers
 
             var result = await _services.VehicleService.GetAllAsync(pageNumber, pageSize);
             return Ok(ApiResponse<PagedResult<VehicleResponseDto>>.CreateSuccess(result));
+        }
+
+        [HttpGet("details")]
+        public async Task<IActionResult> GetAllWithDetails([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
+        {
+            if (pageNumber < 1 || pageSize < 1)
+            {
+                return BadRequest(ApiResponse<string>.CreateFail("PageNumber and PageSize must be greater than 0", null, 400));
+            }
+
+            var result = await _services.VehicleService.GetAllWithDetailsAsync(pageNumber, pageSize);
+            return Ok(ApiResponse<PagedResult<VehicleDetailResponseDto>>.CreateSuccess(result));
         }
 
         [HttpGet("{id}")]

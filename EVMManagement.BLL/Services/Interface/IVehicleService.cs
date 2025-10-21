@@ -11,6 +11,7 @@ namespace EVMManagement.BLL.Services.Interface
     {
         Task<VehicleResponseDto> CreateVehicleAsync(VehicleCreateDto dto);
         Task<PagedResult<VehicleResponseDto>> GetAllAsync(int pageNumber = 1, int pageSize = 10);
+        Task<PagedResult<VehicleDetailResponseDto>> GetAllWithDetailsAsync(int pageNumber = 1, int pageSize = 10);
         Task<VehicleResponseDto?> GetByIdAsync(Guid id);
         Task<VehicleResponseDto?> UpdateAsync(Guid id, VehicleUpdateDto dto);
         Task<VehicleResponseDto?> UpdateIsDeletedAsync(Guid id, bool isDeleted);

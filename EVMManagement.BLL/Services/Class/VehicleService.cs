@@ -1,3 +1,8 @@
+using System;
+using System.Linq;
+using System.Threading.Tasks;
+using AutoMapper;
+using AutoMapper.QueryableExtensions;
 using EVMManagement.BLL.DTOs.Request.Vehicle;
 using EVMManagement.BLL.DTOs.Response;
 using EVMManagement.BLL.DTOs.Response.Vehicle;
@@ -6,19 +11,18 @@ using EVMManagement.DAL.Models.Entities;
 using EVMManagement.DAL.Models.Enums;
 using EVMManagement.DAL.UnitOfWork;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace EVMManagement.BLL.Services.Class
 {
     public class VehicleService : IVehicleService
     {
         private readonly IUnitOfWork _unitOfWork;
+        private readonly IMapper _mapper;
 
-        public VehicleService(IUnitOfWork unitOfWork)
+        public VehicleService(IUnitOfWork unitOfWork, IMapper mapper)
         {
             _unitOfWork = unitOfWork;
+            _mapper = mapper;
         }
 
         public async Task<VehicleResponseDto> CreateVehicleAsync(VehicleCreateDto dto)
@@ -47,11 +51,25 @@ namespace EVMManagement.BLL.Services.Class
                 .OrderByDescending(x => x.CreatedDate)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
+                .ProjectTo<VehicleResponseDto>(_mapper.ConfigurationProvider)
                 .ToListAsync();
 
-            var responses = items.Select(MapToDto).ToList();
+            return PagedResult<VehicleResponseDto>.Create(items, totalCount, pageNumber, pageSize);
+        }
 
-            return PagedResult<VehicleResponseDto>.Create(responses, totalCount, pageNumber, pageSize);
+        public async Task<PagedResult<VehicleDetailResponseDto>> GetAllWithDetailsAsync(int pageNumber = 1, int pageSize = 10)
+        {
+            var query = _unitOfWork.Vehicles.GetQueryable();
+            var totalCount = await query.CountAsync();
+
+            var items = await query
+                .OrderByDescending(x => x.CreatedDate)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ProjectTo<VehicleDetailResponseDto>(_mapper.ConfigurationProvider)
+                .ToListAsync();
+
+            return PagedResult<VehicleDetailResponseDto>.Create(items, totalCount, pageNumber, pageSize);
         }
 
         public async Task<VehicleResponseDto?> GetByIdAsync(Guid id)
@@ -91,8 +109,6 @@ namespace EVMManagement.BLL.Services.Class
             return MapToDto(entity);
         }
 
-        
-
         public async Task<PagedResult<VehicleResponseDto>> SearchByQueryAsync(string? q, int pageNumber = 1, int pageSize = 10)
         {
             if (string.IsNullOrWhiteSpace(q))
@@ -107,11 +123,10 @@ namespace EVMManagement.BLL.Services.Class
                 .OrderByDescending(x => x.CreatedDate)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
+                .ProjectTo<VehicleResponseDto>(_mapper.ConfigurationProvider)
                 .ToListAsync();
 
-            var responses = items.Select(MapToDto).ToList();
-
-            return PagedResult<VehicleResponseDto>.Create(responses, totalCount, pageNumber, pageSize);
+            return PagedResult<VehicleResponseDto>.Create(items, totalCount, pageNumber, pageSize);
         }
 
         
@@ -138,10 +153,10 @@ namespace EVMManagement.BLL.Services.Class
                 .OrderByDescending(x => x.CreatedDate)
                 .Skip((filter.PageNumber - 1) * filter.PageSize)
                 .Take(filter.PageSize)
+                .ProjectTo<VehicleResponseDto>(_mapper.ConfigurationProvider)
                 .ToListAsync();
 
-            var responses = items.Select(MapToDto).ToList();
-            return PagedResult<VehicleResponseDto>.Create(responses, totalCount, filter.PageNumber, filter.PageSize);
+            return PagedResult<VehicleResponseDto>.Create(items, totalCount, filter.PageNumber, filter.PageSize);
         }
 
         public async Task<VehicleResponseDto?> UpdateStatusAsync(Guid id, VehicleStatus status)
@@ -158,19 +173,7 @@ namespace EVMManagement.BLL.Services.Class
 
         private VehicleResponseDto MapToDto(Vehicle e)
         {
-            return new VehicleResponseDto
-            {
-                Id = e.Id,
-                VariantId = e.VariantId,
-                WarehouseId = e.WarehouseId,
-                Vin = e.Vin,
-                Status = e.Status,
-                Purpose = e.Purpose,
-                CreatedDate = e.CreatedDate,
-                ModifiedDate = e.ModifiedDate,
-                DeletedDate = e.DeletedDate,
-                IsDeleted = e.IsDeleted
-            };
+            return _mapper.Map<VehicleResponseDto>(e);
         }
     }
 }
