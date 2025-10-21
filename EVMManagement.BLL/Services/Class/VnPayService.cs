@@ -34,8 +34,8 @@ namespace EVMManagement.BLL.Services.Class
                 throw new Exception("Order not found");
             }
 
-            var transactionCode = $"ORD{request.OrderId.ToString("N")[..8]}{DateTime.Now:yyyyMMddHHmmss}";
-            var createDate = DateTime.Now;
+            var transactionCode = $"ORD{request.OrderId.ToString("N")[..8]}{DateTime.UtcNow:yyyyMMddHHmmss}";
+            var createDate = DateTime.UtcNow;
             var expireDate = createDate.AddMinutes(15);
 
             var vnpay = new VnPayLibrary();
@@ -92,7 +92,7 @@ namespace EVMManagement.BLL.Services.Class
                     invoice = new Invoice
                     {
                         OrderId = request.OrderId,
-                        InvoiceCode = $"INV{request.OrderId.ToString("N")[..8]}{DateTime.Now:yyyyMMddHHmmss}",
+                        InvoiceCode = $"INV{request.OrderId.ToString("N")[..8]}{DateTime.UtcNow:yyyyMMddHHmmss}",
                         TotalAmount = request.Amount,
                         Status = InvoiceStatus.DRAFT
                     };

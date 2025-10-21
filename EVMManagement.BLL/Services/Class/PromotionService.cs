@@ -1,22 +1,27 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using AutoMapper;
+using AutoMapper.QueryableExtensions;
 using EVMManagement.BLL.DTOs.Request.Promotion;
 using EVMManagement.BLL.DTOs.Response;
 using EVMManagement.BLL.DTOs.Response.Promotion;
 using EVMManagement.BLL.Services.Interface;
 using EVMManagement.DAL.Models.Entities;
 using EVMManagement.DAL.UnitOfWork;
+using Microsoft.EntityFrameworkCore;
 
 namespace EVMManagement.BLL.Services.Class
 {
     public class PromotionService : IPromotionService
     {
         private readonly IUnitOfWork _unitOfWork;
+        private readonly IMapper _mapper;
 
-        public PromotionService(IUnitOfWork unitOfWork)
+        public PromotionService(IUnitOfWork unitOfWork, IMapper mapper)
         {
             _unitOfWork = unitOfWork;
+            _mapper = mapper;
         }
 
         public async Task<PromotionResponseDto> CreatePromotionAsync(PromotionCreateDto dto)
@@ -35,20 +40,7 @@ namespace EVMManagement.BLL.Services.Class
             await _unitOfWork.Promotions.AddAsync(promotion);
             await _unitOfWork.SaveChangesAsync();
 
-            return new PromotionResponseDto
-            {
-                Id = promotion.Id,
-                Code = promotion.Code,
-                Name = promotion.Name,
-                Description = promotion.Description,
-                DiscountPercent = promotion.DiscountPercent,
-                StartAt = promotion.StartAt,
-                EndAt = promotion.EndAt,
-                IsActive = promotion.IsActive,
-                CreatedDate = promotion.CreatedDate,
-                ModifiedDate = promotion.ModifiedDate,
-                IsDeleted = promotion.IsDeleted
-            };
+            return _mapper.Map<PromotionResponseDto>(promotion);
         }
 
         public async Task<PagedResult<PromotionResponseDto>> GetAllAsync(int pageNumber = 1, int pageSize = 10)
@@ -56,25 +48,12 @@ namespace EVMManagement.BLL.Services.Class
             var query = _unitOfWork.Promotions.GetQueryable();
             var totalCount = await _unitOfWork.Promotions.CountAsync();
 
-            var items = query
+            var items = await query
                 .OrderByDescending(x => x.CreatedDate)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
-                .Select(x => new PromotionResponseDto
-                {
-                    Id = x.Id,
-                    Code = x.Code,
-                    Name = x.Name,
-                    Description = x.Description,
-                    DiscountPercent = x.DiscountPercent,
-                    StartAt = x.StartAt,
-                    EndAt = x.EndAt,
-                    IsActive = x.IsActive,
-                    CreatedDate = x.CreatedDate,
-                    ModifiedDate = x.ModifiedDate,
-                    IsDeleted = x.IsDeleted
-                })
-                .ToList();
+                .ProjectTo<PromotionResponseDto>(_mapper.ConfigurationProvider)
+                .ToListAsync();
 
             return PagedResult<PromotionResponseDto>.Create(items, totalCount, pageNumber, pageSize);
         }
@@ -84,20 +63,7 @@ namespace EVMManagement.BLL.Services.Class
             var entity = await _unitOfWork.Promotions.GetByIdAsync(id);
             if (entity == null) return null;
 
-            return new PromotionResponseDto
-            {
-                Id = entity.Id,
-                Code = entity.Code,
-                Name = entity.Name,
-                Description = entity.Description,
-                DiscountPercent = entity.DiscountPercent,
-                StartAt = entity.StartAt,
-                EndAt = entity.EndAt,
-                IsActive = entity.IsActive,
-                CreatedDate = entity.CreatedDate,
-                ModifiedDate = entity.ModifiedDate,
-                IsDeleted = entity.IsDeleted
-            };
+            return _mapper.Map<PromotionResponseDto>(entity);
         }
 
         public Task<PagedResult<PromotionResponseDto>> SearchAsync(string? query, int pageNumber = 1, int pageSize = 10)
@@ -120,20 +86,7 @@ namespace EVMManagement.BLL.Services.Class
                 .OrderByDescending(x => x.CreatedDate)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
-                .Select(x => new PromotionResponseDto
-                {
-                    Id = x.Id,
-                    Code = x.Code,
-                    Name = x.Name,
-                    Description = x.Description,
-                    DiscountPercent = x.DiscountPercent,
-                    StartAt = x.StartAt,
-                    EndAt = x.EndAt,
-                    IsActive = x.IsActive,
-                    CreatedDate = x.CreatedDate,
-                    ModifiedDate = x.ModifiedDate,
-                    IsDeleted = x.IsDeleted
-                })
+                .ProjectTo<PromotionResponseDto>(_mapper.ConfigurationProvider)
                 .ToList();
 
             return Task.FromResult(PagedResult<PromotionResponseDto>.Create(items, totalCount, pageNumber, pageSize));

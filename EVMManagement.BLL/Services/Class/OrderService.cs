@@ -1,22 +1,27 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using AutoMapper;
+using AutoMapper.QueryableExtensions;
 using EVMManagement.BLL.DTOs.Request.Order;
 using EVMManagement.BLL.DTOs.Response;
 using EVMManagement.BLL.DTOs.Response.Order;
 using EVMManagement.BLL.Services.Interface;
 using EVMManagement.DAL.Models.Entities;
 using EVMManagement.DAL.UnitOfWork;
+using Microsoft.EntityFrameworkCore;
 
 namespace EVMManagement.BLL.Services.Class
 {
     public class OrderService : IOrderService
     {
         private readonly IUnitOfWork _unitOfWork;
+        private readonly IMapper _mapper;
 
-        public OrderService(IUnitOfWork unitOfWork)
+        public OrderService(IUnitOfWork unitOfWork, IMapper mapper)
         {
             _unitOfWork = unitOfWork;
+            _mapper = mapper;
         }
 
         public async Task<Order> CreateOrderAsync(OrderCreateDto dto)
@@ -48,30 +53,12 @@ namespace EVMManagement.BLL.Services.Class
             var query = _unitOfWork.Orders.GetQueryable();
             var totalCount = await _unitOfWork.Orders.CountAsync();
 
-            var items = query
+            var items = await query
                 .OrderByDescending(x => x.CreatedDate)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
-                .Select(x => new OrderResponse
-                {
-                    Id = x.Id,
-                    Code = x.Code,
-                    QuotationId = x.QuotationId,
-                    CustomerId = x.CustomerId,
-                    DealerId = x.DealerId,
-                    CreatedByUserId = x.CreatedByUserId,
-                    Status = x.Status,
-                    TotalAmount = x.TotalAmount,
-                    DiscountAmount = x.DiscountAmount,
-                    FinalAmount = x.FinalAmount,
-                    ExpectedDeliveryAt = x.ExpectedDeliveryAt,
-                    OrderType = x.OrderType,
-                    IsFinanced = x.IsFinanced,
-                    CreatedDate = x.CreatedDate,
-                    ModifiedDate = x.ModifiedDate,
-                    IsDeleted = x.IsDeleted
-                })
-                .ToList();
+                .ProjectTo<OrderResponse>(_mapper.ConfigurationProvider)
+                .ToListAsync();
 
             return PagedResult<OrderResponse>.Create(items, totalCount, pageNumber, pageSize);
         }
@@ -81,25 +68,7 @@ namespace EVMManagement.BLL.Services.Class
             var entity = await _unitOfWork.Orders.GetByIdAsync(id);
             if (entity == null) return null;
 
-            return new OrderResponse
-            {
-                Id = entity.Id,
-                Code = entity.Code,
-                QuotationId = entity.QuotationId,
-                CustomerId = entity.CustomerId,
-                DealerId = entity.DealerId,
-                CreatedByUserId = entity.CreatedByUserId,
-                Status = entity.Status,
-                TotalAmount = entity.TotalAmount,
-                DiscountAmount = entity.DiscountAmount,
-                FinalAmount = entity.FinalAmount,
-                ExpectedDeliveryAt = entity.ExpectedDeliveryAt,
-                OrderType = entity.OrderType,
-                IsFinanced = entity.IsFinanced,
-                CreatedDate = entity.CreatedDate,
-                ModifiedDate = entity.ModifiedDate,
-                IsDeleted = entity.IsDeleted
-            };
+            return _mapper.Map<OrderResponse>(entity);
         }
 
         public async Task<OrderResponse?> UpdateAsync(Guid id, OrderUpdateDto dto)

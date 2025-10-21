@@ -1,6 +1,8 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using AutoMapper;
+using AutoMapper.QueryableExtensions;
 using EVMManagement.BLL.DTOs.Request.HandoverRecord;
 using EVMManagement.BLL.DTOs.Response;
 using EVMManagement.BLL.DTOs.Response.HandoverRecord;
@@ -15,10 +17,12 @@ namespace EVMManagement.BLL.Services.Class
     public class HandoverRecordService : IHandoverRecordService
     {
         private readonly IUnitOfWork _unitOfWork;
+        private readonly IMapper _mapper;
 
-        public HandoverRecordService(IUnitOfWork unitOfWork)
+        public HandoverRecordService(IUnitOfWork unitOfWork, IMapper mapper)
         {
             _unitOfWork = unitOfWork;
+            _mapper = mapper;
         }
 
         public async Task<HandoverRecordResponseDto> CreateAsync(HandoverRecordCreateDto dto)
@@ -49,7 +53,7 @@ namespace EVMManagement.BLL.Services.Class
                 .Take(pageSize)
                 .ToListAsync();
 
-            var items = entities.Select(MapToDto).ToList();
+            var items = entities.Select(e => _mapper.Map<HandoverRecordResponseDto>(e)).ToList();
             return PagedResult<HandoverRecordResponseDto>.Create(items, total, pageNumber, pageSize);
         }
 
@@ -57,7 +61,7 @@ namespace EVMManagement.BLL.Services.Class
         {
             var entity = await _unitOfWork.HandoverRecords.GetByIdWithIncludesAsync(id);
             if (entity == null) return null;
-            return MapToDto(entity);
+            return _mapper.Map<HandoverRecordResponseDto>(entity);
         }
 
         public async Task<HandoverRecordResponseDto?> UpdateAsync(Guid id, HandoverRecordUpdateDto dto)
@@ -90,25 +94,6 @@ namespace EVMManagement.BLL.Services.Class
             await _unitOfWork.SaveChangesAsync();
 
             return await GetByIdAsync(id);
-        }
-
-        
-
-        private HandoverRecordResponseDto MapToDto(HandoverRecord entity)
-        {
-            return new HandoverRecordResponseDto
-            {
-                Id = entity.Id,
-                OrderId = entity.OrderId,
-                VehicleId = entity.VehicleId,
-                TransportDetailId = entity.TransportDetailId,
-                Notes = entity.Notes,
-                IsAccepted = entity.IsAccepted,
-                HandoverDate = entity.HandoverDate,
-                CreatedDate = entity.CreatedDate,
-                ModifiedDate = entity.ModifiedDate,
-                IsDeleted = entity.IsDeleted
-            };
         }
     }
 }

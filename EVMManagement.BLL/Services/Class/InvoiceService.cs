@@ -1,22 +1,27 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using AutoMapper;
+using AutoMapper.QueryableExtensions;
 using EVMManagement.BLL.DTOs.Request.Invoice;
 using EVMManagement.BLL.DTOs.Response;
 using EVMManagement.BLL.DTOs.Response.Invoice;
 using EVMManagement.BLL.Services.Interface;
 using EVMManagement.DAL.Models.Entities;
 using EVMManagement.DAL.UnitOfWork;
+using Microsoft.EntityFrameworkCore;
 
 namespace EVMManagement.BLL.Services.Class
 {
     public class InvoiceService : IInvoiceService
     {
         private readonly IUnitOfWork _unitOfWork;
+        private readonly IMapper _mapper;
 
-        public InvoiceService(IUnitOfWork unitOfWork)
+        public InvoiceService(IUnitOfWork unitOfWork, IMapper mapper)
         {
             _unitOfWork = unitOfWork;
+            _mapper = mapper;
         }
 
         public async Task<Invoice> CreateInvoiceAsync(InvoiceCreateDto dto)
@@ -40,22 +45,12 @@ namespace EVMManagement.BLL.Services.Class
             var query = _unitOfWork.Invoices.GetQueryable();
             var totalCount = await _unitOfWork.Invoices.CountAsync();
 
-            var items = query
+            var items = await query
                 .OrderByDescending(x => x.CreatedDate)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
-                .Select(x => new InvoiceResponse
-                {
-                    Id = x.Id,
-                    OrderId = x.OrderId,
-                    InvoiceCode = x.InvoiceCode,
-                    TotalAmount = x.TotalAmount,
-                    Status = x.Status,
-                    CreatedDate = x.CreatedDate,
-                    ModifiedDate = x.ModifiedDate,
-                    IsDeleted = x.IsDeleted
-                })
-                .ToList();
+                .ProjectTo<InvoiceResponse>(_mapper.ConfigurationProvider)
+                .ToListAsync();
 
             return PagedResult<InvoiceResponse>.Create(items, totalCount, pageNumber, pageSize);
         }
@@ -65,17 +60,7 @@ namespace EVMManagement.BLL.Services.Class
             var entity = await _unitOfWork.Invoices.GetByIdAsync(id);
             if (entity == null) return null;
 
-            return new InvoiceResponse
-            {
-                Id = entity.Id,
-                OrderId = entity.OrderId,
-                InvoiceCode = entity.InvoiceCode,
-                TotalAmount = entity.TotalAmount,
-                Status = entity.Status,
-                CreatedDate = entity.CreatedDate,
-                ModifiedDate = entity.ModifiedDate,
-                IsDeleted = entity.IsDeleted
-            };
+            return _mapper.Map<InvoiceResponse>(entity);
         }
 
         public async Task<InvoiceResponse?> UpdateAsync(Guid id, InvoiceUpdateDto dto)
