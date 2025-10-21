@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using EVMManagement.BLL.DTOs.Request.Auth;
 using EVMManagement.BLL.DTOs.Response;
 using EVMManagement.API.Services;
+using EVMManagement.DAL.Models.Enums;
 
 namespace EVMManagement.API.Controllers
 {
@@ -144,13 +145,13 @@ namespace EVMManagement.API.Controllers
         [Authorize]
         public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequestDto request, CancellationToken cancellationToken)
         {
-            var accountIdClaim = User.FindFirst("Id")?.Value;
-            if (string.IsNullOrWhiteSpace(accountIdClaim) || !Guid.TryParse(accountIdClaim, out var accountId))
+            var accountId = GetCurrentAccountId();
+            if (!accountId.HasValue)
             {
                 return Unauthorized(ApiResponse<string>.CreateFail("Không tìm thấy thông tin tài khoản.", errorCode: 401));
             }
 
-            var result = await _services.AuthService.ChangePasswordAsync(accountId, request, cancellationToken);
+            var result = await _services.AuthService.ChangePasswordAsync(accountId.Value, request, cancellationToken);
             if (result.Success)
             {
                 return Ok(result);
@@ -174,5 +175,43 @@ namespace EVMManagement.API.Controllers
 
             return StatusCode(statusCode, result);
         }
+
+        #region Helper Methods
+
+        protected Guid? GetCurrentAccountId()
+        {
+            var accountIdClaim = User.FindFirst("Id")?.Value;
+            if (string.IsNullOrWhiteSpace(accountIdClaim) || !Guid.TryParse(accountIdClaim, out var accountId))
+            {
+                return null;
+            }
+            return accountId;
+        }
+
+
+        protected AccountRole? GetCurrentRole()
+        {
+            var roleClaim = User.FindFirst("Role")?.Value;
+            if (string.IsNullOrWhiteSpace(roleClaim) || !Enum.TryParse<AccountRole>(roleClaim, out var role))
+            {
+                return null;
+            }
+            return role;
+        }
+
+
+        protected async Task<Guid?> GetCurrentUserDealerIdAsync()
+        {
+            var accountId = GetCurrentAccountId();
+            if (!accountId.HasValue)
+            {
+                return null;
+            }
+
+            var userProfile = await _services.UserProfileService.GetByAccountIdAsync(accountId.Value);
+            return userProfile?.DealerId;
+        }
+
+        #endregion
     }
 }
