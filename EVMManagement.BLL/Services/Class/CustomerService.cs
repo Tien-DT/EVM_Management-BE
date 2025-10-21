@@ -1,22 +1,27 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using AutoMapper;
+using AutoMapper.QueryableExtensions;
 using EVMManagement.BLL.DTOs.Request.Customer;
 using EVMManagement.BLL.DTOs.Response;
 using EVMManagement.BLL.DTOs.Response.Customer;
 using EVMManagement.BLL.Services.Interface;
 using EVMManagement.DAL.Models.Entities;
 using EVMManagement.DAL.UnitOfWork;
+using Microsoft.EntityFrameworkCore;
 
 namespace EVMManagement.BLL.Services.Class
 {
     public class CustomerService : ICustomerService
     {
         private readonly IUnitOfWork _unitOfWork;
+        private readonly IMapper _mapper;
 
-        public CustomerService(IUnitOfWork unitOfWork)
+        public CustomerService(IUnitOfWork unitOfWork, IMapper mapper)
         {
             _unitOfWork = unitOfWork;
+            _mapper = mapper;
         }
 
         public async Task<Customer> CreateCustomerAsync(CustomerCreateDto dto)
@@ -41,27 +46,31 @@ namespace EVMManagement.BLL.Services.Class
         public async Task<PagedResult<CustomerResponse>> GetAllAsync(int pageNumber = 1, int pageSize = 10)
         {
             var query = _unitOfWork.Customers.GetQueryable();
-            var totalCount = await _unitOfWork.Customers.CountAsync();
+            var totalCount = await query.CountAsync();
 
-            var items = query
+            var items = await query
                 .OrderByDescending(x => x.CreatedDate)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
-                .Select(x => new CustomerResponse
-                {
-                    Id = x.Id,
-                    FullName = x.FullName,
-                    Phone = x.Phone,
-                    Email = x.Email,
-                    Gender = x.Gender,
-                    Address = x.Address,
-                    Dob = x.Dob,
-                    CardId = x.CardId,
-                    CreatedDate = x.CreatedDate,
-                    ModifiedDate = x.ModifiedDate,
-                    IsDeleted = x.IsDeleted
-                })
-                .ToList();
+                .ProjectTo<CustomerResponse>(_mapper.ConfigurationProvider)
+                .ToListAsync();
+
+            return PagedResult<CustomerResponse>.Create(items, totalCount, pageNumber, pageSize);
+        }
+
+        public async Task<PagedResult<CustomerResponse>> GetByDealerIdAsync(Guid dealerId, int pageNumber = 1, int pageSize = 10)
+        {
+            var query = _unitOfWork.Customers.GetQueryable()
+                .Where(x => x.Orders.Any(o => o.DealerId == dealerId));
+
+            var totalCount = await query.CountAsync();
+
+            var items = await query
+                .OrderByDescending(x => x.CreatedDate)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ProjectTo<CustomerResponse>(_mapper.ConfigurationProvider)
+                .ToListAsync();
 
             return PagedResult<CustomerResponse>.Create(items, totalCount, pageNumber, pageSize);
         }
@@ -71,20 +80,7 @@ namespace EVMManagement.BLL.Services.Class
             var entity = await _unitOfWork.Customers.GetByIdAsync(id);
             if (entity == null) return null;
 
-            return new CustomerResponse
-            {
-                Id = entity.Id,
-                FullName = entity.FullName,
-                Phone = entity.Phone,
-                Email = entity.Email,
-                Gender = entity.Gender,
-                Address = entity.Address,
-                Dob = entity.Dob,
-                CardId = entity.CardId,
-                CreatedDate = entity.CreatedDate,
-                ModifiedDate = entity.ModifiedDate,
-                IsDeleted = entity.IsDeleted
-            };
+            return _mapper.Map<CustomerResponse>(entity);
         }
 
         public async Task<CustomerResponse?> UpdateAsync(Guid id, CustomerUpdateDto dto)
@@ -105,7 +101,7 @@ namespace EVMManagement.BLL.Services.Class
             _unitOfWork.Customers.Update(entity);
             await _unitOfWork.SaveChangesAsync();
 
-            return await GetByIdAsync(id);
+            return _mapper.Map<CustomerResponse>(entity);
         }
 
         public async Task<CustomerResponse?> UpdateIsDeletedAsync(Guid id, bool isDeleted)
@@ -123,7 +119,7 @@ namespace EVMManagement.BLL.Services.Class
             _unitOfWork.Customers.Update(entity);
             await _unitOfWork.SaveChangesAsync();
 
-            return await GetByIdAsync(id);
+            return _mapper.Map<CustomerResponse>(entity);
         }
 
         public async Task<bool> DeleteAsync(Guid id)
