@@ -34,16 +34,18 @@ namespace EVMManagement.BLL.Services.Class
                 throw new Exception("Order not found");
             }
 
-            var transactionCode = $"ORD{request.OrderId.ToString("N")[..8]}{DateTime.UtcNow:yyyyMMddHHmmss}";
             var createDate = DateTime.UtcNow;
-            var expireDate = createDate.AddMinutes(15);
+            var vnTimeZone = TimeZoneInfo.FindSystemTimeZoneById("SE Asia Standard Time");
+            var createDateVn = TimeZoneInfo.ConvertTimeFromUtc(createDate, vnTimeZone);
+            var expireDateVn = createDateVn.AddMinutes(15);
+            var transactionCode = $"ORD{request.OrderId.ToString("N")[..8]}{createDateVn:yyyyMMddHHmmss}";
 
             var vnpay = new VnPayLibrary();
             vnpay.AddRequestData("vnp_Version", _vnPaySettings.Version);
             vnpay.AddRequestData("vnp_Command", _vnPaySettings.Command);
             vnpay.AddRequestData("vnp_TmnCode", _vnPaySettings.TmnCode);
             vnpay.AddRequestData("vnp_Amount", ((long)(request.Amount * 100)).ToString());
-            vnpay.AddRequestData("vnp_CreateDate", createDate.ToString("yyyyMMddHHmmss"));
+            vnpay.AddRequestData("vnp_CreateDate", createDateVn.ToString("yyyyMMddHHmmss"));
             vnpay.AddRequestData("vnp_CurrCode", _vnPaySettings.CurrCode);
             vnpay.AddRequestData("vnp_IpAddr", ipAddress);
             vnpay.AddRequestData("vnp_Locale", request.Locale ?? _vnPaySettings.Locale);
@@ -51,7 +53,7 @@ namespace EVMManagement.BLL.Services.Class
             vnpay.AddRequestData("vnp_OrderType", "other");
             vnpay.AddRequestData("vnp_ReturnUrl", _vnPaySettings.ReturnUrl);
             vnpay.AddRequestData("vnp_TxnRef", transactionCode);
-            vnpay.AddRequestData("vnp_ExpireDate", expireDate.ToString("yyyyMMddHHmmss"));
+            vnpay.AddRequestData("vnp_ExpireDate", expireDateVn.ToString("yyyyMMddHHmmss"));
 
             if (!string.IsNullOrEmpty(request.BankCode))
             {
