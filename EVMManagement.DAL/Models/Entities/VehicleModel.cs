@@ -19,6 +19,9 @@ namespace EVMManagement.DAL.Models.Entities
 
         public string? Description { get; set; }
 
+        [MaxLength(500)]
+        public string? ImageUrl { get; set; }
+
         public bool Status { get; set; } = true;
 
         public VehicleModelRanking? Ranking { get; set; }
