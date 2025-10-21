@@ -22,7 +22,7 @@ namespace EVMManagement.API.Services
         public IWarehouseService WarehouseService { get; }
         public IVehicleTimeSlotService VehicleTimeSlotService { get; }
         public IMasterTimeSlotService MasterTimeSlotService { get; }
-        public IAvailableSlotService AvailableSlotService { get; }
+        // public IAvailableSlotService AvailableSlotService { get; } // Removed - now using VehicleTimeSlotService with Status = AVAILABLE
     public ITestDriveBookingService TestDriveBookingService { get; }
         public IEmailService EmailService { get; }
         public IStorageService StorageService { get; }
@@ -47,7 +47,7 @@ namespace EVMManagement.API.Services
             IWarehouseService warehouseService,
             IVehicleTimeSlotService vehicleTimeSlotService,
             IMasterTimeSlotService masterTimeSlotService,
-            IAvailableSlotService availableSlotService,
+            // IAvailableSlotService availableSlotService, // Removed - now using VehicleTimeSlotService with Status = AVAILABLE
             IDealerContractService dealerContractService,
             ITestDriveBookingService testDriveBookingService,
             IEmailService emailService,
@@ -72,7 +72,7 @@ namespace EVMManagement.API.Services
             WarehouseService = warehouseService;
             VehicleTimeSlotService = vehicleTimeSlotService;
             MasterTimeSlotService = masterTimeSlotService;
-            AvailableSlotService = availableSlotService;
+            // AvailableSlotService = availableSlotService; // Removed - now using VehicleTimeSlotService with Status = AVAILABLE
             DealerContractService = dealerContractService;
             TestDriveBookingService = testDriveBookingService;
             EmailService = emailService;

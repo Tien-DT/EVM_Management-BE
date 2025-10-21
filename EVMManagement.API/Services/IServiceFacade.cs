@@ -22,7 +22,7 @@ namespace EVMManagement.API.Services
         IWarehouseService WarehouseService { get; }
         IVehicleTimeSlotService VehicleTimeSlotService { get; }
         IMasterTimeSlotService MasterTimeSlotService { get; }
-        IAvailableSlotService AvailableSlotService { get; }
+        // IAvailableSlotService AvailableSlotService { get; } // Removed - now using VehicleTimeSlotService with Status = AVAILABLE
     ITestDriveBookingService TestDriveBookingService { get; }
         IEmailService EmailService { get; }
         IStorageService StorageService { get; }
