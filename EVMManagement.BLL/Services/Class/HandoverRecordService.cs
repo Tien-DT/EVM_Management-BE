@@ -6,6 +6,7 @@ using AutoMapper.QueryableExtensions;
 using EVMManagement.BLL.DTOs.Request.HandoverRecord;
 using EVMManagement.BLL.DTOs.Response;
 using EVMManagement.BLL.DTOs.Response.HandoverRecord;
+using EVMManagement.BLL.Helpers;
 using EVMManagement.BLL.Services.Interface;
 using EVMManagement.DAL.Models.Entities;
 using EVMManagement.DAL.Repositories.Interface;
@@ -33,7 +34,7 @@ namespace EVMManagement.BLL.Services.Class
                 VehicleId = dto.VehicleId,
                 TransportDetailId = dto.TransportDetailId,
                 Notes = dto.Notes,
-                HandoverDate = dto.HandoverDate
+                HandoverDate = DateTimeHelper.ToUtc(dto.HandoverDate)
             };
 
             await _unitOfWork.HandoverRecords.AddAsync(entity);
@@ -72,7 +73,7 @@ namespace EVMManagement.BLL.Services.Class
             if (dto.TransportDetailId.HasValue) entity.TransportDetailId = dto.TransportDetailId.Value;
             if (dto.Notes != null) entity.Notes = dto.Notes;
             if (dto.IsAccepted.HasValue) entity.IsAccepted = dto.IsAccepted.Value;
-            if (dto.HandoverDate.HasValue) entity.HandoverDate = dto.HandoverDate;
+            if (dto.HandoverDate.HasValue) entity.HandoverDate = DateTimeHelper.ToUtc(dto.HandoverDate);
 
             entity.ModifiedDate = DateTime.UtcNow;
             _unitOfWork.HandoverRecords.Update(entity);

@@ -6,6 +6,7 @@ using AutoMapper.QueryableExtensions;
 using EVMManagement.BLL.DTOs.Request.Customer;
 using EVMManagement.BLL.DTOs.Response;
 using EVMManagement.BLL.DTOs.Response.Customer;
+using EVMManagement.BLL.Helpers;
 using EVMManagement.BLL.Services.Interface;
 using EVMManagement.DAL.Models.Entities;
 using EVMManagement.DAL.UnitOfWork;
@@ -33,7 +34,7 @@ namespace EVMManagement.BLL.Services.Class
                 Email = dto.Email,
                 Gender = dto.Gender,
                 Address = dto.Address,
-                Dob = dto.Dob,
+                Dob = DateTimeHelper.ToUtc(dto.Dob),
                 CardId = dto.CardId
             };
 
@@ -93,7 +94,7 @@ namespace EVMManagement.BLL.Services.Class
             if (dto.Email != null) entity.Email = dto.Email;
             if (dto.Gender != null) entity.Gender = dto.Gender;
             if (dto.Address != null) entity.Address = dto.Address;
-            if (dto.Dob.HasValue) entity.Dob = dto.Dob;
+            if (dto.Dob.HasValue) entity.Dob = DateTimeHelper.ToUtc(dto.Dob);
             if (dto.CardId != null) entity.CardId = dto.CardId;
 
             entity.ModifiedDate = DateTime.UtcNow;

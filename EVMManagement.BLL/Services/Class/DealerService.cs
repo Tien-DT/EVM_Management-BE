@@ -6,6 +6,7 @@ using AutoMapper.QueryableExtensions;
 using EVMManagement.BLL.DTOs.Request.Dealer;
 using EVMManagement.BLL.DTOs.Response;
 using EVMManagement.BLL.DTOs.Response.Dealer;
+using EVMManagement.BLL.Helpers;
 using EVMManagement.BLL.Services.Interface;
 using EVMManagement.DAL.Models.Entities;
 using EVMManagement.DAL.UnitOfWork;
@@ -31,7 +32,7 @@ namespace EVMManagement.BLL.Services.Class
                 Address = dto.Address,
                 Phone = dto.Phone,
                 Email = dto.Email,
-                EstablishedAt = dto.EstablishedAt,
+                EstablishedAt = DateTimeHelper.ToUtc(dto.EstablishedAt),
                 IsActive = dto.IsActive
             };
 
@@ -85,7 +86,7 @@ namespace EVMManagement.BLL.Services.Class
             if (dto.Address != null) entity.Address = dto.Address;
             if (dto.Phone != null) entity.Phone = dto.Phone;
             if (dto.Email != null) entity.Email = dto.Email;
-            if (dto.EstablishedAt.HasValue) entity.EstablishedAt = dto.EstablishedAt;
+            if (dto.EstablishedAt.HasValue) entity.EstablishedAt = DateTimeHelper.ToUtc(dto.EstablishedAt);
             if (dto.IsActive.HasValue) entity.IsActive = dto.IsActive.Value;
 
             entity.ModifiedDate = DateTime.UtcNow;

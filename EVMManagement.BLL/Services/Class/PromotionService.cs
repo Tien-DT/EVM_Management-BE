@@ -6,6 +6,7 @@ using AutoMapper.QueryableExtensions;
 using EVMManagement.BLL.DTOs.Request.Promotion;
 using EVMManagement.BLL.DTOs.Response;
 using EVMManagement.BLL.DTOs.Response.Promotion;
+using EVMManagement.BLL.Helpers;
 using EVMManagement.BLL.Services.Interface;
 using EVMManagement.DAL.Models.Entities;
 using EVMManagement.DAL.UnitOfWork;
@@ -32,8 +33,8 @@ namespace EVMManagement.BLL.Services.Class
                 Name = dto.Name,
                 Description = dto.Description,
                 DiscountPercent = dto.DiscountPercent,
-                StartAt = dto.StartAt,
-                EndAt = dto.EndAt,
+                StartAt = DateTimeHelper.ToUtc(dto.StartAt),
+                EndAt = DateTimeHelper.ToUtc(dto.EndAt),
                 IsActive = dto.IsActive
             };
 
@@ -101,8 +102,8 @@ namespace EVMManagement.BLL.Services.Class
             if (dto.Name != null) entity.Name = dto.Name;
             if (dto.Description != null) entity.Description = dto.Description;
             if (dto.DiscountPercent.HasValue) entity.DiscountPercent = dto.DiscountPercent;
-            if (dto.StartAt.HasValue) entity.StartAt = dto.StartAt;
-            if (dto.EndAt.HasValue) entity.EndAt = dto.EndAt;
+            if (dto.StartAt.HasValue) entity.StartAt = DateTimeHelper.ToUtc(dto.StartAt);
+            if (dto.EndAt.HasValue) entity.EndAt = DateTimeHelper.ToUtc(dto.EndAt);
             if (dto.IsActive.HasValue) entity.IsActive = dto.IsActive.Value;
 
             entity.ModifiedDate = DateTime.UtcNow;

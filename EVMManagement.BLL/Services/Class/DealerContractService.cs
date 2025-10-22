@@ -1,6 +1,7 @@
 using EVMManagement.BLL.DTOs.Request.DealerContract;
 using EVMManagement.BLL.DTOs.Response;
 using EVMManagement.BLL.DTOs.Response.DealerContract;
+using EVMManagement.BLL.Helpers;
 using EVMManagement.BLL.Services.Interface;
 using EVMManagement.DAL.Models.Entities;
 using EVMManagement.DAL.UnitOfWork;
@@ -36,8 +37,8 @@ namespace EVMManagement.BLL.Services.Class
                 ContractCode = dto.ContractCode,
                 Terms = dto.Terms,
                 Status = dto.Status,
-                EffectiveDate = dto.EffectiveDate,
-                ExpirationDate = dto.ExpirationDate,
+                EffectiveDate = DateTimeHelper.ToUtc(dto.EffectiveDate),
+                ExpirationDate = DateTimeHelper.ToUtc(dto.ExpirationDate),
                 SignedByDealerUserId = null,
                 SignedByEvmUserId = null,
                 ContractLink = dto.ContractLink

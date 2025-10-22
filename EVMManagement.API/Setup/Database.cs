@@ -9,6 +9,9 @@ namespace EVMManagement.API.Setup
             this IServiceCollection services, 
             IConfiguration configuration)
         {
+            // Enable legacy timestamp behavior to handle DateTime with different Kinds
+            AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+
             // Configure PostgreSQL
             services.AddDbContext<AppDbContext>(options =>
             {
