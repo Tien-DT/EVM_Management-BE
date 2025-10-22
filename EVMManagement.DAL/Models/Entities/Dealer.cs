@@ -31,5 +31,6 @@ namespace EVMManagement.DAL.Models.Entities
         public virtual DealerContract? DealerContract { get; set; }
         public virtual ICollection<BankAccount> BankAccounts { get; set; } = new HashSet<BankAccount>();
         public virtual ICollection<VehicleTimeSlot> VehicleTimeSlots { get; set; } = new HashSet<VehicleTimeSlot>();
+        public virtual ICollection<Report> Reports { get; set; } = new HashSet<Report>();
     }
 }

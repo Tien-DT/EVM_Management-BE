@@ -55,6 +55,7 @@ namespace EVMManagement.DAL.Data
         public DbSet<TestDriveBooking> TestDriveBookings { get; set; }
 
         public DbSet<DigitalSignature> DigitalSignatures { get; set; }
+        public DbSet<Report> Reports { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -464,6 +465,27 @@ namespace EVMManagement.DAL.Data
                     .WithMany(dc => dc.DigitalSignatures)
                     .HasForeignKey(e => e.DealerContractId)
                     .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<Report>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.HasOne(e => e.Account)
+                    .WithMany(a => a.Reports)
+                    .HasForeignKey(e => e.AccountId)
+                    .OnDelete(DeleteBehavior.Restrict);
+                entity.HasOne(e => e.Dealer)
+                    .WithMany(d => d.Reports)
+                    .HasForeignKey(e => e.DealerId)
+                    .OnDelete(DeleteBehavior.SetNull);
+                entity.HasOne(e => e.Order)
+                    .WithMany(o => o.Reports)
+                    .HasForeignKey(e => e.OrderId)
+                    .OnDelete(DeleteBehavior.SetNull);
+                entity.HasOne(e => e.Transport)
+                    .WithMany(t => t.Reports)
+                    .HasForeignKey(e => e.TransportId)
+                    .OnDelete(DeleteBehavior.SetNull);
             });
         }
     }
