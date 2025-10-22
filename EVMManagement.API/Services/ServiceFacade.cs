@@ -28,6 +28,7 @@ namespace EVMManagement.API.Services
         public IStorageService StorageService { get; }
         public IDigitalSignatureService DigitalSignatureService { get; }
         public IVnPayService VnPayService { get; }
+        public IReportService ReportService { get; }
 
         public ServiceFacade(
             IAuthService authService,
@@ -53,7 +54,8 @@ namespace EVMManagement.API.Services
             IEmailService emailService,
             IStorageService storageService,
             IDigitalSignatureService digitalSignatureService,
-            IVnPayService vnPayService)
+            IVnPayService vnPayService,
+            IReportService reportService)
         {
             AuthService = authService;
             CustomerService = customerService;
@@ -79,6 +81,7 @@ namespace EVMManagement.API.Services
             StorageService = storageService;
             DigitalSignatureService = digitalSignatureService;
             VnPayService = vnPayService;
+            ReportService = reportService;
         }
     }
 }

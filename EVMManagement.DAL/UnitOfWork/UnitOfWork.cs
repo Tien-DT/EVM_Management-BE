@@ -38,6 +38,7 @@ namespace EVMManagement.DAL.UnitOfWork
         private IDigitalSignatureRepository? _digitalSignatures;
         private ITransactionRepository? _transactions;
         private IDepositRepository? _deposits;
+        private IReportRepository? _reports;
 
         public UnitOfWork(AppDbContext context)
         {
@@ -69,6 +70,7 @@ namespace EVMManagement.DAL.UnitOfWork
         public IDigitalSignatureRepository DigitalSignatures => _digitalSignatures ??= new DigitalSignatureRepository(_context);
         public ITransactionRepository Transactions => _transactions ??= new TransactionRepository(_context);
         public IDepositRepository Deposits => _deposits ??= new DepositRepository(_context);
+        public IReportRepository Reports => _reports ??= new ReportRepository(_context);
 
         public async Task<int> SaveChangesAsync()
         {
