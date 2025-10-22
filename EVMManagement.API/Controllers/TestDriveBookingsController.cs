@@ -122,5 +122,42 @@ namespace EVMManagement.API.Controllers
                 return BadRequest(ApiResponse<string>.CreateFail("Failed to send reminder email", errors, 400));
             }
         }
+
+        /// <summary>
+        /// Tạo lịch hẹn với thông tin khách hàng - được gọi khi nhân viên double-click vào ô trống trên màn hình Lịch
+        /// Hàm này xử lý:
+        /// 1. Tìm khách hàng bằng số điện thoại
+        /// 2. Nếu không tìm thấy, tạo khách hàng mới
+        /// 3. Tạo lịch hẹn (TestDriveBooking) cho khách hàng
+        /// </summary>
+        /// <param name="dto">QuickAppointmentCreateDto chứa VehicleTimeslotId, tên, SĐT, email, và ghi chú</param>
+        /// <returns>TestDriveBookingResponseDto của lịch hẹn vừa được tạo</returns>
+        [HttpPost("with-customer-info")]
+        public async Task<IActionResult> CreateWithCustomerInfo([FromBody] TestDriveCreateDto dto)
+        {
+            if (!ModelState.IsValid)
+            {
+                var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
+                return BadRequest(ApiResponse<TestDriveBookingResponseDto>.CreateFail("Validation failed", errors, 400));
+            }
+
+            try
+            {
+                var created = await _services.TestDriveBookingService.CreateWithCustomerInfoAsync(dto);
+                return CreatedAtAction(nameof(GetById), new { id = created.Id }, 
+                    ApiResponse<TestDriveBookingResponseDto>.CreateSuccess(created));
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ApiResponse<TestDriveBookingResponseDto>.CreateFail(
+                    $"Validation error: {ex.Message}", null, 400));
+            }
+            catch (Exception ex)
+            {
+                var errors = new List<string> { ex.Message };
+                return BadRequest(ApiResponse<TestDriveBookingResponseDto>.CreateFail(
+                    "Failed to create appointment with customer info", errors, 400));
+            }
+        }
     }
 }

@@ -133,5 +133,25 @@ namespace EVMManagement.BLL.Services.Class
 
             return true;
         }
+
+        public async Task<CustomerResponse?> SearchCustomerByPhoneAsync(string phone)
+        {
+            if (string.IsNullOrWhiteSpace(phone))
+            {
+                return null;
+            }
+
+            var normalizedPhone = System.Text.RegularExpressions.Regex.Replace(phone, @"[\s\-\(\)]", "");
+
+            var entity = await _unitOfWork.Customers.GetQueryable()
+                .FirstOrDefaultAsync(x => 
+                    x.Phone == phone || 
+                    x.Phone == normalizedPhone ||
+                    x.Phone.Contains(normalizedPhone));
+
+            if (entity == null) return null;
+
+            return _mapper.Map<CustomerResponse>(entity);
+        }
     }
 }

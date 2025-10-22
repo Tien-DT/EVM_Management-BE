@@ -11,6 +11,7 @@ using Microsoft.EntityFrameworkCore;
 using EVMManagement.DAL.UnitOfWork;
 using EVMManagement.DAL.Models.Enums;
 using EVMManagement.BLL.Services.Templates;
+using EVMManagement.BLL.DTOs.Request.Customer;
 
 namespace EVMManagement.BLL.Services.Class
 {
@@ -18,11 +19,13 @@ namespace EVMManagement.BLL.Services.Class
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly IEmailService _emailService;
+        private readonly ICustomerService _customerService;
 
-        public TestDriveBookingService(IUnitOfWork unitOfWork, IEmailService emailService)
+        public TestDriveBookingService(IUnitOfWork unitOfWork, IEmailService emailService, ICustomerService customerService)
         {
             _unitOfWork = unitOfWork;
             _emailService = emailService;
+            _customerService = customerService;
         }
 
         public async Task<TestDriveBookingResponseDto> CreateAsync(TestDriveBookingCreateDto dto)
@@ -51,6 +54,86 @@ namespace EVMManagement.BLL.Services.Class
             }
 
             return result;
+        }
+
+        public async Task<TestDriveBookingResponseDto> CreateWithCustomerInfoAsync(TestDriveCreateDto dto)
+        {
+            if (dto == null)
+            {
+                throw new ArgumentNullException(nameof(dto), "TestDriveCreateDto cannot be null");
+            }
+
+           
+            var vehicleTimeSlot = await _unitOfWork.VehicleTimeSlots.GetByIdAsync(dto.VehicleTimeslotId);
+            if (vehicleTimeSlot == null)
+            {
+                throw new Exception($"VehicleTimeSlot with ID {dto.VehicleTimeslotId} not found");
+            }
+
+            
+            if (vehicleTimeSlot.Status != TimeSlotStatus.AVAILABLE)
+            {
+                throw new Exception($"VehicleTimeSlot is not available. Current status: {vehicleTimeSlot.Status}");
+            }
+
+            
+            Customer customer = null;
+            var existingCustomer = await _customerService.SearchCustomerByPhoneAsync(dto.Phone);
+
+            if (existingCustomer != null)
+            {
+                
+                customer = await _unitOfWork.Customers.GetByIdAsync(existingCustomer.Id);
+            }
+            else
+            {
+                
+                if (string.IsNullOrWhiteSpace(dto.FullName))
+                {
+                    throw new ArgumentException("FullName is required when creating a new customer", nameof(dto.FullName));
+                }
+
+                var customerCreateDto = new CustomerCreateDto
+                {
+                    FullName = dto.FullName,
+                    Phone = dto.Phone,
+                    Email = dto.Email
+                };
+
+                customer = await _customerService.CreateCustomerAsync(customerCreateDto);
+            }
+
+            if (customer == null)
+            {
+                throw new Exception("Failed to get or create customer");
+            }
+
+            
+            var bookingCreateDto = new TestDriveBookingCreateDto
+            {
+                VehicleTimeslotId = dto.VehicleTimeslotId,
+                CustomerId = customer.Id,
+                Status = TestDriveBookingStatus.BOOKED,
+                Note = dto.Note
+            };
+
+            var booking = await CreateAsync(bookingCreateDto);
+
+            vehicleTimeSlot.Status = TimeSlotStatus.BOOKED;
+            vehicleTimeSlot.ModifiedDate = DateTime.UtcNow;
+            _unitOfWork.VehicleTimeSlots.Update(vehicleTimeSlot);
+            await _unitOfWork.SaveChangesAsync();
+
+            try
+            {
+                await SendTestDriveConfirmationEmailAsync(booking);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Failed to send test drive booking confirmation email: {ex.Message}", ex);
+            }
+
+            return booking;
         }
 
         private async Task SendTestDriveConfirmationEmailAsync(TestDriveBookingResponseDto booking)
@@ -103,59 +186,6 @@ namespace EVMManagement.BLL.Services.Class
             return PagedResult<TestDriveBookingResponseDto>.Create(items, total, pageNumber, pageSize);
         }
 
-        public async Task<PagedResult<TestDriveBookingResponseDto>> GetByDealerIdAsync(Guid dealerId, int pageNumber = 1, int pageSize = 10)
-        {
-            var query = _unitOfWork.TestDriveBookings.GetQueryableWithIncludes()
-                .Where(x => x.VehicleTimeSlot != null && x.VehicleTimeSlot.DealerId == dealerId);
-
-            var total = await query.CountAsync();
-
-            var entities = await query
-                .OrderByDescending(x => x.CreatedDate)
-                .Skip((pageNumber - 1) * pageSize)
-                .Take(pageSize)
-                .ToListAsync();
-
-            var items = entities.Select(MapToDto).ToList();
-
-            return PagedResult<TestDriveBookingResponseDto>.Create(items, total, pageNumber, pageSize);
-        }
-
-        public async Task<PagedResult<TestDriveBookingResponseDto>> GetByCustomerIdAsync(Guid customerId, int pageNumber = 1, int pageSize = 10)
-        {
-            var query = _unitOfWork.TestDriveBookings.GetQueryableWithIncludes()
-                .Where(x => x.CustomerId == customerId);
-
-            var total = await query.CountAsync();
-
-            var entities = await query
-                .OrderByDescending(x => x.CreatedDate)
-                .Skip((pageNumber - 1) * pageSize)
-                .Take(pageSize)
-                .ToListAsync();
-
-            var items = entities.Select(MapToDto).ToList();
-
-            return PagedResult<TestDriveBookingResponseDto>.Create(items, total, pageNumber, pageSize);
-        }
-
-        public async Task<PagedResult<TestDriveBookingResponseDto>> GetByStatusAsync(TestDriveBookingStatus status, int pageNumber = 1, int pageSize = 10)
-        {
-            var query = _unitOfWork.TestDriveBookings.GetQueryableWithIncludes()
-                .Where(x => x.Status == status);
-
-            var total = await query.CountAsync();
-
-            var entities = await query
-                .OrderByDescending(x => x.CreatedDate)
-                .Skip((pageNumber - 1) * pageSize)
-                .Take(pageSize)
-                .ToListAsync();
-
-            var items = entities.Select(MapToDto).ToList();
-
-            return PagedResult<TestDriveBookingResponseDto>.Create(items, total, pageNumber, pageSize);
-        }
 
         public async Task<PagedResult<TestDriveBookingResponseDto>> GetByFilterAsync(TestDriveBookingFilterDto filterDto)
         {

@@ -16,5 +16,6 @@ namespace EVMManagement.BLL.Services.Interface
         Task<CustomerResponse?> UpdateAsync(Guid id, CustomerUpdateDto dto);
         Task<CustomerResponse?> UpdateIsDeletedAsync(Guid id, bool isDeleted);
         Task<bool> DeleteAsync(Guid id);
+        Task<CustomerResponse?> SearchCustomerByPhoneAsync(string phone);
     }
 }
