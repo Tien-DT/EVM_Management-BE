@@ -39,63 +39,69 @@ namespace EVMManagement.BLL.Services.Class
 
                 if (!dto.DealerId.HasValue)
                 {
-                    return ApiResponse<WarehouseResponseDto>.CreateFail("DealerId là bắt buộc.", errorCode: 400);
+                    return ApiResponse<WarehouseResponseDto>.CreateFail("DealerId là bắt buộc khi tạo warehouse.", errorCode: 400);
                 }
 
                 if (currentUserRole == AccountRole.DEALER_MANAGER)
                 {
-                    // DEALER_MANAGER chỉ được tạo warehouse cho dealer của mình
                     if (!currentUserDealerId.HasValue)
                     {
-                        return ApiResponse<WarehouseResponseDto>.CreateFail("Không tìm thấy thông tin dealer của bạn.", errorCode: 403);
+                        _logger.LogWarning("DEALER_MANAGER không có DealerId khi tạo warehouse. WarehouseName: {WarehouseName}", dto.Name);
+                        return ApiResponse<WarehouseResponseDto>.CreateFail("Không tìm thấy thông tin dealer của bạn. Vui lòng liên hệ quản trị viên.", errorCode: 403);
                     }
 
                     if (dto.DealerId.Value != currentUserDealerId.Value)
                     {
-                        return ApiResponse<WarehouseResponseDto>.CreateFail("Bạn chỉ có thể tạo kho hàng cho dealer của mình.", errorCode: 403);
+                        _logger.LogWarning("DEALER_MANAGER {DealerManagerDealerId} cố tạo warehouse cho dealer khác {RequestDealerId}", 
+                            currentUserDealerId.Value, dto.DealerId.Value);
+                        return ApiResponse<WarehouseResponseDto>.CreateFail($"Bạn chỉ có thể tạo kho hàng cho dealer của mình. DealerId của bạn: {currentUserDealerId.Value}", errorCode: 403);
                     }
                 }
 
-                // validate dealer tồn tại 
                 var dealer = await _unitOfWork.Dealers.GetByIdAsync(dto.DealerId.Value);
                 if (dealer == null)
                 {
-                    return ApiResponse<WarehouseResponseDto>.CreateFail("Dealer không tồn tại.", errorCode: 404);
+                    _logger.LogWarning("Cố tạo warehouse cho dealer không tồn tại. DealerId: {DealerId}", dto.DealerId.Value);
+                    return ApiResponse<WarehouseResponseDto>.CreateFail($"Dealer với ID '{dto.DealerId.Value}' không tồn tại trong hệ thống.", errorCode: 404);
                 }
 
                 if (dealer.IsDeleted)
                 {
-                    return ApiResponse<WarehouseResponseDto>.CreateFail("Dealer đã bị xóa.", errorCode: 400);
+                    _logger.LogWarning("Cố tạo warehouse cho dealer đã bị xóa. DealerId: {DealerId}, DealerName: {DealerName}", 
+                        dto.DealerId.Value, dealer.Name);
+                    return ApiResponse<WarehouseResponseDto>.CreateFail($"Dealer '{dealer.Name}' đã bị xóa. Vui lòng liên hệ quản trị viên.", errorCode: 400);
                 }
 
                 if (!dealer.IsActive)
                 {
-                    return ApiResponse<WarehouseResponseDto>.CreateFail("Dealer chưa được kích hoạt.", errorCode: 400);
+                    _logger.LogWarning("Cố tạo warehouse cho dealer chưa active. DealerId: {DealerId}, DealerName: {DealerName}", 
+                        dto.DealerId.Value, dealer.Name);
+                    return ApiResponse<WarehouseResponseDto>.CreateFail($"Dealer '{dealer.Name}' chưa được kích hoạt. Vui lòng liên hệ quản trị viên.", errorCode: 400);
                 }
 
                 var entity = new Warehouse
                 {
                     DealerId = dto.DealerId.Value,
-                    Name = dto.Name,
-                    Address = dto.Address,
-                    Capacity = dto.Capacity,
-                    Type = dto.Type
-                };
+                Name = dto.Name,
+                Address = dto.Address,
+                Capacity = dto.Capacity,
+                Type = dto.Type
+            };
 
-                await _unitOfWork.Warehouses.AddAsync(entity);
-                await _unitOfWork.SaveChangesAsync();
+            await _unitOfWork.Warehouses.AddAsync(entity);
+            await _unitOfWork.SaveChangesAsync();
 
-                _logger.LogInformation("Warehouse được tạo thành công bởi {CurrentUserRole} cho dealer {DealerId}: {WarehouseName}",
-                    currentUserRole, dto.DealerId, dto.Name);
+                _logger.LogInformation("Warehouse được tạo thành công. CreatedBy: {CurrentUserRole}, WarehouseId: {WarehouseId}, DealerId: {DealerId}, DealerName: {DealerName}, WarehouseName: {WarehouseName}, Type: {Type}",
+                    currentUserRole, entity.Id, dto.DealerId, dealer.Name, dto.Name, dto.Type);
 
                 var result = MapToDto(entity);
-                return ApiResponse<WarehouseResponseDto>.CreateSuccess(result, "Tạo kho hàng thành công.");
+                return ApiResponse<WarehouseResponseDto>.CreateSuccess(result, $"Tạo kho hàng '{dto.Name}' thành công cho dealer '{dealer.Name}'.");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Lỗi khi tạo warehouse. CurrentUserRole: {CurrentUserRole}, DealerId: {DealerId}",
-                    currentUserRole, dto?.DealerId);
-                return ApiResponse<WarehouseResponseDto>.CreateFail(ex);
+                _logger.LogError(ex, "Lỗi nghiêm trọng khi tạo warehouse. CurrentUserRole: {CurrentUserRole}, DealerId: {DealerId}, WarehouseName: {WarehouseName}",
+                    currentUserRole, dto?.DealerId, dto?.Name);
+                return ApiResponse<WarehouseResponseDto>.CreateFail("Có lỗi xảy ra khi tạo kho hàng. Vui lòng thử lại sau hoặc liên hệ quản trị viên.", errorCode: 500);
             }
         }
 
@@ -152,7 +158,7 @@ namespace EVMManagement.BLL.Services.Class
                     return ApiResponse<WarehouseResponseDto>.CreateFail("Yêu cầu không hợp lệ.");
                 }
 
-                var entity = await _unitOfWork.Warehouses.GetByIdAsync(id);
+            var entity = await _unitOfWork.Warehouses.GetByIdAsync(id);
                 if (entity == null)
                 {
                     return ApiResponse<WarehouseResponseDto>.CreateFail("Warehouse không tồn tại.", errorCode: 404);
@@ -160,47 +166,50 @@ namespace EVMManagement.BLL.Services.Class
 
                 if (currentUserRole == AccountRole.DEALER_MANAGER)
                 {
-                    // DEALER_MANAGER chỉ được update warehouse của dealer mình
                     if (!currentUserDealerId.HasValue)
                     {
-                        return ApiResponse<WarehouseResponseDto>.CreateFail("Không tìm thấy thông tin dealer của bạn.", errorCode: 403);
+                        _logger.LogWarning("DEALER_MANAGER không có DealerId khi update warehouse. WarehouseId: {WarehouseId}", id);
+                        return ApiResponse<WarehouseResponseDto>.CreateFail("Không tìm thấy thông tin dealer của bạn. Vui lòng liên hệ quản trị viên.", errorCode: 403);
                     }
 
                     if (entity.DealerId != currentUserDealerId.Value)
                     {
-                        return ApiResponse<WarehouseResponseDto>.CreateFail("Bạn chỉ có thể cập nhật kho hàng của dealer mình.", errorCode: 403);
+                        _logger.LogWarning("DEALER_MANAGER {DealerManagerDealerId} cố update warehouse của dealer khác. WarehouseId: {WarehouseId}, WarehouseDealerId: {WarehouseDealerId}",
+                            currentUserDealerId.Value, id, entity.DealerId);
+                        return ApiResponse<WarehouseResponseDto>.CreateFail($"Bạn chỉ có thể cập nhật kho hàng của dealer mình. Warehouse này thuộc DealerId: {entity.DealerId}", errorCode: 403);
                     }
                 }
 
+                var oldName = entity.Name;
                 if (dto.DealerId.HasValue) entity.DealerId = dto.DealerId.Value;
-                if (dto.Name != null) entity.Name = dto.Name;
-                if (dto.Address != null) entity.Address = dto.Address;
-                if (dto.Capacity.HasValue) entity.Capacity = dto.Capacity;
-                entity.Type = dto.Type;
+            if (dto.Name != null) entity.Name = dto.Name;
+            if (dto.Address != null) entity.Address = dto.Address;
+            if (dto.Capacity.HasValue) entity.Capacity = dto.Capacity;
+            entity.Type = dto.Type;
                 entity.ModifiedDate = DateTime.UtcNow;
 
-                _unitOfWork.Warehouses.Update(entity);
-                await _unitOfWork.SaveChangesAsync();
+            _unitOfWork.Warehouses.Update(entity);
+            await _unitOfWork.SaveChangesAsync();
 
-                _logger.LogInformation("Warehouse được cập nhật bởi {CurrentUserRole} cho dealer {DealerId}: {WarehouseId}",
-                    currentUserRole, entity.DealerId, id);
+                _logger.LogInformation("Warehouse được cập nhật thành công. UpdatedBy: {CurrentUserRole}, WarehouseId: {WarehouseId}, DealerId: {DealerId}, OldName: '{OldName}', NewName: '{NewName}'",
+                    currentUserRole, id, entity.DealerId, oldName, entity.Name);
 
                 var result = await GetWarehouseByIdAsync(id);
-                return ApiResponse<WarehouseResponseDto>.CreateSuccess(result, "Cập nhật kho hàng thành công.");
+                return ApiResponse<WarehouseResponseDto>.CreateSuccess(result, $"Cập nhật kho hàng '{entity.Name}' thành công.");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Lỗi khi cập nhật warehouse. CurrentUserRole: {CurrentUserRole}, WarehouseId: {WarehouseId}",
+                _logger.LogError(ex, "Lỗi nghiêm trọng khi cập nhật warehouse. CurrentUserRole: {CurrentUserRole}, WarehouseId: {WarehouseId}",
                     currentUserRole, id);
-                return ApiResponse<WarehouseResponseDto>.CreateFail(ex);
+                return ApiResponse<WarehouseResponseDto>.CreateFail("Có lỗi xảy ra khi cập nhật kho hàng. Vui lòng thử lại sau hoặc liên hệ quản trị viên.", errorCode: 500);
             }
         }
 
         public async Task<ApiResponse<WarehouseResponseDto>> UpdateIsDeletedAsync(Guid id, bool isDeleted, AccountRole currentUserRole, Guid? currentUserDealerId = null)
         {
             try
-            {
-                var entity = await _unitOfWork.Warehouses.GetByIdAsync(id);
+        {
+            var entity = await _unitOfWork.Warehouses.GetByIdAsync(id);
                 if (entity == null)
                 {
                     return ApiResponse<WarehouseResponseDto>.CreateFail("Warehouse không tồn tại.", errorCode: 404);
@@ -210,36 +219,42 @@ namespace EVMManagement.BLL.Services.Class
                 {
                     if (!currentUserDealerId.HasValue)
                     {
-                        return ApiResponse<WarehouseResponseDto>.CreateFail("Không tìm thấy thông tin dealer của bạn.", errorCode: 403);
+                        _logger.LogWarning("DEALER_MANAGER không có DealerId khi soft delete warehouse. WarehouseId: {WarehouseId}", id);
+                        return ApiResponse<WarehouseResponseDto>.CreateFail("Không tìm thấy thông tin dealer của bạn. Vui lòng liên hệ quản trị viên.", errorCode: 403);
                     }
 
                     if (entity.DealerId != currentUserDealerId.Value)
                     {
-                        return ApiResponse<WarehouseResponseDto>.CreateFail("Bạn chỉ có thể xóa kho hàng của dealer mình.", errorCode: 403);
+                        _logger.LogWarning("DEALER_MANAGER {DealerManagerDealerId} cố soft delete warehouse của dealer khác. WarehouseId: {WarehouseId}, WarehouseDealerId: {WarehouseDealerId}",
+                            currentUserDealerId.Value, id, entity.DealerId);
+                        return ApiResponse<WarehouseResponseDto>.CreateFail($"Bạn chỉ có thể xóa kho hàng của dealer mình. Warehouse này thuộc DealerId: {entity.DealerId}", errorCode: 403);
                     }
                 }
 
-                entity.IsDeleted = isDeleted;
+                var warehouseName = entity.Name;
+            entity.IsDeleted = isDeleted;
                 if (isDeleted)
                 {
                     entity.DeletedDate = DateTime.UtcNow;
                 }
                 entity.ModifiedDate = DateTime.UtcNow;
 
-                _unitOfWork.Warehouses.Update(entity);
-                await _unitOfWork.SaveChangesAsync();
+            _unitOfWork.Warehouses.Update(entity);
+            await _unitOfWork.SaveChangesAsync();
 
-                _logger.LogInformation("Warehouse IsDeleted được cập nhật thành {IsDeleted} bởi {CurrentUserRole} cho dealer {DealerId}: {WarehouseId}",
-                    isDeleted, currentUserRole, entity.DealerId, id);
+                var action = isDeleted ? "xóa (soft delete)" : "khôi phục";
+                _logger.LogInformation("Warehouse được {Action} thành công. UpdatedBy: {CurrentUserRole}, WarehouseId: {WarehouseId}, DealerId: {DealerId}, WarehouseName: '{WarehouseName}', IsDeleted: {IsDeleted}",
+                    action, currentUserRole, id, entity.DealerId, warehouseName, isDeleted);
 
                 var result = await GetWarehouseByIdAsync(id);
-                return ApiResponse<WarehouseResponseDto>.CreateSuccess(result, $"Cập nhật trạng thái kho hàng thành công.");
+                var message = isDeleted ? $"Xóa kho hàng '{warehouseName}' thành công." : $"Khôi phục kho hàng '{warehouseName}' thành công.";
+                return ApiResponse<WarehouseResponseDto>.CreateSuccess(result, message);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Lỗi khi cập nhật IsDeleted của warehouse. CurrentUserRole: {CurrentUserRole}, WarehouseId: {WarehouseId}",
-                    currentUserRole, id);
-                return ApiResponse<WarehouseResponseDto>.CreateFail(ex);
+                _logger.LogError(ex, "Lỗi nghiêm trọng khi cập nhật IsDeleted của warehouse. CurrentUserRole: {CurrentUserRole}, WarehouseId: {WarehouseId}, IsDeleted: {IsDeleted}",
+                    currentUserRole, id, isDeleted);
+                return ApiResponse<WarehouseResponseDto>.CreateFail("Có lỗi xảy ra khi cập nhật trạng thái kho hàng. Vui lòng thử lại sau hoặc liên hệ quản trị viên.", errorCode: 500);
             }
         }
 

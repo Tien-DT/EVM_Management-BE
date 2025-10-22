@@ -189,42 +189,49 @@ namespace EVMManagement.BLL.Services.Class
                     return ApiResponse<string>.CreateFail("Role không hợp lệ cho đại lý.");
                 }
 
-                // Validate DealerId dựa trên role của user hiện tại
+                // validate DealerId dựa trên role của user hiện tại
                 if (currentUserRole == AccountRole.DEALER_MANAGER)
                 {
-                    // DEALER_MANAGER chỉ được tạo account cho dealer của mình
                     if (!currentUserDealerId.HasValue)
                     {
-                        return ApiResponse<string>.CreateFail("Không tìm thấy thông tin dealer của bạn.", errorCode: 403);
+                        _logger.LogWarning("DEALER_MANAGER không có DealerId trong UserProfile. Email: {Email}", request.Email);
+                        return ApiResponse<string>.CreateFail("Không tìm thấy thông tin dealer của bạn. Vui lòng liên hệ quản trị viên để được hỗ trợ.", errorCode: 403);
                     }
 
                     if (request.DealerId != currentUserDealerId.Value)
                     {
-                        return ApiResponse<string>.CreateFail("Bạn chỉ có thể tạo tài khoản cho dealer của mình.", errorCode: 403);
+                        _logger.LogWarning("DEALER_MANAGER {DealerManagerDealerId} cố tạo account cho dealer khác {RequestDealerId}", 
+                            currentUserDealerId.Value, request.DealerId);
+                        return ApiResponse<string>.CreateFail($"Bạn chỉ có thể tạo tài khoản cho dealer của mình. DealerId của bạn: {currentUserDealerId.Value}", errorCode: 403);
                     }
                 }
 
-                // Kiểm tra dealer có tồn tại không
                 var dealer = await _unitOfWork.Dealers.GetByIdAsync(request.DealerId);
                 if (dealer == null)
                 {
-                    return ApiResponse<string>.CreateFail("Dealer không tồn tại.", errorCode: 404);
+                    _logger.LogWarning("Cố tạo account cho dealer không tồn tại. DealerId: {DealerId}", request.DealerId);
+                    return ApiResponse<string>.CreateFail($"Dealer với ID '{request.DealerId}' không tồn tại trong hệ thống.", errorCode: 404);
                 }
 
                 if (dealer.IsDeleted)
                 {
-                    return ApiResponse<string>.CreateFail("Dealer đã bị xóa.", errorCode: 400);
+                    _logger.LogWarning("Cố tạo account cho dealer đã bị xóa. DealerId: {DealerId}, DealerName: {DealerName}", 
+                        request.DealerId, dealer.Name);
+                    return ApiResponse<string>.CreateFail($"Dealer '{dealer.Name}' đã bị xóa. Vui lòng liên hệ quản trị viên.", errorCode: 400);
                 }
 
                 if (!dealer.IsActive)
                 {
-                    return ApiResponse<string>.CreateFail("Dealer chưa được kích hoạt.", errorCode: 400);
+                    _logger.LogWarning("Cố tạo account cho dealer chưa active. DealerId: {DealerId}, DealerName: {DealerName}", 
+                        request.DealerId, dealer.Name);
+                    return ApiResponse<string>.CreateFail($"Dealer '{dealer.Name}' chưa được kích hoạt. Vui lòng liên hệ quản trị viên.", errorCode: 400);
                 }
 
                 var existed = await _unitOfWork.Accounts.GetByEmailAsync(request.Email);
                 if (existed != null)
                 {
-                    return ApiResponse<string>.CreateFail("Email đã được sử dụng.", errorCode: 409);
+                    _logger.LogWarning("Cố tạo account với email đã tồn tại. Email: {Email}", request.Email);
+                    return ApiResponse<string>.CreateFail($"Email '{request.Email}' đã được sử dụng. Vui lòng sử dụng email khác.", errorCode: 409);
                 }
 
                 var plainPassword = GenerateRandomPassword();
@@ -255,22 +262,23 @@ namespace EVMManagement.BLL.Services.Class
                 {
                     var emailBody = EmailTemplates.WelcomeDealerEmail(request.FullName, request.Email, plainPassword);
                     await _emailService.SendEmailAsync(request.Email, EmailTemplates.Subjects.WelcomeDealer, emailBody, isHtml: true);
+                    _logger.LogInformation("Email chào mừng đã được gửi đến {Email} cho account mới tạo", request.Email);
                 }
                 catch (Exception emailEx)
                 {
-                    _logger.LogError(emailEx, "Lỗi khi gửi email đến {Email}", request.Email);
+                    _logger.LogError(emailEx, "Lỗi khi gửi email chào mừng đến {Email}. Account đã được tạo nhưng email không gửi được.", request.Email);
                 }
 
-                _logger.LogInformation("Tài khoản dealer {Role} được tạo thành công bởi {CurrentUserRole} cho dealer {DealerId}: {Email}", 
-                    request.Role, currentUserRole, request.DealerId, request.Email);
+                _logger.LogInformation("Tài khoản dealer {Role} được tạo thành công. CreatedBy: {CurrentUserRole}, AccountId: {AccountId}, DealerId: {DealerId}, Email: {Email}, DealerName: {DealerName}", 
+                    request.Role, currentUserRole, account.Id, request.DealerId, request.Email, dealer.Name);
 
-                return ApiResponse<string>.CreateSuccess(account.Id.ToString(), "Tạo tài khoản đại lý thành công.");
+                return ApiResponse<string>.CreateSuccess(account.Id.ToString(), $"Tạo tài khoản cho '{request.FullName}' thành công. Thông tin đăng nhập đã được gửi qua email.");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Lỗi khi đăng ký tài khoản đại lý. CurrentUserRole: {CurrentUserRole}, DealerId: {DealerId}", 
-                    currentUserRole, request?.DealerId);
-                return ApiResponse<string>.CreateFail(ex);
+                _logger.LogError(ex, "Lỗi nghiêm trọng khi đăng ký tài khoản dealer. CurrentUserRole: {CurrentUserRole}, DealerId: {DealerId}, Email: {Email}, FullName: {FullName}", 
+                    currentUserRole, request?.DealerId, request?.Email, request?.FullName);
+                return ApiResponse<string>.CreateFail("Có lỗi xảy ra khi tạo tài khoản. Vui lòng thử lại sau hoặc liên hệ quản trị viên.", errorCode: 500);
             }
         }
 
