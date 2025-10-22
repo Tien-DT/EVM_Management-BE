@@ -2,6 +2,7 @@ using AutoMapper;
 using EVMManagement.BLL.DTOs.Request.Contract;
 using EVMManagement.BLL.DTOs.Request.Customer;
 using EVMManagement.BLL.DTOs.Request.Dealer;
+using EVMManagement.BLL.DTOs.Request.Deposit;
 using EVMManagement.BLL.DTOs.Request.DealerContract;
 using EVMManagement.BLL.DTOs.Request.HandoverRecord;
 using EVMManagement.BLL.DTOs.Request.Invoice;
@@ -21,6 +22,7 @@ using EVMManagement.BLL.DTOs.Response.Contract;
 using EVMManagement.BLL.DTOs.Response.Customer;
 using EVMManagement.BLL.DTOs.Response.Dealer;
 using EVMManagement.BLL.DTOs.Response.DealerContract;
+using EVMManagement.BLL.DTOs.Response.Deposit;
 using EVMManagement.BLL.DTOs.Response.DigitalSignature;
 using EVMManagement.BLL.DTOs.Response.HandoverRecord;
 using EVMManagement.BLL.DTOs.Response.Invoice;
@@ -176,6 +178,10 @@ namespace EVMManagement.BLL.Mappings
             // Report Mappings
             CreateMap<ReportCreateDto, Report>();
             CreateMap<Report, ReportResponse>();
+
+            // Deposit Mappings
+            CreateMap<DepositCreateDto, Deposit>();
+            CreateMap<Deposit, DepositResponse>();
         }
     }
 }
