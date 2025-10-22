@@ -11,6 +11,7 @@ using EVMManagement.BLL.DTOs.Request.OrderDetail;
 using EVMManagement.BLL.DTOs.Request.Promotion;
 using EVMManagement.BLL.DTOs.Request.Quotation;
 using EVMManagement.BLL.DTOs.Request.QuotationDetail;
+using EVMManagement.BLL.DTOs.Request.Report;
 using EVMManagement.BLL.DTOs.Request.TestDriveBooking;
 using EVMManagement.BLL.DTOs.Request.User;
 using EVMManagement.BLL.DTOs.Request.Vehicle;
@@ -29,6 +30,7 @@ using EVMManagement.BLL.DTOs.Response.OrderDetail;
 using EVMManagement.BLL.DTOs.Response.Promotion;
 using EVMManagement.BLL.DTOs.Response.Quotation;
 using EVMManagement.BLL.DTOs.Response.QuotationDetail;
+using EVMManagement.BLL.DTOs.Response.Report;
 using EVMManagement.BLL.DTOs.Response.TestDriveBooking;
 using EVMManagement.BLL.DTOs.Response.User;
 using EVMManagement.BLL.DTOs.Response.Vehicle;
@@ -170,6 +172,10 @@ namespace EVMManagement.BLL.Mappings
 
             // DigitalSignature Mappings
             CreateMap<DigitalSignature, DigitalSignatureResponse>();
+
+            // Report Mappings
+            CreateMap<ReportCreateDto, Report>();
+            CreateMap<Report, ReportResponse>();
         }
     }
 }

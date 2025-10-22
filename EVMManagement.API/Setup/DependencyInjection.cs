@@ -41,6 +41,7 @@ namespace EVMManagement.API.Setup
             services.AddScoped<IDigitalSignatureRepository, DigitalSignatureRepository>();
             services.AddScoped<ITransactionRepository, TransactionRepository>();
             services.AddScoped<IDepositRepository, DepositRepository>();
+            services.AddScoped<IReportRepository, ReportRepository>();
 
             services.AddScoped<IUserProfileService, UserProfileService>();
             services.AddScoped<IVehicleVariantService, VehicleVariantService>();
@@ -65,6 +66,7 @@ namespace EVMManagement.API.Setup
             services.AddScoped<IQuotationService, QuotationService>();
             services.AddScoped<IDigitalSignatureService, DigitalSignatureService>();
             services.AddScoped<IVnPayService, VnPayService>();
+            services.AddScoped<IReportService, ReportService>();
 
             services.AddScoped<IHandoverRecordService, HandoverRecordService>();
 

@@ -30,6 +30,7 @@ namespace EVMManagement.DAL.UnitOfWork
         IDigitalSignatureRepository DigitalSignatures { get; }
         ITransactionRepository Transactions { get; }
         IDepositRepository Deposits { get; }
+        IReportRepository Reports { get; }
 
         Task<int> SaveChangesAsync();
         Task BeginTransactionAsync();
