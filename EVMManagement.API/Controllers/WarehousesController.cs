@@ -118,18 +118,94 @@ namespace EVMManagement.API.Controllers
                 return BadRequest(ApiResponse<WarehouseResponseDto>.CreateFail("Validation failed", errors, 400));
             }
 
-            var updated = await Services.WarehouseService.UpdateWarehouseAsync(id, dto);
-            if (updated == null) return NotFound(ApiResponse<WarehouseResponseDto>.CreateFail("Warehouse not found", null, 404));
-            return Ok(ApiResponse<WarehouseResponseDto>.CreateSuccess(updated));
+            var currentRole = GetCurrentRole();
+            if (!currentRole.HasValue)
+            {
+                return Unauthorized(ApiResponse<string>.CreateFail("Không tìm thấy thông tin role của tài khoản.", errorCode: 401));
+            }
+
+            Guid? currentUserDealerId = null;
+            if (currentRole.Value == AccountRole.DEALER_MANAGER)
+            {
+                currentUserDealerId = await GetCurrentUserDealerIdAsync();
+                if (!currentUserDealerId.HasValue)
+                {
+                    return BadRequest(ApiResponse<string>.CreateFail("Không tìm thấy thông tin dealer của bạn. Vui lòng liên hệ admin.", errorCode: 400));
+                }
+            }
+
+            var result = await Services.WarehouseService.UpdateWarehouseAsync(id, dto, currentRole.Value, currentUserDealerId);
+            
+            if (!result.Success)
+            {
+                var statusCode = result.ErrorCode ?? StatusCodes.Status400BadRequest;
+                
+                if (statusCode == StatusCodes.Status401Unauthorized)
+                {
+                    return Unauthorized(result);
+                }
+
+                if (statusCode == StatusCodes.Status403Forbidden)
+                {
+                    return StatusCode(StatusCodes.Status403Forbidden, result);
+                }
+
+                if (statusCode == StatusCodes.Status404NotFound)
+                {
+                    return NotFound(result);
+                }
+
+                return StatusCode(statusCode, result);
+            }
+
+            return Ok(result);
         }
 
         [HttpPatch("{id}")]
         [Authorize(Roles = "DEALER_MANAGER,EVM_ADMIN")]
         public async Task<IActionResult> UpdateIsDeleted(Guid id, [FromQuery] bool isDeleted)
         {
-            var updated = await Services.WarehouseService.UpdateIsDeletedAsync(id, isDeleted);
-            if (updated == null) return NotFound(ApiResponse<WarehouseResponseDto>.CreateFail("Warehouse not found", null, 404));
-            return Ok(ApiResponse<WarehouseResponseDto>.CreateSuccess(updated));
+            var currentRole = GetCurrentRole();
+            if (!currentRole.HasValue)
+            {
+                return Unauthorized(ApiResponse<string>.CreateFail("Không tìm thấy thông tin role của tài khoản.", errorCode: 401));
+            }
+
+            Guid? currentUserDealerId = null;
+            if (currentRole.Value == AccountRole.DEALER_MANAGER)
+            {
+                currentUserDealerId = await GetCurrentUserDealerIdAsync();
+                if (!currentUserDealerId.HasValue)
+                {
+                    return BadRequest(ApiResponse<string>.CreateFail("Không tìm thấy thông tin dealer của bạn. Vui lòng liên hệ admin.", errorCode: 400));
+                }
+            }
+
+            var result = await Services.WarehouseService.UpdateIsDeletedAsync(id, isDeleted, currentRole.Value, currentUserDealerId);
+            
+            if (!result.Success)
+            {
+                var statusCode = result.ErrorCode ?? StatusCodes.Status400BadRequest;
+                
+                if (statusCode == StatusCodes.Status401Unauthorized)
+                {
+                    return Unauthorized(result);
+                }
+
+                if (statusCode == StatusCodes.Status403Forbidden)
+                {
+                    return StatusCode(StatusCodes.Status403Forbidden, result);
+                }
+
+                if (statusCode == StatusCodes.Status404NotFound)
+                {
+                    return NotFound(result);
+                }
+
+                return StatusCode(statusCode, result);
+            }
+
+            return Ok(result);
         }
 
         
