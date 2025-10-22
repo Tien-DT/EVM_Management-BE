@@ -143,33 +143,104 @@ namespace EVMManagement.BLL.Services.Class
             return MapToDto(entity);
         }
 
-        public async Task<WarehouseResponseDto?> UpdateWarehouseAsync(Guid id, WarehouseUpdateDto dto)
+        public async Task<ApiResponse<WarehouseResponseDto>> UpdateWarehouseAsync(Guid id, WarehouseUpdateDto dto, AccountRole currentUserRole, Guid? currentUserDealerId = null)
         {
-            var entity = await _unitOfWork.Warehouses.GetByIdAsync(id);
-            if (entity == null) return null;
+            try
+            {
+                if (dto == null)
+                {
+                    return ApiResponse<WarehouseResponseDto>.CreateFail("Yêu cầu không hợp lệ.");
+                }
 
-            if (dto.DealerId.HasValue) entity.DealerId = dto.DealerId;
-            if (dto.Name != null) entity.Name = dto.Name;
-            if (dto.Address != null) entity.Address = dto.Address;
-            if (dto.Capacity.HasValue) entity.Capacity = dto.Capacity;
-            entity.Type = dto.Type;
+                var entity = await _unitOfWork.Warehouses.GetByIdAsync(id);
+                if (entity == null)
+                {
+                    return ApiResponse<WarehouseResponseDto>.CreateFail("Warehouse không tồn tại.", errorCode: 404);
+                }
 
-            _unitOfWork.Warehouses.Update(entity);
-            await _unitOfWork.SaveChangesAsync();
+                if (currentUserRole == AccountRole.DEALER_MANAGER)
+                {
+                    // DEALER_MANAGER chỉ được update warehouse của dealer mình
+                    if (!currentUserDealerId.HasValue)
+                    {
+                        return ApiResponse<WarehouseResponseDto>.CreateFail("Không tìm thấy thông tin dealer của bạn.", errorCode: 403);
+                    }
 
-            return await GetWarehouseByIdAsync(id);
+                    if (entity.DealerId != currentUserDealerId.Value)
+                    {
+                        return ApiResponse<WarehouseResponseDto>.CreateFail("Bạn chỉ có thể cập nhật kho hàng của dealer mình.", errorCode: 403);
+                    }
+                }
+
+                if (dto.DealerId.HasValue) entity.DealerId = dto.DealerId.Value;
+                if (dto.Name != null) entity.Name = dto.Name;
+                if (dto.Address != null) entity.Address = dto.Address;
+                if (dto.Capacity.HasValue) entity.Capacity = dto.Capacity;
+                entity.Type = dto.Type;
+                entity.ModifiedDate = DateTime.UtcNow;
+
+                _unitOfWork.Warehouses.Update(entity);
+                await _unitOfWork.SaveChangesAsync();
+
+                _logger.LogInformation("Warehouse được cập nhật bởi {CurrentUserRole} cho dealer {DealerId}: {WarehouseId}",
+                    currentUserRole, entity.DealerId, id);
+
+                var result = await GetWarehouseByIdAsync(id);
+                return ApiResponse<WarehouseResponseDto>.CreateSuccess(result, "Cập nhật kho hàng thành công.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi cập nhật warehouse. CurrentUserRole: {CurrentUserRole}, WarehouseId: {WarehouseId}",
+                    currentUserRole, id);
+                return ApiResponse<WarehouseResponseDto>.CreateFail(ex);
+            }
         }
 
-        public async Task<WarehouseResponseDto?> UpdateIsDeletedAsync(Guid id, bool isDeleted)
+        public async Task<ApiResponse<WarehouseResponseDto>> UpdateIsDeletedAsync(Guid id, bool isDeleted, AccountRole currentUserRole, Guid? currentUserDealerId = null)
         {
-            var entity = await _unitOfWork.Warehouses.GetByIdAsync(id);
-            if (entity == null) return null;
+            try
+            {
+                var entity = await _unitOfWork.Warehouses.GetByIdAsync(id);
+                if (entity == null)
+                {
+                    return ApiResponse<WarehouseResponseDto>.CreateFail("Warehouse không tồn tại.", errorCode: 404);
+                }
 
-            entity.IsDeleted = isDeleted;
-            _unitOfWork.Warehouses.Update(entity);
-            await _unitOfWork.SaveChangesAsync();
+                if (currentUserRole == AccountRole.DEALER_MANAGER)
+                {
+                    if (!currentUserDealerId.HasValue)
+                    {
+                        return ApiResponse<WarehouseResponseDto>.CreateFail("Không tìm thấy thông tin dealer của bạn.", errorCode: 403);
+                    }
 
-            return await GetWarehouseByIdAsync(id);
+                    if (entity.DealerId != currentUserDealerId.Value)
+                    {
+                        return ApiResponse<WarehouseResponseDto>.CreateFail("Bạn chỉ có thể xóa kho hàng của dealer mình.", errorCode: 403);
+                    }
+                }
+
+                entity.IsDeleted = isDeleted;
+                if (isDeleted)
+                {
+                    entity.DeletedDate = DateTime.UtcNow;
+                }
+                entity.ModifiedDate = DateTime.UtcNow;
+
+                _unitOfWork.Warehouses.Update(entity);
+                await _unitOfWork.SaveChangesAsync();
+
+                _logger.LogInformation("Warehouse IsDeleted được cập nhật thành {IsDeleted} bởi {CurrentUserRole} cho dealer {DealerId}: {WarehouseId}",
+                    isDeleted, currentUserRole, entity.DealerId, id);
+
+                var result = await GetWarehouseByIdAsync(id);
+                return ApiResponse<WarehouseResponseDto>.CreateSuccess(result, $"Cập nhật trạng thái kho hàng thành công.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi cập nhật IsDeleted của warehouse. CurrentUserRole: {CurrentUserRole}, WarehouseId: {WarehouseId}",
+                    currentUserRole, id);
+                return ApiResponse<WarehouseResponseDto>.CreateFail(ex);
+            }
         }
 
        
