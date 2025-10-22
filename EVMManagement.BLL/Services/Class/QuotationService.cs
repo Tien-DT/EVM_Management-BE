@@ -35,7 +35,7 @@ namespace EVMManagement.BLL.Services.Class
                 CreatedByUserId = dto.CreatedByUserId,
                 Note = dto.Note,
                 Status = dto.Status,
-                ValidUntil = dto.ValidUntil
+                ValidUntil = dto.ValidUntil.HasValue ? DateTime.SpecifyKind(dto.ValidUntil.Value, DateTimeKind.Utc) : null
             };
 
             decimal subtotal = 0;
@@ -124,7 +124,7 @@ namespace EVMManagement.BLL.Services.Class
             if (dto.CustomerId.HasValue) entity.CustomerId = dto.CustomerId;
             if (dto.Note != null) entity.Note = dto.Note;
             if (dto.Status.HasValue) entity.Status = dto.Status.Value;
-            if (dto.ValidUntil.HasValue) entity.ValidUntil = dto.ValidUntil;
+            if (dto.ValidUntil.HasValue) entity.ValidUntil = DateTime.SpecifyKind(dto.ValidUntil.Value, DateTimeKind.Utc);
 
             if (dto.QuotationDetails != null && dto.QuotationDetails.Any())
             {
