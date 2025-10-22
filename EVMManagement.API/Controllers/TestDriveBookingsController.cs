@@ -123,15 +123,6 @@ namespace EVMManagement.API.Controllers
             }
         }
 
-        /// <summary>
-        /// Tạo lịch hẹn với thông tin khách hàng - được gọi khi nhân viên double-click vào ô trống trên màn hình Lịch
-        /// Hàm này xử lý:
-        /// 1. Tìm khách hàng bằng số điện thoại
-        /// 2. Nếu không tìm thấy, tạo khách hàng mới
-        /// 3. Tạo lịch hẹn (TestDriveBooking) cho khách hàng
-        /// </summary>
-        /// <param name="dto">QuickAppointmentCreateDto chứa VehicleTimeslotId, tên, SĐT, email, và ghi chú</param>
-        /// <returns>TestDriveBookingResponseDto của lịch hẹn vừa được tạo</returns>
         [HttpPost("with-customer-info")]
         public async Task<IActionResult> CreateWithCustomerInfo([FromBody] TestDriveCreateDto dto)
         {
