@@ -23,5 +23,6 @@ namespace EVMManagement.DAL.Models.Entities
 
         public DateTime? DeliveredAt { get; set; }
         public virtual ICollection<TransportDetail> TransportDetails { get; set; } = new HashSet<TransportDetail>();
+        public virtual ICollection<Report> Reports { get; set; } = new HashSet<Report>();
     }
 }

@@ -49,5 +49,6 @@ namespace EVMManagement.DAL.Models.Entities
         public virtual Invoice? Invoice { get; set; }
         public virtual InstallmentPlan? InstallmentPlan { get; set; }
         public virtual HandoverRecord? HandoverRecord { get; set; }
+        public virtual ICollection<Report> Reports { get; set; } = new HashSet<Report>();
     }
 }
