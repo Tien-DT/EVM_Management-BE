@@ -67,6 +67,7 @@ namespace EVMManagement.API.Setup
             services.AddScoped<IDigitalSignatureService, DigitalSignatureService>();
             services.AddScoped<IVnPayService, VnPayService>();
             services.AddScoped<IReportService, ReportService>();
+            services.AddScoped<IDepositService, DepositService>();
 
             services.AddScoped<IHandoverRecordService, HandoverRecordService>();
 

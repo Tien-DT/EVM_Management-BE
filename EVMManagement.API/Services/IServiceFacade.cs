@@ -29,5 +29,6 @@ namespace EVMManagement.API.Services
         IDigitalSignatureService DigitalSignatureService { get; }
         IVnPayService VnPayService { get; }
         IReportService ReportService { get; }
+        IDepositService DepositService { get; }
     }
 }
