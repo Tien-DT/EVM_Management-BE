@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using EVMManagement.BLL.DTOs.Request.Quotation;
 using EVMManagement.BLL.DTOs.Response;
 using EVMManagement.BLL.DTOs.Response.Quotation;
+using EVMManagement.BLL.Helpers;
 using EVMManagement.BLL.Services.Interface;
 using EVMManagement.DAL.Models.Entities;
 using EVMManagement.DAL.Models.Enums;
@@ -35,7 +36,7 @@ namespace EVMManagement.BLL.Services.Class
                 CreatedByUserId = dto.CreatedByUserId,
                 Note = dto.Note,
                 Status = dto.Status,
-                ValidUntil = dto.ValidUntil.HasValue ? DateTime.SpecifyKind(dto.ValidUntil.Value, DateTimeKind.Utc) : null
+                ValidUntil = DateTimeHelper.ToUtc(dto.ValidUntil)
             };
 
             decimal subtotal = 0;
@@ -124,7 +125,7 @@ namespace EVMManagement.BLL.Services.Class
             if (dto.CustomerId.HasValue) entity.CustomerId = dto.CustomerId;
             if (dto.Note != null) entity.Note = dto.Note;
             if (dto.Status.HasValue) entity.Status = dto.Status.Value;
-            if (dto.ValidUntil.HasValue) entity.ValidUntil = DateTime.SpecifyKind(dto.ValidUntil.Value, DateTimeKind.Utc);
+            if (dto.ValidUntil.HasValue) entity.ValidUntil = DateTimeHelper.ToUtc(dto.ValidUntil);
 
             if (dto.QuotationDetails != null && dto.QuotationDetails.Any())
             {

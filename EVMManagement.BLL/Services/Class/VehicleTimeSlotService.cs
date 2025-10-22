@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using EVMManagement.BLL.DTOs.Request.VehicleTimeSlot;
 using EVMManagement.BLL.DTOs.Response;
 using EVMManagement.BLL.DTOs.Response.VehicleTimeSlot;
+using EVMManagement.BLL.Helpers;
 using EVMManagement.BLL.Services.Interface;
 using EVMManagement.DAL.Models.Entities;
 using EVMManagement.DAL.Models.Enums;
@@ -44,7 +45,7 @@ namespace EVMManagement.BLL.Services.Class
                 VehicleId = dto.VehicleId,
                 DealerId = dto.DealerId,
                 MasterSlotId = dto.MasterSlotId,
-                SlotDate = dto.SlotDate,
+                SlotDate = DateTimeHelper.ToUtc(dto.SlotDate),
                 Status = dto.Status
             };
 
@@ -206,7 +207,7 @@ namespace EVMManagement.BLL.Services.Class
             if (dto.VehicleId.HasValue) entity.VehicleId = dto.VehicleId.Value;
             if (dto.DealerId.HasValue) entity.DealerId = dto.DealerId.Value;
             if (dto.MasterSlotId.HasValue) entity.MasterSlotId = dto.MasterSlotId.Value;
-            if (dto.SlotDate.HasValue) entity.SlotDate = dto.SlotDate.Value;
+            if (dto.SlotDate.HasValue) entity.SlotDate = DateTimeHelper.ToUtc(dto.SlotDate.Value);
             if (dto.Status.HasValue) entity.Status = dto.Status.Value;
 
             entity.ModifiedDate = DateTime.UtcNow;

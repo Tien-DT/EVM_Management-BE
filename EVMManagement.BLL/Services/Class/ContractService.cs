@@ -6,6 +6,7 @@ using AutoMapper.QueryableExtensions;
 using EVMManagement.BLL.DTOs.Request.Contract;
 using EVMManagement.BLL.DTOs.Response;
 using EVMManagement.BLL.DTOs.Response.Contract;
+using EVMManagement.BLL.Helpers;
 using EVMManagement.BLL.Services.Interface;
 using EVMManagement.DAL.Models.Entities;
 using EVMManagement.DAL.UnitOfWork;
@@ -33,7 +34,7 @@ namespace EVMManagement.BLL.Services.Class
                 CreatedByUserId = dto.CreatedByUserId,
                 Terms = dto.Terms,
                 Status = dto.Status,
-                SignedAt = dto.SignedAt,
+                SignedAt = DateTimeHelper.ToUtc(dto.SignedAt),
                 ContractLink = dto.ContractLink
             };
 
@@ -77,7 +78,7 @@ namespace EVMManagement.BLL.Services.Class
             if (dto.CreatedByUserId.HasValue) entity.CreatedByUserId = dto.CreatedByUserId.Value;
             if (dto.Terms != null) entity.Terms = dto.Terms;
             if (dto.Status.HasValue) entity.Status = dto.Status.Value;
-            if (dto.SignedAt.HasValue) entity.SignedAt = dto.SignedAt;
+            if (dto.SignedAt.HasValue) entity.SignedAt = DateTimeHelper.ToUtc(dto.SignedAt);
             if (dto.ContractLink != null) entity.ContractLink = dto.ContractLink;
 
             entity.ModifiedDate = DateTime.UtcNow;

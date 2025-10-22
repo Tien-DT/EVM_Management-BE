@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using EVMManagement.BLL.DTOs.Request.TestDriveBooking;
 using EVMManagement.BLL.DTOs.Response;
 using EVMManagement.BLL.DTOs.Response.TestDriveBooking;
+using EVMManagement.BLL.Helpers;
 using EVMManagement.BLL.Services.Interface;
 using EVMManagement.DAL.Models.Entities;
 using Microsoft.EntityFrameworkCore;
@@ -283,8 +284,8 @@ namespace EVMManagement.BLL.Services.Class
             if (dto.CustomerId.HasValue) entity.CustomerId = dto.CustomerId.Value;
             if (dto.DealerStaffId.HasValue) entity.DealerStaffId = dto.DealerStaffId.Value;
             if (dto.Status.HasValue) entity.Status = dto.Status.Value;
-            if (dto.CheckinAt.HasValue) entity.CheckinAt = dto.CheckinAt;
-            if (dto.CheckoutAt.HasValue) entity.CheckoutAt = dto.CheckoutAt;
+            if (dto.CheckinAt.HasValue) entity.CheckinAt = DateTimeHelper.ToUtc(dto.CheckinAt);
+            if (dto.CheckoutAt.HasValue) entity.CheckoutAt = DateTimeHelper.ToUtc(dto.CheckoutAt);
             if (dto.Note != null) entity.Note = dto.Note;
 
             entity.ModifiedDate = DateTime.UtcNow;

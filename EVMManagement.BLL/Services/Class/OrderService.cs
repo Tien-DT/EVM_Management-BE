@@ -6,6 +6,7 @@ using AutoMapper.QueryableExtensions;
 using EVMManagement.BLL.DTOs.Request.Order;
 using EVMManagement.BLL.DTOs.Response;
 using EVMManagement.BLL.DTOs.Response.Order;
+using EVMManagement.BLL.Helpers;
 using EVMManagement.BLL.Services.Interface;
 using EVMManagement.DAL.Models.Entities;
 using EVMManagement.DAL.UnitOfWork;
@@ -37,7 +38,7 @@ namespace EVMManagement.BLL.Services.Class
                 TotalAmount = dto.TotalAmount,
                 DiscountAmount = dto.DiscountAmount,
                 FinalAmount = dto.FinalAmount,
-                ExpectedDeliveryAt = dto.ExpectedDeliveryAt,
+                ExpectedDeliveryAt = DateTimeHelper.ToUtc(dto.ExpectedDeliveryAt),
                 OrderType = dto.OrderType,
                 IsFinanced = dto.IsFinanced
             };
@@ -84,7 +85,7 @@ namespace EVMManagement.BLL.Services.Class
             if (dto.TotalAmount.HasValue) entity.TotalAmount = dto.TotalAmount;
             if (dto.DiscountAmount.HasValue) entity.DiscountAmount = dto.DiscountAmount;
             if (dto.FinalAmount.HasValue) entity.FinalAmount = dto.FinalAmount;
-            if (dto.ExpectedDeliveryAt.HasValue) entity.ExpectedDeliveryAt = dto.ExpectedDeliveryAt;
+            if (dto.ExpectedDeliveryAt.HasValue) entity.ExpectedDeliveryAt = DateTimeHelper.ToUtc(dto.ExpectedDeliveryAt);
             if (dto.OrderType.HasValue) entity.OrderType = dto.OrderType.Value;
             if (dto.IsFinanced.HasValue) entity.IsFinanced = dto.IsFinanced.Value;
 
