@@ -19,7 +19,7 @@ namespace EVMManagement.BLL.DTOs.Request.VehicleTimeSlot
         public DateTime SlotDate { get; set; }
 
         [Required]
-        public TimeSlotStatus Status { get; set; } = TimeSlotStatus.PENDING;
+        public TimeSlotStatus Status { get; set; } = TimeSlotStatus.AVAILABLE;
     }
 }
 

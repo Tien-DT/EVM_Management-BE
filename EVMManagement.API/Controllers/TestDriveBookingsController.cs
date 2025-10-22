@@ -122,5 +122,33 @@ namespace EVMManagement.API.Controllers
                 return BadRequest(ApiResponse<string>.CreateFail("Failed to send reminder email", errors, 400));
             }
         }
+
+        [HttpPost("with-customer-info")]
+        public async Task<IActionResult> CreateWithCustomerInfo([FromBody] TestDriveCreateDto dto)
+        {
+            if (!ModelState.IsValid)
+            {
+                var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
+                return BadRequest(ApiResponse<TestDriveBookingResponseDto>.CreateFail("Validation failed", errors, 400));
+            }
+
+            try
+            {
+                var created = await _services.TestDriveBookingService.CreateWithCustomerInfoAsync(dto);
+                return CreatedAtAction(nameof(GetById), new { id = created.Id }, 
+                    ApiResponse<TestDriveBookingResponseDto>.CreateSuccess(created));
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ApiResponse<TestDriveBookingResponseDto>.CreateFail(
+                    $"Validation error: {ex.Message}", null, 400));
+            }
+            catch (Exception ex)
+            {
+                var errors = new List<string> { ex.Message };
+                return BadRequest(ApiResponse<TestDriveBookingResponseDto>.CreateFail(
+                    "Failed to create appointment with customer info", errors, 400));
+            }
+        }
     }
 }
