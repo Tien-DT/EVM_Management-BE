@@ -6,11 +6,13 @@ using EVMManagement.API.Services;
 using System.Threading.Tasks;
 using System;
 using System.Linq;
+using Microsoft.AspNetCore.Authorization;
 
 namespace EVMManagement.API.Controllers
 {
     [Route("api/v1/[controller]")]
     [ApiController]
+    [Authorize]
     public class TestDriveBookingsController : ControllerBase
     {
         private readonly IServiceFacade _services;
@@ -21,6 +23,7 @@ namespace EVMManagement.API.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "DEALER_STAFF")]
         public async Task<IActionResult> Create([FromBody] TestDriveBookingCreateDto dto)
         {
             if (!ModelState.IsValid)
@@ -127,6 +130,7 @@ namespace EVMManagement.API.Controllers
         }
 
         [HttpPost("{id}/send-reminder")]
+        [Authorize(Roles = "DEALER_STAFF")]
         public async Task<IActionResult> SendReminder(Guid id)
         {
             try
@@ -142,6 +146,7 @@ namespace EVMManagement.API.Controllers
         }
 
         [HttpPost("with-customer-info")]
+        [Authorize(Roles = "DEALER_STAFF")]
         public async Task<IActionResult> CreateWithCustomerInfo([FromBody] TestDriveCreateDto dto)
         {
             if (!ModelState.IsValid)

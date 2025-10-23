@@ -8,16 +8,18 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Linq;
 using EVMManagement.API.Services;
+using Microsoft.AspNetCore.Authorization;
 
 namespace EVMManagement.API.Controllers
 {
     [Route("api/v1/[controller]")]
     [ApiController]
-    public class VehicleTimeSlotsController : ControllerBase
+    [Authorize]
+    public class VehicleTimeSlotsController : BaseController
     {
         private readonly IServiceFacade _services;
 
-        public VehicleTimeSlotsController(IServiceFacade services)
+        public VehicleTimeSlotsController(IServiceFacade services) : base(services)
         {
             _services = services;
         }
@@ -138,6 +140,7 @@ namespace EVMManagement.API.Controllers
         /// fromDate và toDate là optional, nếu không điền sẽ lấy từ ngày hôm nay
         /// </summary>
         [HttpGet("available-slots-in-date")]
+        [Authorize(Roles = "DEALER_MANAGER,DEALER_STAFF")]
         public async Task<IActionResult> GetAvailableSlotsInDate(
             [FromQuery] Guid modelId,
             [FromQuery] Guid variantId,
@@ -145,12 +148,17 @@ namespace EVMManagement.API.Controllers
             [FromQuery] DateTime? fromDate,
             [FromQuery] DateTime? toDate)
         {
+           
             if (modelId == Guid.Empty || variantId == Guid.Empty || dealerId == Guid.Empty)
             {
                 return BadRequest(ApiResponse<List<DaySlotsummaryDto>>.CreateFail(
                     "ModelId, VariantId and DealerId are required", null, 400));
             }
-
+            var currentRole = GetCurrentRole();
+            if (!currentRole.HasValue)
+            {
+                return Unauthorized(ApiResponse<string>.CreateFail("Không tìm thấy thông tin role của tài khoản.", errorCode: 401));
+            }
             var result = await _services.VehicleTimeSlotService.GetAvailableSlotByVariantAsync(
                 modelId, variantId, dealerId, fromDate, toDate);
             return Ok(ApiResponse<List<DaySlotsummaryDto>>.CreateSuccess(result));
@@ -162,6 +170,7 @@ namespace EVMManagement.API.Controllers
         /// Trả về: Ngày + Slot + Danh sách xe trống
         /// </summary>
         [HttpGet("available-by-variant/vehicles-in-slot")]
+        [Authorize(Roles = "DEALER_MANAGER,DEALER_STAFF")]
         public async Task<IActionResult> GetAvailableVehiclesInSlot(
             [FromQuery] DateTime slotDate,
             [FromQuery] Guid masterSlotId,
@@ -169,6 +178,11 @@ namespace EVMManagement.API.Controllers
             [FromQuery] Guid variantId,
             [FromQuery] Guid dealerId)
         {
+            var currentRole = GetCurrentRole();
+            if (!currentRole.HasValue)
+            {
+                return Unauthorized(ApiResponse<string>.CreateFail("Không tìm thấy thông tin role của tài khoản.", errorCode: 401));
+            }
             if (slotDate == DateTime.MinValue || masterSlotId == Guid.Empty || modelId == Guid.Empty || variantId == Guid.Empty || dealerId == Guid.Empty)
             {
                 return BadRequest(ApiResponse<SlotVehiclesDto>.CreateFail(

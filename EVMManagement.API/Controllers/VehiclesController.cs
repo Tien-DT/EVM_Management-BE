@@ -1,22 +1,24 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using EVMManagement.API.Services;
 using EVMManagement.BLL.DTOs.Request.Vehicle;
-using EVMManagement.BLL.DTOs.Response.Vehicle;
 using EVMManagement.BLL.DTOs.Response;
+using EVMManagement.BLL.DTOs.Response.Vehicle;
+using EVMManagement.DAL.Models.Enums;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
-using EVMManagement.DAL.Models.Enums;
-using EVMManagement.API.Services;
 
 namespace EVMManagement.API.Controllers
 {
     [Route("api/v1/[controller]")]
     [ApiController]
-    public class VehiclesController : ControllerBase
+    [Authorize]
+    public class VehiclesController :  BaseController
     {
         private readonly IServiceFacade _services;
 
-        public VehiclesController(IServiceFacade services)
+        public VehiclesController(IServiceFacade services) : base(services)
         {
             _services = services;
         }
@@ -141,8 +143,14 @@ namespace EVMManagement.API.Controllers
         }
 
         [HttpGet("dealer/{dealerId}/models")]
+        [Authorize(Roles = "DEALER_MANAGER,DEALER_STAFF")]
         public async Task<IActionResult> GetModelsByDealer(Guid dealerId)
         {
+            var currentRole = GetCurrentRole();
+            if (!currentRole.HasValue)
+            {
+                return Unauthorized(ApiResponse<string>.CreateFail("Không tìm thấy thông tin role của tài khoản.", errorCode: 401));
+            }
             if (dealerId == Guid.Empty)
             {
                 return BadRequest(ApiResponse<string>.CreateFail("DealerId is required", null, 400));
@@ -153,8 +161,14 @@ namespace EVMManagement.API.Controllers
         }
 
         [HttpGet("dealer/{dealerId}/models/{modelId}/variants")]
+        [Authorize(Roles = "DEALER_MANAGER,DEALER_STAFF")]
         public async Task<IActionResult> GetVariantsByDealerAndModel(Guid dealerId, Guid modelId)
         {
+            var currentRole = GetCurrentRole();
+            if (!currentRole.HasValue)
+            {
+                return Unauthorized(ApiResponse<string>.CreateFail("Không tìm thấy thông tin role của tài khoản.", errorCode: 401));
+            }
             if (dealerId == Guid.Empty)
             {
                 return BadRequest(ApiResponse<string>.CreateFail("DealerId is required", null, 400));
