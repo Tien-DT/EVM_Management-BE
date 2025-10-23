@@ -38,6 +38,7 @@ using EVMManagement.BLL.DTOs.Response.User;
 using EVMManagement.BLL.DTOs.Response.Vehicle;
 using EVMManagement.BLL.DTOs.Response.VehicleTimeSlot;
 using EVMManagement.BLL.DTOs.Response.Warehouse;
+using UserDealerDto = EVMManagement.BLL.DTOs.Response.User.DealerDto;
 using EVMManagement.DAL.Models.Entities;
 
 namespace EVMManagement.BLL.Mappings
@@ -96,6 +97,7 @@ namespace EVMManagement.BLL.Mappings
             CreateMap<UpdateDealerDto, Dealer>()
                 .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
             CreateMap<Dealer, DealerResponseDto>();
+            CreateMap<Dealer, UserDealerDto>();
 
             // Promotion Mappings
             CreateMap<PromotionCreateDto, Promotion>();
@@ -154,6 +156,7 @@ namespace EVMManagement.BLL.Mappings
             CreateMap<ContractUpdateDto, Contract>()
                 .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
             CreateMap<Contract, ContractResponse>();
+            CreateMap<Contract, ContractDetailResponse>();
 
             // Invoice Mappings
             CreateMap<InvoiceCreateDto, Invoice>();
@@ -168,6 +171,7 @@ namespace EVMManagement.BLL.Mappings
             // UserProfile Mappings
             CreateMap<UserProfileUpdateDto, UserProfile>()
                 .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
+            CreateMap<Account, AccountDto>();
             CreateMap<UserProfile, UserProfileResponse>();
 
             // HandoverRecord Mappings

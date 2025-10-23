@@ -16,6 +16,7 @@ namespace EVMManagement.DAL.Repositories.Class
         {
             return _dbSet
                 .Include(x => x.Customer)
+                .Include(x => x.DealerStaff)
                 .Include(x => x.VehicleTimeSlot).ThenInclude(vts => vts.Vehicle).ThenInclude(v => v.VehicleVariant).ThenInclude(vv => vv.VehicleModel)
                 .Include(x => x.VehicleTimeSlot).ThenInclude(vts => vts.Dealer)
                 .Include(x => x.VehicleTimeSlot).ThenInclude(vts => vts.MasterSlot);
@@ -26,13 +27,13 @@ namespace EVMManagement.DAL.Repositories.Class
             return await GetQueryableWithIncludes().FirstOrDefaultAsync(x => x.Id == id);
         }
 
-        public IQueryable<TestDriveBooking> GetQueryableWithFilter(Guid? dealerId, Guid? customerId, TestDriveBookingStatus? status)
+        public IQueryable<TestDriveBooking> GetQueryableWithFilter(Guid? vehicleTimeSlotId, Guid? customerId, Guid? dealerStaffId, TestDriveBookingStatus? status, Guid? dealerId)
         {
             var query = GetQueryableWithIncludes();
 
-            if (dealerId.HasValue)
+            if (vehicleTimeSlotId.HasValue)
             {
-                query = query.Where(x => x.VehicleTimeSlot != null && x.VehicleTimeSlot.DealerId == dealerId.Value);
+                query = query.Where(x => x.VehicleTimeslotId == vehicleTimeSlotId.Value);
             }
 
             if (customerId.HasValue)
@@ -40,9 +41,19 @@ namespace EVMManagement.DAL.Repositories.Class
                 query = query.Where(x => x.CustomerId == customerId.Value);
             }
 
+            if (dealerStaffId.HasValue)
+            {
+                query = query.Where(x => x.DealerStaffId == dealerStaffId.Value);
+            }
+
             if (status.HasValue)
             {
                 query = query.Where(x => x.Status == status.Value);
+            }
+
+            if (dealerId.HasValue)
+            {
+                query = query.Where(x => x.VehicleTimeSlot != null && x.VehicleTimeSlot.DealerId == dealerId.Value);
             }
 
             return query;

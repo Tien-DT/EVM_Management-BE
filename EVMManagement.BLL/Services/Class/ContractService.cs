@@ -9,7 +9,9 @@ using EVMManagement.BLL.DTOs.Response.Contract;
 using EVMManagement.BLL.Helpers;
 using EVMManagement.BLL.Services.Interface;
 using EVMManagement.DAL.Models.Entities;
+using EVMManagement.DAL.Models.Enums;
 using EVMManagement.DAL.UnitOfWork;
+using Microsoft.EntityFrameworkCore;
 
 namespace EVMManagement.BLL.Services.Class
 {
@@ -44,19 +46,19 @@ namespace EVMManagement.BLL.Services.Class
             return contract;
         }
 
-        public async Task<PagedResult<ContractResponse>> GetAllAsync(int pageNumber = 1, int pageSize = 10)
+        public async Task<PagedResult<ContractDetailResponse>> GetAllAsync(Guid? orderId, Guid? customerId, Guid? createdByUserId, ContractStatus? status, int pageNumber = 1, int pageSize = 10)
         {
-            var query = _unitOfWork.Contracts.GetQueryable().Where(x => !x.IsDeleted);
-            var totalCount = await _unitOfWork.Contracts.CountAsync(x => !x.IsDeleted);
+            var query = _unitOfWork.Contracts.GetContractsWithDetails(orderId, customerId, createdByUserId, status);
+            var totalCount = await query.CountAsync();
 
-            var items = query
+            var items = await query
                 .OrderByDescending(x => x.CreatedDate)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
-                .ProjectTo<ContractResponse>(_mapper.ConfigurationProvider)
-                .ToList();
+                .ProjectTo<ContractDetailResponse>(_mapper.ConfigurationProvider)
+                .ToListAsync();
 
-            return PagedResult<ContractResponse>.Create(items, totalCount, pageNumber, pageSize);
+            return PagedResult<ContractDetailResponse>.Create(items, totalCount, pageNumber, pageSize);
         }
 
         public async Task<ContractResponse?> GetByIdAsync(Guid id)
