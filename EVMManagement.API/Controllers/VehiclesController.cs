@@ -117,5 +117,27 @@ namespace EVMManagement.API.Controllers
             if (updated == null) return NotFound(ApiResponse<VehicleResponseDto>.CreateFail("Vehicle not found", null, 404));
             return Ok(ApiResponse<VehicleResponseDto>.CreateSuccess(updated));
         }
+
+        [HttpGet("check-stock")]
+        public async Task<IActionResult> CheckStock([FromQuery] Guid variantId, [FromQuery] Guid dealerId, [FromQuery] int quantity)
+        {
+            if (variantId == Guid.Empty)
+            {
+                return BadRequest(ApiResponse<string>.CreateFail("VariantId is required", null, 400));
+            }
+
+            if (dealerId == Guid.Empty)
+            {
+                return BadRequest(ApiResponse<string>.CreateFail("DealerId is required", null, 400));
+            }
+
+            if (quantity < 1)
+            {
+                return BadRequest(ApiResponse<string>.CreateFail("Quantity must be greater than 0", null, 400));
+            }
+
+            var result = await _services.VehicleService.CheckStockAvailabilityAsync(variantId, dealerId, quantity);
+            return Ok(ApiResponse<StockCheckResponseDto>.CreateSuccess(result));
+        }
     }
 }

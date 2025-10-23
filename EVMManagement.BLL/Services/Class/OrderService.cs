@@ -261,5 +261,191 @@ namespace EVMManagement.BLL.Services.Class
 
             return true;
         }
+
+        public async Task<OrderResponse> UpdateCustomerConfirmationAsync(Guid orderId, CustomerConfirmationRequestDto dto)
+        {
+            var order = await _unitOfWork.Orders.GetByIdAsync(orderId);
+            if (order == null)
+            {
+                throw new Exception($"Order with ID {orderId} not found");
+            }
+
+            if (dto.IsConfirmed)
+            {
+                // khách xác nhận - cập nhật trạng thái CONFIRMED
+                order.Status = OrderStatus.CONFIRMED;
+                order.ModifiedDate = DateTime.UtcNow;
+                _unitOfWork.Orders.Update(order);
+
+                var confirmReport = new Report
+                {
+                    Type = "CUSTOMER_CONFIRMED",
+                    Title = "Customer confirmed order",
+                    Content = $"Customer confirmed order {order.Code}. Note: {dto.CustomerNote}",
+                    OrderId = order.Id,
+                    DealerId = order.DealerId,
+                    AccountId = order.CreatedByUserId
+                };
+                await _unitOfWork.Reports.AddAsync(confirmReport);
+            }
+            else
+            {
+                // khách từ chối - hủy đơn 
+                order.Status = OrderStatus.CANCELED;
+                order.ModifiedDate = DateTime.UtcNow;
+                _unitOfWork.Orders.Update(order);
+
+                var cancelReport = new Report
+                {
+                    Type = "CUSTOMER_REJECTED",
+                    Title = "Customer rejected order",
+                    Content = $"Customer rejected order {order.Code}. Reason: {dto.CustomerNote}",
+                    OrderId = order.Id,
+                    DealerId = order.DealerId,
+                    AccountId = order.CreatedByUserId
+                };
+                await _unitOfWork.Reports.AddAsync(cancelReport);
+            }
+
+            await _unitOfWork.SaveChangesAsync();
+
+            return await GetByIdAsync(orderId) ?? throw new Exception("Failed to retrieve updated order");
+        }
+
+        public async Task<OrderFlowResponseDto> ConfirmPaymentAsync(Guid orderId, ConfirmPaymentRequestDto dto)
+        {
+            var order = await _unitOfWork.Orders.GetQueryable()
+                .Include(o => o.Deposits)
+                .FirstOrDefaultAsync(o => o.Id == orderId);
+
+            if (order == null)
+            {
+                return new OrderFlowResponseDto
+                {
+                    OrderId = orderId,
+                    Success = false,
+                    Message = "Order not found"
+                };
+            }
+
+            // tính số tiền còn lại
+            var totalOrderAmount = order.FinalAmount ?? 0;
+            var totalDeposits = order.Deposits
+                .Where(d => !d.IsDeleted && d.Status == DepositStatus.PAID)
+                .Sum(d => d.Amount);
+            var remainingAmount = totalOrderAmount - totalDeposits;
+
+            if (remainingAmount < 0)
+            {
+                return new OrderFlowResponseDto
+                {
+                    OrderId = orderId,
+                    Success = false,
+                    Message = "Invalid payment amount calculation"
+                };
+            }
+
+            // tạo mã hóa đơn
+            var invoiceCode = $"INV-{order.Code}-{DateTime.UtcNow:yyyyMMddHHmmss}";
+
+            var invoice = new Invoice
+            {
+                OrderId = orderId,
+                InvoiceCode = invoiceCode,
+                TotalAmount = remainingAmount,
+                Status = InvoiceStatus.PAID
+            };
+
+            await _unitOfWork.Invoices.AddAsync(invoice);
+            await _unitOfWork.SaveChangesAsync(); 
+
+            // tạo giao dịch
+            var transaction = new Transaction
+            {
+                InvoiceId = invoice.Id,
+                Amount = remainingAmount,
+                Currency = "VND",
+                Status = TransactionStatus.SUCCESS,
+                TransactionTime = DateTime.UtcNow,
+                PaymentGateway = dto.Method.ToString(),
+                TransactionInfo = dto.Note ?? $"Payment for order {order.Code}",
+                ResponseCode = "00" // Success code
+            };
+
+            if (!string.IsNullOrWhiteSpace(dto.TransactionReference))
+            {
+                transaction.VnpayTransactionCode = dto.TransactionReference;
+            }
+
+            await _unitOfWork.Transactions.AddAsync(transaction);
+
+            // cập nhật trạng thái đơn
+            order.Status = OrderStatus.READY_FOR_HANDOVER;
+            order.ModifiedDate = DateTime.UtcNow;
+            _unitOfWork.Orders.Update(order);
+
+            // log ghi thanh toán
+            var report = new Report
+            {
+                Type = "PAYMENT_CONFIRMED",
+                Title = "Payment confirmed",
+                Content = $"Payment confirmed for order {order.Code}. Amount: {remainingAmount:N2} VND. Method: {dto.Method}",
+                OrderId = order.Id,
+                DealerId = order.DealerId,
+                AccountId = order.CreatedByUserId
+            };
+            await _unitOfWork.Reports.AddAsync(report);
+
+            await _unitOfWork.SaveChangesAsync();
+
+            return new OrderFlowResponseDto
+            {
+                OrderId = order.Id,
+                Status = order.Status,
+                Success = true,
+                Message = $"Payment confirmed. Amount paid: {remainingAmount:N2} VND",
+                Data = new
+                {
+                    InvoiceCode = invoiceCode,
+                    AmountPaid = remainingAmount,
+                    TotalDeposits = totalDeposits,
+                    TotalOrderAmount = totalOrderAmount
+                }
+            };
+        }
+
+
+        public async Task<string?> GetOrderFlowStageAsync(Guid orderId)
+        {
+            var latestReport = await _unitOfWork.Reports.GetQueryable()
+                .Where(r => r.OrderId == orderId && !r.IsDeleted)
+                .OrderByDescending(r => r.CreatedDate)
+                .FirstOrDefaultAsync();
+
+            return latestReport?.Type;
+        }
+
+
+        public async Task CreateOrderFlowReportAsync(Guid orderId, string type, string title, string content, Guid? accountId = null)
+        {
+            var order = await _unitOfWork.Orders.GetByIdAsync(orderId);
+            if (order == null)
+            {
+                throw new Exception($"Order with ID {orderId} not found");
+            }
+
+            var report = new Report
+            {
+                Type = type,
+                Title = title,
+                Content = content,
+                OrderId = orderId,
+                DealerId = order.DealerId,
+                AccountId = accountId ?? order.CreatedByUserId
+            };
+
+            await _unitOfWork.Reports.AddAsync(report);
+            await _unitOfWork.SaveChangesAsync();
+        }
     }
 }
