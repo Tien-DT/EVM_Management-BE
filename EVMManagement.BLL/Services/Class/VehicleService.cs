@@ -213,6 +213,35 @@ namespace EVMManagement.BLL.Services.Class
             };
         }
 
+        public async Task<List<DealerModelListDto>> GetModelsByDealerAsync(Guid dealerId)
+        {
+            var models = await _unitOfWork.Vehicles.GetModelsByDealerAsync(dealerId);
+
+            var result = models.Select(m => new DealerModelListDto
+            {
+                Id = m.Id,
+                Name = m.Name,
+                VariantCount = m.VariantCount
+            }).ToList();
+
+            return result;
+        }
+
+        public async Task<List<DealerVariantListDto>> GetVariantsByDealerAndModelAsync(Guid dealerId, Guid modelId)
+        {
+            var variants = await _unitOfWork.Vehicles.GetVariantsByDealerAndModelAsync(dealerId, modelId);
+
+            var result = variants.Select(v => new DealerVariantListDto
+            {
+                Id = v.Id,
+                ModelId = v.ModelId,
+                ModelName = v.ModelName,
+                AvailableCount = v.AvailableCount
+            }).ToList();
+
+            return result;
+        }
+
         private VehicleResponseDto MapToDto(Vehicle e)
         {
             return _mapper.Map<VehicleResponseDto>(e);

@@ -139,5 +139,34 @@ namespace EVMManagement.API.Controllers
             var result = await _services.VehicleService.CheckStockAvailabilityAsync(variantId, dealerId, quantity);
             return Ok(ApiResponse<StockCheckResponseDto>.CreateSuccess(result));
         }
+
+        [HttpGet("dealer/{dealerId}/models")]
+        public async Task<IActionResult> GetModelsByDealer(Guid dealerId)
+        {
+            if (dealerId == Guid.Empty)
+            {
+                return BadRequest(ApiResponse<string>.CreateFail("DealerId is required", null, 400));
+            }
+
+            var result = await _services.VehicleService.GetModelsByDealerAsync(dealerId);
+            return Ok(ApiResponse<List<DealerModelListDto>>.CreateSuccess(result));
+        }
+
+        [HttpGet("dealer/{dealerId}/models/{modelId}/variants")]
+        public async Task<IActionResult> GetVariantsByDealerAndModel(Guid dealerId, Guid modelId)
+        {
+            if (dealerId == Guid.Empty)
+            {
+                return BadRequest(ApiResponse<string>.CreateFail("DealerId is required", null, 400));
+            }
+
+            if (modelId == Guid.Empty)
+            {
+                return BadRequest(ApiResponse<string>.CreateFail("ModelId is required", null, 400));
+            }
+
+            var result = await _services.VehicleService.GetVariantsByDealerAndModelAsync(dealerId, modelId);
+            return Ok(ApiResponse<List<DealerVariantListDto>>.CreateSuccess(result));
+        }
     }
 }
