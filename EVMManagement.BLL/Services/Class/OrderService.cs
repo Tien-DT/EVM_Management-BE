@@ -67,6 +67,62 @@ namespace EVMManagement.BLL.Services.Class
             return PagedResult<OrderResponse>.Create(items, totalCount, pageNumber, pageSize);
         }
 
+        public async Task<PagedResult<OrderResponse>> GetByFilterAsync(OrderFilterDto filter)
+        {
+            IQueryable<Order> query = _unitOfWork.Orders.GetQueryable()
+                .Include(o => o.Quotation)
+                .Include(o => o.Customer)
+                .Include(o => o.Dealer)
+                .Include(o => o.CreatedByUser);
+
+            if (!string.IsNullOrWhiteSpace(filter.Code))
+            {
+                var code = filter.Code.ToLower();
+                query = query.Where(o => o.Code.ToLower().Contains(code));
+            }
+
+            if (filter.QuotationId.HasValue)
+            {
+                query = query.Where(o => o.QuotationId == filter.QuotationId.Value);
+            }
+
+            if (filter.CustomerId.HasValue)
+            {
+                query = query.Where(o => o.CustomerId == filter.CustomerId.Value);
+            }
+
+            if (filter.DealerId.HasValue)
+            {
+                query = query.Where(o => o.DealerId == filter.DealerId.Value);
+            }
+
+            if (filter.CreatedByUserId.HasValue)
+            {
+                query = query.Where(o => o.CreatedByUserId == filter.CreatedByUserId.Value);
+            }
+
+            if (filter.OrderType.HasValue)
+            {
+                query = query.Where(o => o.OrderType == filter.OrderType.Value);
+            }
+
+            if (filter.Status.HasValue)
+            {
+                query = query.Where(o => o.Status == filter.Status.Value);
+            }
+
+            var totalCount = await query.CountAsync();
+
+            var items = await query
+                .OrderByDescending(x => x.CreatedDate)
+                .Skip((filter.PageNumber - 1) * filter.PageSize)
+                .Take(filter.PageSize)
+                .ProjectTo<OrderResponse>(_mapper.ConfigurationProvider)
+                .ToListAsync();
+
+            return PagedResult<OrderResponse>.Create(items, totalCount, filter.PageNumber, filter.PageSize);
+        }
+
         public async Task<OrderResponse?> GetByIdAsync(Guid id)
         {
             var entity = await _unitOfWork.Orders.GetByIdAsync(id);
