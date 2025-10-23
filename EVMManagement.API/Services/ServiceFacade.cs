@@ -30,6 +30,7 @@ namespace EVMManagement.API.Services
         public IVnPayService VnPayService { get; }
         public IReportService ReportService { get; }
         public IDepositService DepositService { get; }
+        public IHandoverRecordService HandoverRecordService { get; }
 
         public ServiceFacade(
             IAuthService authService,
@@ -57,7 +58,8 @@ namespace EVMManagement.API.Services
             IDigitalSignatureService digitalSignatureService,
             IVnPayService vnPayService,
             IReportService reportService,
-            IDepositService depositService)
+            IDepositService depositService,
+            IHandoverRecordService handoverRecordService)
         {
             AuthService = authService;
             CustomerService = customerService;
@@ -85,6 +87,7 @@ namespace EVMManagement.API.Services
             VnPayService = vnPayService;
             ReportService = reportService;
             DepositService = depositService;
+            HandoverRecordService = handoverRecordService;
         }
     }
 }
