@@ -7,6 +7,6 @@ namespace EVMManagement.DAL.Repositories.Interface
     {
         IQueryable<TestDriveBooking> GetQueryableWithIncludes();
         Task<TestDriveBooking?> GetByIdWithIncludesAsync(Guid id);
-        IQueryable<TestDriveBooking> GetQueryableWithFilter(Guid? dealerId, Guid? customerId, TestDriveBookingStatus? status);
+        IQueryable<TestDriveBooking> GetQueryableWithFilter(Guid? vehicleTimeSlotId, Guid? customerId, Guid? dealerStaffId, TestDriveBookingStatus? status, Guid? dealerId);
     }
 }
