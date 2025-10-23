@@ -60,7 +60,12 @@ namespace EVMManagement.BLL.Services.Class
 
         public async Task<PagedResult<VehicleDetailResponseDto>> GetAllWithDetailsAsync(int pageNumber = 1, int pageSize = 10)
         {
-            var query = _unitOfWork.Vehicles.GetQueryable();
+            var query = _unitOfWork.Vehicles.GetQueryable()
+                .Include(v => v.VehicleVariant)
+                    .ThenInclude(vv => vv.VehicleModel)
+                .Include(v => v.Warehouse)
+                    .ThenInclude(w => w.Dealer);
+            
             var totalCount = await query.CountAsync();
 
             var items = await query

@@ -16,5 +16,8 @@ namespace EVMManagement.BLL.Services.Interface
         Task<VehicleVariantResponse?> UpdateAsync(Guid id, VehicleVariantUpdateDto dto);
         Task<VehicleVariantResponse?> UpdateIsDeletedAsync(Guid id, bool isDeleted);
         Task<bool> DeleteAsync(Guid id);
+        Task<PagedResult<VehicleVariantResponse>> GetByModelIdAsync(Guid modelId, int pageNumber = 1, int pageSize = 10);
+
+      
     }
 }

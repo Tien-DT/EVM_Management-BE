@@ -8,6 +8,7 @@ using EVMManagement.BLL.DTOs.Response.Vehicle;
 using EVMManagement.BLL.Services.Interface;
 using EVMManagement.DAL.Models.Entities;
 using EVMManagement.DAL.UnitOfWork;
+using Microsoft.EntityFrameworkCore;
 
 namespace EVMManagement.BLL.Services.Class
 {
@@ -58,7 +59,8 @@ namespace EVMManagement.BLL.Services.Class
             var query = _unitOfWork.VehicleVariants.GetQueryable();
             var totalCount = await _unitOfWork.VehicleVariants.CountAsync();
             
-            var items = query
+            var items = await query
+                .Include(v => v.VehicleModel)
                 .OrderByDescending(x => x.CreatedDate)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
@@ -66,6 +68,7 @@ namespace EVMManagement.BLL.Services.Class
                 {
                     Id = x.Id,
                     ModelId = x.ModelId,
+                    ModelName = x.VehicleModel!.Name,
                     Color = x.Color,
                     ChargingTime = x.ChargingTime,
                     Engine = x.Engine,
@@ -90,7 +93,7 @@ namespace EVMManagement.BLL.Services.Class
                     ModifiedDate = x.ModifiedDate,
                     IsDeleted = x.IsDeleted
                 })
-                .ToList();
+                .ToListAsync();
 
             return PagedResult<VehicleVariantResponse>.Create(items, totalCount, pageNumber, pageSize);
         }
@@ -100,10 +103,13 @@ namespace EVMManagement.BLL.Services.Class
             var entity = await _unitOfWork.VehicleVariants.GetByIdAsync(id);
             if (entity == null) return null;
 
+            var modelName = entity.VehicleModel?.Name ?? "Unknown";
+
             return new VehicleVariantResponse
             {
                 Id = entity.Id,
                 ModelId = entity.ModelId,
+                ModelName = modelName,
                 Color = entity.Color,
                 ChargingTime = entity.ChargingTime,
                 Engine = entity.Engine,
@@ -185,5 +191,54 @@ namespace EVMManagement.BLL.Services.Class
 
             return true;
         }
+
+       
+        public async Task<PagedResult<VehicleVariantResponse>> GetByModelIdAsync(Guid modelId, int pageNumber = 1, int pageSize = 10)
+        {
+            var query = _unitOfWork.VehicleVariants.GetQueryable()
+                .Where(v => v.ModelId == modelId && !v.IsDeleted)
+                .Include(v => v.VehicleModel);
+
+            var totalCount = await query.CountAsync();
+
+            var items = await query
+                .OrderByDescending(x => x.CreatedDate)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .Select(x => new VehicleVariantResponse
+                {
+                    Id = x.Id,
+                    ModelId = x.ModelId,
+                    ModelName = x.VehicleModel!.Name,
+                    Color = x.Color,
+                    ChargingTime = x.ChargingTime,
+                    Engine = x.Engine,
+                    Capacity = x.Capacity,
+                    ShockAbsorbers = x.ShockAbsorbers,
+                    BatteryType = x.BatteryType,
+                    BatteryLife = x.BatteryLife,
+                    MaximumSpeed = x.MaximumSpeed,
+                    DistancePerCharge = x.DistancePerCharge,
+                    Weight = x.Weight,
+                    GroundClearance = x.GroundClearance,
+                    Brakes = x.Brakes,
+                    Length = x.Length,
+                    Width = x.Width,
+                    Height = x.Height,
+                    Price = x.Price,
+                    TrunkWidth = x.TrunkWidth,
+                    Description = x.Description,
+                    ChargingCapacity = x.ChargingCapacity,
+                    ImageUrl = x.ImageUrl,
+                    CreatedDate = x.CreatedDate,
+                    ModifiedDate = x.ModifiedDate,
+                    IsDeleted = x.IsDeleted
+                })
+                .ToListAsync();
+
+            return PagedResult<VehicleVariantResponse>.Create(items, totalCount, pageNumber, pageSize);
+        }
+
+       
     }
 }

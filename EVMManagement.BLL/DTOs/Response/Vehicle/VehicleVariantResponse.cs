@@ -6,6 +6,7 @@ namespace EVMManagement.BLL.DTOs.Response.Vehicle
     {
         public Guid Id { get; set; }
         public Guid ModelId { get; set; }
+        public string? ModelName { get; set; }
         public string? Color { get; set; }
         public int? ChargingTime { get; set; }
         public string? Engine { get; set; }
