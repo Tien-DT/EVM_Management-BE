@@ -4,8 +4,10 @@ using Microsoft.AspNetCore.Http;
 using EVMManagement.BLL.DTOs.Request.Warehouse;
 using EVMManagement.BLL.DTOs.Response;
 using EVMManagement.BLL.DTOs.Response.Warehouse;
+using EVMManagement.BLL.DTOs.Response.Vehicle;
 using EVMManagement.DAL.Models.Entities;
 using EVMManagement.DAL.Models.Enums;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using System;
 using System.Linq;
@@ -208,6 +210,42 @@ namespace EVMManagement.API.Controllers
             return Ok(result);
         }
 
-        
+        [HttpPost("{warehouseId}/add-vehicles")]
+        [Authorize(Roles = "EVM_STAFF,EVM_ADMIN")]
+        public async Task<IActionResult> AddVehiclesToWarehouse(Guid warehouseId, [FromBody] AddVehiclesToWarehouseRequestDto dto)
+        {
+            if (!ModelState.IsValid)
+            {
+                var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
+                return BadRequest(ApiResponse<string>.CreateFail("Validation failed", errors, 400));
+            }
+
+            var currentAccountId = GetCurrentAccountId();
+            if (!currentAccountId.HasValue)
+            {
+                return Unauthorized(ApiResponse<string>.CreateFail("User ID not found", null, 401));
+            }
+
+            var result = await Services.WarehouseService.AddVehiclesToWarehouseAsync(warehouseId, dto, currentAccountId.Value);
+
+            if (!result.Success)
+            {
+                var statusCode = result.ErrorCode ?? StatusCodes.Status400BadRequest;
+
+                if (statusCode == StatusCodes.Status404NotFound)
+                {
+                    return NotFound(result);
+                }
+
+                if (statusCode == StatusCodes.Status500InternalServerError)
+                {
+                    return StatusCode(StatusCodes.Status500InternalServerError, result);
+                }
+
+                return StatusCode(statusCode, result);
+            }
+
+            return Ok(result);
+        }
     }
 }
