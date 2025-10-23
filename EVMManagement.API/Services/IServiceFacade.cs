@@ -30,5 +30,6 @@ namespace EVMManagement.API.Services
         IVnPayService VnPayService { get; }
         IReportService ReportService { get; }
         IDepositService DepositService { get; }
+        IHandoverRecordService HandoverRecordService { get; }
     }
 }
