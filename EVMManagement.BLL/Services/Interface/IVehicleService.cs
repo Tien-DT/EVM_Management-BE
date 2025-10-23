@@ -18,5 +18,6 @@ namespace EVMManagement.BLL.Services.Interface
         Task<PagedResult<VehicleResponseDto>> SearchByQueryAsync(string? q, int pageNumber = 1, int pageSize = 10);
         Task<PagedResult<VehicleResponseDto>> GetByFilterAsync(VehicleFilterDto filter);
         Task<VehicleResponseDto?> UpdateStatusAsync(Guid id, VehicleStatus status);
+        Task<StockCheckResponseDto> CheckStockAvailabilityAsync(Guid variantId, Guid dealerId, int quantity);
     }
 }

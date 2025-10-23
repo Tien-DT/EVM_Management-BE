@@ -15,5 +15,11 @@ namespace EVMManagement.BLL.Services.Interface
         Task<OrderResponse?> UpdateAsync(Guid id, OrderUpdateDto dto);
         Task<OrderResponse?> UpdateIsDeletedAsync(Guid id, bool isDeleted);
         Task<bool> DeleteAsync(Guid id);
+        
+        Task<OrderFlowResponseDto> RequestDealerManagerApprovalAsync(Guid orderId, DealerManagerApprovalRequestDto dto);
+        Task<OrderFlowResponseDto> ApproveDealerOrderRequestAsync(Guid orderId, Guid approvedByUserId);
+        Task<bool> NotifyCustomerAsync(Guid orderId, CustomerNotificationRequestDto dto);
+        Task<OrderResponse> UpdateCustomerConfirmationAsync(Guid orderId, CustomerConfirmationRequestDto dto);
+        Task<OrderFlowResponseDto> ConfirmPaymentAsync(Guid orderId, ConfirmPaymentRequestDto dto);
     }
 }
