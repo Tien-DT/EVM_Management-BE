@@ -1,7 +1,9 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using EVMManagement.BLL.DTOs.Request.Warehouse;
 using EVMManagement.BLL.DTOs.Response;
+using EVMManagement.BLL.DTOs.Response.Vehicle;
 using EVMManagement.BLL.DTOs.Response.Warehouse;
 using EVMManagement.DAL.Models.Enums;
 
@@ -15,5 +17,6 @@ namespace EVMManagement.BLL.Services.Interface
         Task<ApiResponse<WarehouseResponseDto>> CreateWarehouseAsync(WarehouseCreateDto dto, AccountRole currentUserRole, Guid? currentUserDealerId = null);
         Task<ApiResponse<WarehouseResponseDto>> UpdateWarehouseAsync(Guid id, WarehouseUpdateDto dto, AccountRole currentUserRole, Guid? currentUserDealerId = null);
         Task<ApiResponse<WarehouseResponseDto>> UpdateIsDeletedAsync(Guid id, bool isDeleted, AccountRole currentUserRole, Guid? currentUserDealerId = null);
+        Task<ApiResponse<List<VehicleResponseDto>>> AddVehiclesToWarehouseAsync(Guid warehouseId, AddVehiclesToWarehouseRequestDto dto, Guid addedByUserId);
     }
 }
