@@ -34,14 +34,32 @@ namespace EVMManagement.API.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetAll([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
+        public async Task<IActionResult> GetAll(
+            [FromQuery] Guid? vehicleTimeSlotId,
+            [FromQuery] Guid? customerId,
+            [FromQuery] Guid? dealerStaffId,
+            [FromQuery] EVMManagement.DAL.Models.Enums.TestDriveBookingStatus? status,
+            [FromQuery] Guid? dealerId,
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 10)
         {
             if (pageNumber < 1 || pageSize < 1)
             {
                 return BadRequest(ApiResponse<string>.CreateFail("PageNumber and PageSize must be greater than 0", null, 400));
             }
 
-            var result = await _services.TestDriveBookingService.GetAllAsync(pageNumber, pageSize);
+            var filterDto = new TestDriveBookingFilterDto
+            {
+                VehicleTimeSlotId = vehicleTimeSlotId,
+                CustomerId = customerId,
+                DealerStaffId = dealerStaffId,
+                Status = status,
+                DealerId = dealerId,
+                PageNumber = pageNumber,
+                PageSize = pageSize
+            };
+
+            var result = await _services.TestDriveBookingService.GetByFilterAsync(filterDto);
             return Ok(ApiResponse<PagedResult<TestDriveBookingResponseDto>>.CreateSuccess(result));
         }
 
