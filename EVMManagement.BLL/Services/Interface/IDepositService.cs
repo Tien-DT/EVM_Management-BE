@@ -9,6 +9,7 @@ namespace EVMManagement.BLL.Services.Interface
     public interface IDepositService
     {
         Task<DepositResponse> CreateAsync(DepositCreateDto dto);
+        Task<DepositResponse> CreatePreOrderDepositAsync(PreOrderDepositRequestDto dto);
         Task<PagedResult<DepositResponse>> GetAsync(Guid? orderId, Guid? receivedByUserId, int pageNumber, int pageSize);
         Task<DepositResponse?> GetByIdAsync(Guid id);
         Task<DepositResponse?> UpdateAsync(Guid id, DepositUpdateDto dto);
