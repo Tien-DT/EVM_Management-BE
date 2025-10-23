@@ -36,6 +36,18 @@ namespace EVMManagement.API.Controllers
             return Ok(ApiResponse<PagedResult<OrderResponse>>.CreateSuccess(result));
         }
 
+        [HttpGet("filter")]
+        public async Task<IActionResult> Filter([FromQuery] OrderFilterDto filter)
+        {
+            if (filter.PageNumber < 1 || filter.PageSize < 1)
+            {
+                return BadRequest(ApiResponse<string>.CreateFail("PageNumber and PageSize must be greater than 0", null, 400));
+            }
+
+            var result = await _services.OrderService.GetByFilterAsync(filter);
+            return Ok(ApiResponse<PagedResult<OrderResponse>>.CreateSuccess(result));
+        }
+
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(Guid id)
         {
