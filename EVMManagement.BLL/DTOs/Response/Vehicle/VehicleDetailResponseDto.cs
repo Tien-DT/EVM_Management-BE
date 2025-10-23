@@ -17,6 +17,8 @@ namespace EVMManagement.BLL.DTOs.Response.Vehicle
         public DateTime? DeletedDate { get; init; }
         public bool IsDeleted { get; init; }
         public VehicleVariantDetailDto? VehicleVariant { get; init; }
+        public WarehouseDetailDto? Warehouse { get; init; }
+        public DealerDetailDto? Dealer { get; init; }
     }
 
     public class VehicleVariantDetailDto
@@ -64,5 +66,28 @@ namespace EVMManagement.BLL.DTOs.Response.Vehicle
         public DateTime? ModifiedDate { get; init; }
         public DateTime? DeletedDate { get; init; }
         public bool IsDeleted { get; init; }
+    }
+
+    public class WarehouseDetailDto
+    {
+        public Guid Id { get; init; }
+        public Guid? DealerId { get; init; }
+        public string Name { get; init; } = string.Empty;
+        public string? Address { get; init; }
+        public int? Capacity { get; init; }
+        public WarehouseType Type { get; init; }
+        public DateTime CreatedDate { get; init; }
+        public DateTime? ModifiedDate { get; init; }
+    }
+
+    public class DealerDetailDto
+    {
+        public Guid Id { get; init; }
+        public string Name { get; init; } = string.Empty;
+        public string? Address { get; init; }
+        public string? Phone { get; init; }
+        public string Email { get; init; } = string.Empty;
+        public DateTime? EstablishedAt { get; init; }
+        public bool IsActive { get; init; }
     }
 }

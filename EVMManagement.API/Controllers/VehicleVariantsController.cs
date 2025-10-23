@@ -84,5 +84,19 @@ namespace EVMManagement.API.Controllers
             if (!deleted) return NotFound(ApiResponse<string>.CreateFail("VehicleVariant not found", null, 404));
             return Ok(ApiResponse<string>.CreateSuccess("Deleted"));
         }
+
+        [HttpGet("by-model/{modelId}")]
+        public async Task<IActionResult> GetByModelId(Guid modelId, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
+        {
+            if (pageNumber < 1 || pageSize < 1)
+            {
+                return BadRequest(ApiResponse<string>.CreateFail("PageNumber and PageSize must be greater than 0", null, 400));
+            }
+
+            var result = await _services.VehicleVariantService.GetByModelIdAsync(modelId, pageNumber, pageSize);
+            return Ok(ApiResponse<PagedResult<VehicleVariantResponse>>.CreateSuccess(result));
+        }
+
+       
     }
 }
