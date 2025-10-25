@@ -5,6 +5,7 @@ using EVMManagement.BLL.DTOs.Request.Vehicle;
 using EVMManagement.BLL.DTOs.Response;
 using EVMManagement.BLL.DTOs.Response.Vehicle;
 using EVMManagement.DAL.Models.Entities;
+using EVMManagement.DAL.Models.Enums;
 
 namespace EVMManagement.BLL.Services.Interface
 {
@@ -17,6 +18,6 @@ namespace EVMManagement.BLL.Services.Interface
         Task<VehicleVariantResponse?> UpdateIsDeletedAsync(Guid id, bool isDeleted);
         Task<bool> DeleteAsync(Guid id);
         Task<PagedResult<VehicleVariantResponse>> GetByModelIdAsync(Guid modelId, int pageNumber = 1, int pageSize = 10);
-        Task<PagedResult<VehicleVariantResponse>> GetByDealerIdAsync(Guid dealerId, int pageNumber = 1, int pageSize = 10);
+        Task<PagedResult<VehicleVariantResponse>> GetByDealerIdAsync(Guid dealerId, VehiclePurpose? purpose, int pageNumber = 1, int pageSize = 10);
     }
 }
