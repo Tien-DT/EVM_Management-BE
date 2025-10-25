@@ -4,11 +4,13 @@ using System.Threading.Tasks;
 using AutoMapper;
 using AutoMapper.QueryableExtensions;
 using EVMManagement.BLL.DTOs.Request.HandoverRecord;
+using EVMManagement.BLL.DTOs.Request.Order;
 using EVMManagement.BLL.DTOs.Response;
 using EVMManagement.BLL.DTOs.Response.HandoverRecord;
 using EVMManagement.BLL.Helpers;
 using EVMManagement.BLL.Services.Interface;
 using EVMManagement.DAL.Models.Entities;
+using EVMManagement.DAL.Models.Enums;
 using EVMManagement.DAL.Repositories.Interface;
 using EVMManagement.DAL.UnitOfWork;
 using Microsoft.EntityFrameworkCore;
@@ -95,6 +97,89 @@ namespace EVMManagement.BLL.Services.Class
             await _unitOfWork.SaveChangesAsync();
 
             return await GetByIdAsync(id);
+        }
+
+        public async Task<HandoverRecordResponseDto> CreateHandoverWithVehicleAssignmentAsync(Guid orderId, OrderHandoverRequestDto dto)
+        {
+            // Lấy order với OrderDetails
+            var order = await _unitOfWork.Orders.GetQueryable()
+                .Include(o => o.OrderDetails)
+                .FirstOrDefaultAsync(o => o.Id == orderId);
+
+            if (order == null)
+            {
+                throw new Exception($"Order with ID {orderId} not found");
+            }
+
+            HandoverRecord? firstHandoverRecord = null;
+
+            foreach (var orderDetail in order.OrderDetails.Where(od => !od.IsDeleted))
+            {
+                // Tìm vehicle có sẵn cho variant này
+                var availableVehicle = await _unitOfWork.Vehicles.GetQueryable()
+                    .Where(v => v.VariantId == orderDetail.VehicleVariantId &&
+                               v.Status == VehicleStatus.IN_STOCK &&
+                               v.Purpose == VehiclePurpose.FOR_SALE &&
+                               !v.IsDeleted)
+                    .FirstOrDefaultAsync();
+
+                if (availableVehicle == null)
+                {
+                    throw new Exception($"No available vehicle found for variant {orderDetail.VehicleVariantId}");
+                }
+
+                // gán xe vào OrderDetail
+                orderDetail.VehicleId = availableVehicle.Id;
+                orderDetail.ModifiedDate = DateTime.UtcNow;
+                _unitOfWork.OrderDetails.Update(orderDetail);
+
+                // cập nhật trạng thái xe = SOLD
+                availableVehicle.Status = VehicleStatus.SOLD;
+                availableVehicle.ModifiedDate = DateTime.UtcNow;
+                _unitOfWork.Vehicles.Update(availableVehicle);
+
+                // tạo HandoverRecord
+                var handoverRecord = new HandoverRecord
+                {
+                    OrderId = orderId,
+                    VehicleId = availableVehicle.Id,
+                    HandoverDate = dto.HandoverDate.HasValue 
+                        ? DateTimeHelper.ToUtc(dto.HandoverDate) 
+                        : DateTime.UtcNow,
+                    Notes = dto.Notes,
+                    IsAccepted = true
+                };
+
+                await _unitOfWork.HandoverRecords.AddAsync(handoverRecord);
+
+                // lưu handover record đầu tiên để return
+                if (firstHandoverRecord == null)
+                {
+                    firstHandoverRecord = handoverRecord;
+                }
+            }
+
+            // cập nhật trạng thái đơn = COMPLETED
+            order.Status = OrderStatus.COMPLETED;
+            order.ModifiedDate = DateTime.UtcNow;
+            _unitOfWork.Orders.Update(order);
+
+            // log ghi nhận
+            var report = new Report
+            {
+                Type = "HANDOVER_COMPLETED",
+                Title = "Vehicle handover completed",
+                Content = $"Order {order.Code} handover completed. {order.OrderDetails.Count} vehicle(s) assigned and status updated to SOLD.",
+                OrderId = order.Id,
+                DealerId = order.DealerId,
+                AccountId = order.CreatedByUserId
+            };
+            await _unitOfWork.Reports.AddAsync(report);
+
+            await _unitOfWork.SaveChangesAsync();
+
+            return await GetByIdAsync(firstHandoverRecord!.Id) 
+                ?? throw new Exception("Failed to create HandoverRecord");
         }
     }
 }

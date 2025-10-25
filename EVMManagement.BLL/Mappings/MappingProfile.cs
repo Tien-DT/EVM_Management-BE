@@ -63,7 +63,11 @@ namespace EVMManagement.BLL.Mappings
             CreateMap<VehicleUpdateDto, Vehicle>()
                 .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
             CreateMap<Vehicle, VehicleResponseDto>();
-            CreateMap<Vehicle, VehicleDetailResponseDto>();
+            CreateMap<Vehicle, VehicleDetailResponseDto>()
+                .ForMember(dest => dest.Warehouse, opt => opt.MapFrom(src => src.Warehouse))
+                .ForMember(dest => dest.Dealer, opt => opt.MapFrom(src => src.Warehouse != null ? src.Warehouse.Dealer : null));
+            CreateMap<Warehouse, WarehouseDetailDto>();
+            CreateMap<Dealer, DealerDetailDto>();
 
             // VehicleVariant Mappings
             CreateMap<VehicleVariantCreateDto, VehicleVariant>();

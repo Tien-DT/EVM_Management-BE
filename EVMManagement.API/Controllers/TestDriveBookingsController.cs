@@ -6,11 +6,13 @@ using EVMManagement.API.Services;
 using System.Threading.Tasks;
 using System;
 using System.Linq;
+using Microsoft.AspNetCore.Authorization;
 
 namespace EVMManagement.API.Controllers
 {
     [Route("api/v1/[controller]")]
     [ApiController]
+    [Authorize]
     public class TestDriveBookingsController : ControllerBase
     {
         private readonly IServiceFacade _services;
@@ -21,6 +23,7 @@ namespace EVMManagement.API.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "DEALER_STAFF")]
         public async Task<IActionResult> Create([FromBody] TestDriveBookingCreateDto dto)
         {
             if (!ModelState.IsValid)
@@ -34,14 +37,32 @@ namespace EVMManagement.API.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetAll([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
+        public async Task<IActionResult> GetAll(
+            [FromQuery] Guid? vehicleTimeSlotId,
+            [FromQuery] Guid? customerId,
+            [FromQuery] Guid? dealerStaffId,
+            [FromQuery] EVMManagement.DAL.Models.Enums.TestDriveBookingStatus? status,
+            [FromQuery] Guid? dealerId,
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 10)
         {
             if (pageNumber < 1 || pageSize < 1)
             {
                 return BadRequest(ApiResponse<string>.CreateFail("PageNumber and PageSize must be greater than 0", null, 400));
             }
 
-            var result = await _services.TestDriveBookingService.GetAllAsync(pageNumber, pageSize);
+            var filterDto = new TestDriveBookingFilterDto
+            {
+                VehicleTimeSlotId = vehicleTimeSlotId,
+                CustomerId = customerId,
+                DealerStaffId = dealerStaffId,
+                Status = status,
+                DealerId = dealerId,
+                PageNumber = pageNumber,
+                PageSize = pageSize
+            };
+
+            var result = await _services.TestDriveBookingService.GetByFilterAsync(filterDto);
             return Ok(ApiResponse<PagedResult<TestDriveBookingResponseDto>>.CreateSuccess(result));
         }
 
@@ -109,6 +130,7 @@ namespace EVMManagement.API.Controllers
         }
 
         [HttpPost("{id}/send-reminder")]
+        [Authorize(Roles = "DEALER_STAFF")]
         public async Task<IActionResult> SendReminder(Guid id)
         {
             try
@@ -124,6 +146,7 @@ namespace EVMManagement.API.Controllers
         }
 
         [HttpPost("with-customer-info")]
+        [Authorize(Roles = "DEALER_STAFF")]
         public async Task<IActionResult> CreateWithCustomerInfo([FromBody] TestDriveCreateDto dto)
         {
             if (!ModelState.IsValid)

@@ -60,7 +60,12 @@ namespace EVMManagement.BLL.Services.Class
 
         public async Task<PagedResult<VehicleDetailResponseDto>> GetAllWithDetailsAsync(int pageNumber = 1, int pageSize = 10)
         {
-            var query = _unitOfWork.Vehicles.GetQueryable();
+            var query = _unitOfWork.Vehicles.GetQueryable()
+                .Include(v => v.VehicleVariant)
+                    .ThenInclude(vv => vv.VehicleModel)
+                .Include(v => v.Warehouse)
+                    .ThenInclude(w => w.Dealer);
+            
             var totalCount = await query.CountAsync();
 
             var items = await query
@@ -171,6 +176,70 @@ namespace EVMManagement.BLL.Services.Class
             await _unitOfWork.SaveChangesAsync();
 
             return MapToDto(entity);
+        }
+
+        public async Task<StockCheckResponseDto> CheckStockAvailabilityAsync(Guid variantId, Guid dealerId, int quantity)
+        {
+            // Get warehouses belonging to the dealer
+            var warehouses = await _unitOfWork.Warehouses.GetQueryable()
+                .Where(w => w.DealerId == dealerId && !w.IsDeleted)
+                .ToListAsync();
+
+            var warehouseIds = warehouses.Select(w => w.Id).ToList();
+
+            // Query available vehicles
+            var availableVehicles = await _unitOfWork.Vehicles.GetQueryable()
+                .Where(v => v.VariantId == variantId &&
+                           warehouseIds.Contains(v.WarehouseId) &&
+                           v.Status == VehicleStatus.IN_STOCK &&
+                           v.Purpose == VehiclePurpose.FOR_SALE &&
+                           !v.IsDeleted)
+                .ToListAsync();
+
+            var availableQuantity = availableVehicles.Count;
+            var isInStock = availableQuantity >= quantity;
+
+            // Get primary warehouse (first one or null)
+            var primaryWarehouse = warehouses.FirstOrDefault();
+
+            return new StockCheckResponseDto
+            {
+                IsInStock = isInStock,
+                AvailableQuantity = availableQuantity,
+                RequestedQuantity = quantity,
+                WarehouseId = primaryWarehouse?.Id,
+                WarehouseName = primaryWarehouse?.Name,
+                AvailableVehicleIds = availableVehicles.Select(v => v.Id).ToList()
+            };
+        }
+
+        public async Task<List<DealerModelListDto>> GetModelsByDealerAsync(Guid dealerId)
+        {
+            var models = await _unitOfWork.Vehicles.GetModelsByDealerAsync(dealerId);
+
+            var result = models.Select(m => new DealerModelListDto
+            {
+                Id = m.Id,
+                Name = m.Name,
+                VariantCount = m.VariantCount
+            }).ToList();
+
+            return result;
+        }
+
+        public async Task<List<DealerVariantListDto>> GetVariantsByDealerAndModelAsync(Guid dealerId, Guid modelId)
+        {
+            var variants = await _unitOfWork.Vehicles.GetVariantsByDealerAndModelAsync(dealerId, modelId);
+
+            var result = variants.Select(v => new DealerVariantListDto
+            {
+                Id = v.Id,
+                ModelId = v.ModelId,
+                ModelName = v.ModelName,
+                AvailableCount = v.AvailableCount
+            }).ToList();
+
+            return result;
         }
 
         private VehicleResponseDto MapToDto(Vehicle e)

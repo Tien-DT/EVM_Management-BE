@@ -1,13 +1,16 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using EVMManagement.BLL.DTOs.Request.Warehouse;
 using EVMManagement.BLL.DTOs.Response;
+using EVMManagement.BLL.DTOs.Response.Vehicle;
 using EVMManagement.BLL.DTOs.Response.Warehouse;
 using EVMManagement.BLL.Services.Interface;
 using EVMManagement.DAL.UnitOfWork;
 using EVMManagement.DAL.Models.Entities;
 using EVMManagement.DAL.Models.Enums;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 namespace EVMManagement.BLL.Services.Class
@@ -258,7 +261,101 @@ namespace EVMManagement.BLL.Services.Class
             }
         }
 
-       
+        public async Task<ApiResponse<List<VehicleResponseDto>>> AddVehiclesToWarehouseAsync(Guid warehouseId, AddVehiclesToWarehouseRequestDto dto, Guid addedByUserId)
+        {
+            try
+            {
+                // Kiểm tra warehouse tồn tại
+                var warehouse = await _unitOfWork.Warehouses.GetByIdAsync(warehouseId);
+                if (warehouse == null || warehouse.IsDeleted)
+                {
+                    return ApiResponse<List<VehicleResponseDto>>.CreateFail("Warehouse not found or has been deleted", errorCode: 404);
+                }
+
+                // kiểm tra variant tồn tại
+                var variant = await _unitOfWork.VehicleVariants.GetByIdAsync(dto.VehicleVariantId);
+                if (variant == null || variant.IsDeleted)
+                {
+                    return ApiResponse<List<VehicleResponseDto>>.CreateFail("Vehicle variant not found or has been deleted", errorCode: 404);
+                }
+
+                var createdVehicles = new List<VehicleResponseDto>();
+
+                // tạo vehicle cho từng VIN
+                foreach (var vin in dto.VinNumbers)
+                {
+                    if (string.IsNullOrWhiteSpace(vin))
+                    {
+                        _logger.LogWarning("Empty VIN number detected, skipping...");
+                        continue;
+                    }
+
+                    // kiểm tra VIN tồn tại
+                    var existingVehicle = await _unitOfWork.Vehicles.GetQueryable()
+                        .Where(v => v.Vin == vin)
+                        .FirstOrDefaultAsync();
+
+                    if (existingVehicle != null)
+                    {
+                        _logger.LogWarning("VIN {VIN} already exists, skipping...", vin);
+                        continue;
+                    }
+
+                    var vehicle = new Vehicle
+                    {
+                        VariantId = dto.VehicleVariantId,
+                        WarehouseId = warehouseId,
+                        Vin = vin,
+                        Status = VehicleStatus.IN_STOCK,
+                        Purpose = dto.Purpose
+                    };
+
+                    await _unitOfWork.Vehicles.AddAsync(vehicle);
+
+                    createdVehicles.Add(new VehicleResponseDto
+                    {
+                        Id = vehicle.Id,
+                        VariantId = vehicle.VariantId,
+                        WarehouseId = vehicle.WarehouseId,
+                        Vin = vehicle.Vin,
+                        ImageUrl = vehicle.ImageUrl,
+                        Status = vehicle.Status,
+                        Purpose = vehicle.Purpose,
+                        CreatedDate = vehicle.CreatedDate,
+                        ModifiedDate = vehicle.ModifiedDate,
+                        DeletedDate = vehicle.DeletedDate,
+                        IsDeleted = vehicle.IsDeleted
+                    });
+                }
+
+                // report log
+                var report = new Report
+                {
+                    Type = "VEHICLES_ADDED_TO_WAREHOUSE",
+                    Title = "Vehicles added to warehouse",
+                    Content = $"{createdVehicles.Count} vehicle(s) added to warehouse {warehouse.Name}. Variant: {variant.Color}",
+                    DealerId = warehouse.DealerId,
+                    AccountId = addedByUserId
+                };
+                await _unitOfWork.Reports.AddAsync(report);
+
+                await _unitOfWork.SaveChangesAsync();
+
+                _logger.LogInformation("{Count} vehicles added to warehouse {WarehouseId} by user {UserId}", 
+                    createdVehicles.Count, warehouseId, addedByUserId);
+
+                return ApiResponse<List<VehicleResponseDto>>.CreateSuccess(
+                    createdVehicles, 
+                    $"Successfully added {createdVehicles.Count} vehicle(s) to warehouse {warehouse.Name}"
+                );
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error adding vehicles to warehouse {WarehouseId}", warehouseId);
+                return ApiResponse<List<VehicleResponseDto>>.CreateFail("An error occurred while adding vehicles to warehouse", errorCode: 500);
+            }
+        }
+
         private static WarehouseResponseDto MapToDto(Warehouse w)
         {
             return new WarehouseResponseDto

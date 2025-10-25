@@ -1,6 +1,9 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using AutoMapper;
+using AutoMapper.QueryableExtensions;
 using EVMManagement.BLL.DTOs.Request.VehicleTimeSlot;
 using EVMManagement.BLL.DTOs.Response;
 using EVMManagement.BLL.DTOs.Response.VehicleTimeSlot;
@@ -9,16 +12,19 @@ using EVMManagement.BLL.Services.Interface;
 using EVMManagement.DAL.Models.Entities;
 using EVMManagement.DAL.Models.Enums;
 using EVMManagement.DAL.UnitOfWork;
+using Microsoft.EntityFrameworkCore;
 
 namespace EVMManagement.BLL.Services.Class
 {
     public class VehicleTimeSlotService : IVehicleTimeSlotService
     {
         private readonly IUnitOfWork _unitOfWork;
+        private readonly IMapper _mapper;
 
-        public VehicleTimeSlotService(IUnitOfWork unitOfWork)
+        public VehicleTimeSlotService(IUnitOfWork unitOfWork, IMapper mapper)
         {
             _unitOfWork = unitOfWork;
+            _mapper = mapper;
         }
 
         public async Task<VehicleTimeSlotResponseDto> CreateVehicleTimeSlotAsync(VehicleTimeSlotCreateDto dto)
@@ -52,18 +58,7 @@ namespace EVMManagement.BLL.Services.Class
             await _unitOfWork.VehicleTimeSlots.AddAsync(vehicleTimeSlot);
             await _unitOfWork.SaveChangesAsync();
 
-            return new VehicleTimeSlotResponseDto
-            {
-                Id = vehicleTimeSlot.Id,
-                VehicleId = vehicleTimeSlot.VehicleId,
-                DealerId = vehicleTimeSlot.DealerId,
-                MasterSlotId = vehicleTimeSlot.MasterSlotId,
-                SlotDate = vehicleTimeSlot.SlotDate,
-                Status = vehicleTimeSlot.Status,
-                CreatedDate = vehicleTimeSlot.CreatedDate,
-                ModifiedDate = vehicleTimeSlot.ModifiedDate,
-                IsDeleted = vehicleTimeSlot.IsDeleted
-            };
+            return _mapper.Map<VehicleTimeSlotResponseDto>(vehicleTimeSlot);
         }
 
         public async Task<PagedResult<VehicleTimeSlotResponseDto>> GetAllAsync(int pageNumber = 1, int pageSize = 10)
@@ -71,24 +66,13 @@ namespace EVMManagement.BLL.Services.Class
             var query = _unitOfWork.VehicleTimeSlots.GetQueryable();
             var totalCount = await _unitOfWork.VehicleTimeSlots.CountAsync();
 
-            var items = query
+            var items = await query
                 .OrderByDescending(x => x.SlotDate)
                 .ThenByDescending(x => x.CreatedDate)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
-                .Select(x => new VehicleTimeSlotResponseDto
-                {
-                    Id = x.Id,
-                    VehicleId = x.VehicleId,
-                    DealerId = x.DealerId,
-                    MasterSlotId = x.MasterSlotId,
-                    SlotDate = x.SlotDate,
-                    Status = x.Status,
-                    CreatedDate = x.CreatedDate,
-                    ModifiedDate = x.ModifiedDate,
-                    IsDeleted = x.IsDeleted
-                })
-                .ToList();
+                .ProjectTo<VehicleTimeSlotResponseDto>(_mapper.ConfigurationProvider)
+                .ToListAsync();
 
             return PagedResult<VehicleTimeSlotResponseDto>.Create(items, totalCount, pageNumber, pageSize);
         }
@@ -98,105 +82,61 @@ namespace EVMManagement.BLL.Services.Class
             var entity = await _unitOfWork.VehicleTimeSlots.GetByIdAsync(id);
             if (entity == null) return null;
 
-            return new VehicleTimeSlotResponseDto
-            {
-                Id = entity.Id,
-                VehicleId = entity.VehicleId,
-                DealerId = entity.DealerId,
-                MasterSlotId = entity.MasterSlotId,
-                SlotDate = entity.SlotDate,
-                Status = entity.Status,
-                CreatedDate = entity.CreatedDate,
-                ModifiedDate = entity.ModifiedDate,
-                IsDeleted = entity.IsDeleted
-            };
+            return _mapper.Map<VehicleTimeSlotResponseDto>(entity);
         }
 
-        public Task<PagedResult<VehicleTimeSlotResponseDto>> GetByVehicleIdAsync(Guid vehicleId, int pageNumber = 1, int pageSize = 10)
+        public async Task<PagedResult<VehicleTimeSlotResponseDto>> GetByVehicleIdAsync(Guid vehicleId, int pageNumber = 1, int pageSize = 10)
         {
             var query = _unitOfWork.VehicleTimeSlots.GetQueryable()
                 .Where(x => x.VehicleId == vehicleId);
 
             var totalCount = query.Count();
 
-            var items = query
+            var items = await query
                 .OrderByDescending(x => x.SlotDate)
                 .ThenByDescending(x => x.CreatedDate)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
-                .Select(x => new VehicleTimeSlotResponseDto
-                {
-                    Id = x.Id,
-                    VehicleId = x.VehicleId,
-                    DealerId = x.DealerId,
-                    MasterSlotId = x.MasterSlotId,
-                    SlotDate = x.SlotDate,
-                    Status = x.Status,
-                    CreatedDate = x.CreatedDate,
-                    ModifiedDate = x.ModifiedDate,
-                    IsDeleted = x.IsDeleted
-                })
-                .ToList();
+                .ProjectTo<VehicleTimeSlotResponseDto>(_mapper.ConfigurationProvider)
+                .ToListAsync();
 
-            return Task.FromResult(PagedResult<VehicleTimeSlotResponseDto>.Create(items, totalCount, pageNumber, pageSize));
+            return PagedResult<VehicleTimeSlotResponseDto>.Create(items, totalCount, pageNumber, pageSize);
         }
 
-        public Task<PagedResult<VehicleTimeSlotResponseDto>> GetByDealerIdAsync(Guid dealerId, int pageNumber = 1, int pageSize = 10)
+        public async Task<PagedResult<VehicleTimeSlotResponseDto>> GetByDealerIdAsync(Guid dealerId, int pageNumber = 1, int pageSize = 10)
         {
             var query = _unitOfWork.VehicleTimeSlots.GetQueryable()
                 .Where(x => x.DealerId == dealerId);
 
             var totalCount = query.Count();
 
-            var items = query
+            var items = await query
                 .OrderByDescending(x => x.SlotDate)
                 .ThenByDescending(x => x.CreatedDate)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
-                .Select(x => new VehicleTimeSlotResponseDto
-                {
-                    Id = x.Id,
-                    VehicleId = x.VehicleId,
-                    DealerId = x.DealerId,
-                    MasterSlotId = x.MasterSlotId,
-                    SlotDate = x.SlotDate,
-                    Status = x.Status,
-                    CreatedDate = x.CreatedDate,
-                    ModifiedDate = x.ModifiedDate,
-                    IsDeleted = x.IsDeleted
-                })
-                .ToList();
+                .ProjectTo<VehicleTimeSlotResponseDto>(_mapper.ConfigurationProvider)
+                .ToListAsync();
 
-            return Task.FromResult(PagedResult<VehicleTimeSlotResponseDto>.Create(items, totalCount, pageNumber, pageSize));
+            return PagedResult<VehicleTimeSlotResponseDto>.Create(items, totalCount, pageNumber, pageSize);
         }
 
-        public Task<PagedResult<VehicleTimeSlotResponseDto>> GetByStatusAsync(TimeSlotStatus status, int pageNumber = 1, int pageSize = 10)
+        public async Task<PagedResult<VehicleTimeSlotResponseDto>> GetByStatusAsync(TimeSlotStatus status, int pageNumber = 1, int pageSize = 10)
         {
             var query = _unitOfWork.VehicleTimeSlots.GetQueryable()
                 .Where(x => x.Status == status);
 
             var totalCount = query.Count();
 
-            var items = query
+            var items = await query
                 .OrderByDescending(x => x.SlotDate)
                 .ThenByDescending(x => x.CreatedDate)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
-                .Select(x => new VehicleTimeSlotResponseDto
-                {
-                    Id = x.Id,
-                    VehicleId = x.VehicleId,
-                    DealerId = x.DealerId,
-                    MasterSlotId = x.MasterSlotId,
-                    SlotDate = x.SlotDate,
-                    Status = x.Status,
-                    CreatedDate = x.CreatedDate,
-                    ModifiedDate = x.ModifiedDate,
-                    IsDeleted = x.IsDeleted
-                })
-                .ToList();
+                .ProjectTo<VehicleTimeSlotResponseDto>(_mapper.ConfigurationProvider)
+                .ToListAsync();
 
-            return Task.FromResult(PagedResult<VehicleTimeSlotResponseDto>.Create(items, totalCount, pageNumber, pageSize));
+            return PagedResult<VehicleTimeSlotResponseDto>.Create(items, totalCount, pageNumber, pageSize);
         }
 
         public async Task<VehicleTimeSlotResponseDto?> UpdateAsync(Guid id, VehicleTimeSlotUpdateDto dto)
@@ -264,6 +204,145 @@ namespace EVMManagement.BLL.Services.Class
 
             return true;
         }
+
+       
+        
+       
+       
+        
+
+       
+
+        /// <summary>
+        /// Lấy danh sách ngày và các slot có sẵn trong mỗi ngày cho một variant
+        /// Trả về: Ngày → Danh sách slot (slot ID, số xe trống, thời gian)
+        /// </summary>
+        public async Task<List<DaySlotsummaryDto>> GetAvailableSlotByVariantAsync(
+            Guid modelId, Guid variantId, Guid dealerId, DateTime? fromDate = null, DateTime? toDate = null)
+        {
+            // Normalize dates to date-only, use today as default
+            var from = (fromDate ?? DateTime.UtcNow).Date;
+            var to = (toDate ?? DateTime.UtcNow).Date;
+
+            // Get all vehicles of this variant at the dealer
+            var allVehicles = await _unitOfWork.VehicleTimeSlots.GetAvailableVehiclesByVariantAndDealerAsync(variantId, dealerId);
+
+            // Get booked/available VehicleTimeSlots for this variant in date range
+            var bookedBySlot = await _unitOfWork.VehicleTimeSlots.GetSlotsByVariantInDateRangeAsync(modelId, variantId, dealerId, from, to);
+
+            // Group by slot
+            var bookedGroupedBySlot = bookedBySlot
+                .GroupBy(s => new { s.SlotDate.Date, s.MasterSlotId, s.MasterSlot.StartOffsetMinutes, s.MasterSlot.DurationMinutes })
+                .Select(g => new
+                {
+                    SlotDate = g.Key.Date,
+                    MasterSlotId = g.Key.MasterSlotId,
+                    StartOffsetMinutes = g.Key.StartOffsetMinutes ?? 0,
+                    DurationMinutes = g.Key.DurationMinutes ?? 0,
+                    BookedVehicleIds = g.Where(x => x.Status == TimeSlotStatus.BOOKED).Select(x => x.VehicleId).ToHashSet()
+                })
+                .ToList();
+
+            var results = new List<DaySlotsummaryDto>();
+
+            // Group by date
+            var groupedByDate = bookedGroupedBySlot
+                .GroupBy(b => b.SlotDate)
+                .OrderBy(g => g.Key);
+
+            foreach (var dateGroup in groupedByDate)
+            {
+                var slots = new List<SlotSummaryDto>();
+
+                foreach (var slot in dateGroup)
+                {
+                    // Count available vehicles for this slot (not booked in this slot)
+                    var availableCount = allVehicles.Count(v => !slot.BookedVehicleIds.Contains(v.Id));
+
+                    slots.Add(new SlotSummaryDto
+                    {
+                        MasterSlotId = slot.MasterSlotId,
+                        AvailableCount = availableCount,
+                        StartOffsetMinutes = slot.StartOffsetMinutes,
+                        DurationMinutes = slot.DurationMinutes
+                    });
+                }
+
+                results.Add(new DaySlotsummaryDto
+                {
+                    SlotDate = dateGroup.Key,
+                    Slots = slots.OrderBy(s => s.StartOffsetMinutes).ToList()
+                });
+            }
+
+            return results;
+        }
+
+        /// <summary>
+        /// Lấy danh sách xe trống của một time slot cụ thể trong một ngày
+        /// Trả về: Ngày + Slot + Danh sách xe trống lịch trong slot đó
+        /// </summary>
+        public async Task<SlotVehiclesDto?> GetAvailableVehiclesBySlotAsync(
+            Guid modelId, Guid variantId, Guid dealerId, DateTime slotDate, Guid masterSlotId)
+        {
+            // Normalize date to date-only
+            var date = slotDate.Date;
+
+            // Get all vehicles of this variant at the dealer
+            var allVehicles = await _unitOfWork.VehicleTimeSlots.GetAvailableVehiclesByVariantAndDealerAsync(variantId, dealerId);
+            
+            if (allVehicles.Count == 0) return null;
+
+            // Get VehicleTimeSlots for this specific slot from repository
+            var slotsData = await _unitOfWork.VehicleTimeSlots.GetSlotsByDateAndMasterSlotAsync(
+                modelId, variantId, dealerId, date, masterSlotId);
+
+            if (slotsData.Count == 0)
+            {
+                // Slot has no bookings yet, all vehicles are available
+                // Get MasterSlot info
+                var masterSlot = await _unitOfWork.MasterTimeSlots.GetQueryable()
+                    .FirstOrDefaultAsync(m => m.Id == masterSlotId);
+                
+                if (masterSlot == null) return null;
+
+                return new SlotVehiclesDto
+                {
+                    SlotDate = date,
+                    MasterSlotId = masterSlotId,
+                    AvailableCount = allVehicles.Count,
+                    Vehicles = allVehicles.Select(v => new VehicleDetailDto { VehicleId = v.Id, Vin = v.Vin }).ToList(),
+                    StartOffsetMinutes = masterSlot.StartOffsetMinutes ?? 0,
+                    DurationMinutes = masterSlot.DurationMinutes ?? 0
+                };
+            }
+
+            // Get booked vehicle IDs in this slot
+            var bookedVehicleIds = slotsData
+                .Where(x => x.Status == TimeSlotStatus.BOOKED)
+                .Select(x => x.VehicleId)
+                .ToHashSet();
+
+            // Get available vehicles (not booked in this slot)
+            var availableVehicles = allVehicles
+                .Where(v => !bookedVehicleIds.Contains(v.Id))
+                .Select(v => new VehicleDetailDto { VehicleId = v.Id, Vin = v.Vin })
+                .ToList();
+
+            var masterSlotInfo = slotsData.First().MasterSlot;
+
+            return new SlotVehiclesDto
+            {
+                SlotDate = date,
+                MasterSlotId = masterSlotId,
+                AvailableCount = availableVehicles.Count,
+                Vehicles = availableVehicles,
+                StartOffsetMinutes = masterSlotInfo.StartOffsetMinutes ?? 0,
+                DurationMinutes = masterSlotInfo.DurationMinutes ?? 0
+            };
+        }
+
+       
     }
 }
 

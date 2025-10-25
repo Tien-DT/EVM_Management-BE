@@ -1,5 +1,6 @@
 using System;
 using EVMManagement.BLL.DTOs.Response.Customer;
+using EVMManagement.BLL.DTOs.Response.User;
 using EVMManagement.BLL.DTOs.Response.VehicleTimeSlot;
 using EVMManagement.DAL.Models.Enums;
 
@@ -16,6 +17,7 @@ namespace EVMManagement.BLL.DTOs.Response.TestDriveBooking
         public DateTime? CheckoutAt { get; set; }
         public string? Note { get; set; }
         public CustomerResponse? Customer { get; set; }
+        public UserProfileResponse? DealerStaff { get; set; }
         public VehicleTimeSlotResponseDto? VehicleTimeSlot { get; set; }
         public string? VehicleModelName { get; set; }
         public string? VehicleColor { get; set; }

@@ -8,6 +8,7 @@ using EVMManagement.BLL.DTOs.Response;
 using EVMManagement.BLL.DTOs.Response.Deposit;
 using EVMManagement.BLL.Services.Interface;
 using EVMManagement.DAL.Models.Entities;
+using EVMManagement.DAL.Models.Enums;
 using EVMManagement.DAL.UnitOfWork;
 using Microsoft.EntityFrameworkCore;
 
@@ -132,6 +133,62 @@ namespace EVMManagement.BLL.Services.Class
             await _unitOfWork.SaveChangesAsync();
 
             return true;
+        }
+
+        public async Task<DepositResponse> CreatePreOrderDepositAsync(PreOrderDepositRequestDto dto)
+        {
+            var order = await _unitOfWork.Orders.GetByIdAsync(dto.OrderId);
+            if (order == null)
+            {
+                throw new Exception($"Order with ID {dto.OrderId} not found");
+            }
+
+            // tính 10% tiền đặt cọc
+            var depositAmount = (order.FinalAmount ?? 0) * 0.10m;
+
+            var combinedNote = string.Empty;
+            if (!string.IsNullOrWhiteSpace(dto.BillImageUrl))
+            {
+                combinedNote = $"Bill Image: {dto.BillImageUrl}";
+                if (!string.IsNullOrWhiteSpace(dto.Note))
+                {
+                    combinedNote += $"\n{dto.Note}";
+                }
+            }
+            else
+            {
+                combinedNote = dto.Note ?? string.Empty;
+            }
+
+            var deposit = new Deposit
+            {
+                OrderId = dto.OrderId,
+                Amount = depositAmount,
+                Method = dto.Method,
+                Status = DepositStatus.PAID,
+                Note = combinedNote
+            };
+
+            await _unitOfWork.Deposits.AddAsync(deposit);
+
+            order.Status = OrderStatus.IN_PROGRESS;
+            order.ModifiedDate = DateTime.UtcNow;
+            _unitOfWork.Orders.Update(order);
+
+            var report = new Report
+            {
+                Type = "DEPOSIT_PAID_10_PERCENT",
+                Title = "Pre-order deposit received",
+                Content = $"Received 10% deposit ({depositAmount:N2} VND) for Order {order.Code}",
+                OrderId = order.Id,
+                DealerId = order.DealerId,
+                AccountId = order.CreatedByUserId
+            };
+            await _unitOfWork.Reports.AddAsync(report);
+
+            await _unitOfWork.SaveChangesAsync();
+
+            return _mapper.Map<DepositResponse>(deposit);
         }
     }
 }

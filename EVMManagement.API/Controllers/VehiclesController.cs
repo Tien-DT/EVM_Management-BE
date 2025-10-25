@@ -1,22 +1,24 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using EVMManagement.API.Services;
 using EVMManagement.BLL.DTOs.Request.Vehicle;
-using EVMManagement.BLL.DTOs.Response.Vehicle;
 using EVMManagement.BLL.DTOs.Response;
+using EVMManagement.BLL.DTOs.Response.Vehicle;
+using EVMManagement.DAL.Models.Enums;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
-using EVMManagement.DAL.Models.Enums;
-using EVMManagement.API.Services;
 
 namespace EVMManagement.API.Controllers
 {
     [Route("api/v1/[controller]")]
     [ApiController]
-    public class VehiclesController : ControllerBase
+    [Authorize]
+    public class VehiclesController :  BaseController
     {
         private readonly IServiceFacade _services;
 
-        public VehiclesController(IServiceFacade services)
+        public VehiclesController(IServiceFacade services) : base(services)
         {
             _services = services;
         }
@@ -116,6 +118,69 @@ namespace EVMManagement.API.Controllers
             var updated = await _services.VehicleService.UpdateStatusAsync(id, status);
             if (updated == null) return NotFound(ApiResponse<VehicleResponseDto>.CreateFail("Vehicle not found", null, 404));
             return Ok(ApiResponse<VehicleResponseDto>.CreateSuccess(updated));
+        }
+
+        [HttpGet("check-stock")]
+        public async Task<IActionResult> CheckStock([FromQuery] Guid variantId, [FromQuery] Guid dealerId, [FromQuery] int quantity)
+        {
+            if (variantId == Guid.Empty)
+            {
+                return BadRequest(ApiResponse<string>.CreateFail("VariantId is required", null, 400));
+            }
+
+            if (dealerId == Guid.Empty)
+            {
+                return BadRequest(ApiResponse<string>.CreateFail("DealerId is required", null, 400));
+            }
+
+            if (quantity < 1)
+            {
+                return BadRequest(ApiResponse<string>.CreateFail("Quantity must be greater than 0", null, 400));
+            }
+
+            var result = await _services.VehicleService.CheckStockAvailabilityAsync(variantId, dealerId, quantity);
+            return Ok(ApiResponse<StockCheckResponseDto>.CreateSuccess(result));
+        }
+
+        [HttpGet("dealer/{dealerId}/models")]
+        [Authorize(Roles = "DEALER_MANAGER,DEALER_STAFF")]
+        public async Task<IActionResult> GetModelsByDealer(Guid dealerId)
+        {
+            var currentRole = GetCurrentRole();
+            if (!currentRole.HasValue)
+            {
+                return Unauthorized(ApiResponse<string>.CreateFail("Không tìm thấy thông tin role của tài khoản.", errorCode: 401));
+            }
+            if (dealerId == Guid.Empty)
+            {
+                return BadRequest(ApiResponse<string>.CreateFail("DealerId is required", null, 400));
+            }
+
+            var result = await _services.VehicleService.GetModelsByDealerAsync(dealerId);
+            return Ok(ApiResponse<List<DealerModelListDto>>.CreateSuccess(result));
+        }
+
+        [HttpGet("dealer/{dealerId}/models/{modelId}/variants")]
+        [Authorize(Roles = "DEALER_MANAGER,DEALER_STAFF")]
+        public async Task<IActionResult> GetVariantsByDealerAndModel(Guid dealerId, Guid modelId)
+        {
+            var currentRole = GetCurrentRole();
+            if (!currentRole.HasValue)
+            {
+                return Unauthorized(ApiResponse<string>.CreateFail("Không tìm thấy thông tin role của tài khoản.", errorCode: 401));
+            }
+            if (dealerId == Guid.Empty)
+            {
+                return BadRequest(ApiResponse<string>.CreateFail("DealerId is required", null, 400));
+            }
+
+            if (modelId == Guid.Empty)
+            {
+                return BadRequest(ApiResponse<string>.CreateFail("ModelId is required", null, 400));
+            }
+
+            var result = await _services.VehicleService.GetVariantsByDealerAndModelAsync(dealerId, modelId);
+            return Ok(ApiResponse<List<DealerVariantListDto>>.CreateSuccess(result));
         }
     }
 }

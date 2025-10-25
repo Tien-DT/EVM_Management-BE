@@ -1,6 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using EVMManagement.BLL.DTOs.Request.HandoverRecord;
+using EVMManagement.BLL.DTOs.Request.Order;
 using EVMManagement.BLL.DTOs.Response;
 using EVMManagement.BLL.DTOs.Response.HandoverRecord;
 
@@ -13,6 +14,6 @@ namespace EVMManagement.BLL.Services.Interface
         Task<HandoverRecordResponseDto?> GetByIdAsync(Guid id);
         Task<HandoverRecordResponseDto?> UpdateAsync(Guid id, HandoverRecordUpdateDto dto);
         Task<HandoverRecordResponseDto?> UpdateIsDeletedAsync(Guid id, bool isDeleted);
-        
+        Task<HandoverRecordResponseDto> CreateHandoverWithVehicleAssignmentAsync(Guid orderId, OrderHandoverRequestDto dto);
     }
 }
