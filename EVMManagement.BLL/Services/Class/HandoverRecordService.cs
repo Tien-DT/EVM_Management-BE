@@ -49,9 +49,11 @@ namespace EVMManagement.BLL.Services.Class
         public async Task<PagedResult<HandoverRecordResponseDto>> GetAllAsync(int pageNumber = 1, int pageSize = 10)
         {
             var query = _unitOfWork.HandoverRecords.GetQueryableWithIncludes();
-            var total = await _unitOfWork.HandoverRecords.CountAsync();
+            var total = await _unitOfWork.HandoverRecords.CountAsync(x => !x.IsDeleted);
 
-            var entities = await query.OrderByDescending(x => x.CreatedDate)
+            var entities = await query
+                .Where(x => !x.IsDeleted)
+                .OrderByDescending(x => x.CreatedDate)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();

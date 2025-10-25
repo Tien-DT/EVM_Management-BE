@@ -82,7 +82,7 @@ namespace EVMManagement.API.Controllers
             return Ok(ApiResponse<VehicleResponseDto>.CreateSuccess(updated));
         }
 
-        [HttpPatch("{id}/is-deleted")]
+        [HttpDelete("{id}")]
         public async Task<IActionResult> UpdateIsDeleted([FromRoute] Guid id, [FromQuery] bool isDeleted)
         {
             var updated = await _services.VehicleService.UpdateIsDeletedAsync(id, isDeleted);

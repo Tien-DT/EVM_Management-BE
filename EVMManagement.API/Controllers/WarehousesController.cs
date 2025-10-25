@@ -163,7 +163,7 @@ namespace EVMManagement.API.Controllers
             return Ok(result);
         }
 
-        [HttpPatch("{id}")]
+        [HttpDelete("{id}")]
         [Authorize(Roles = "DEALER_MANAGER,EVM_ADMIN")]
         public async Task<IActionResult> UpdateIsDeleted(Guid id, [FromQuery] bool isDeleted)
         {

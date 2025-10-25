@@ -173,9 +173,10 @@ namespace EVMManagement.BLL.Services.Class
         public async Task<PagedResult<TestDriveBookingResponseDto>> GetAllAsync(int pageNumber = 1, int pageSize = 10)
         {
             var query = _unitOfWork.TestDriveBookings.GetQueryableWithIncludes();
-            var total = await _unitOfWork.TestDriveBookings.CountAsync();
+            var total = await _unitOfWork.TestDriveBookings.CountAsync(x => !x.IsDeleted);
 
             var entities = await query
+                .Where(x => !x.IsDeleted)
                 .OrderByDescending(x => x.CreatedDate)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
