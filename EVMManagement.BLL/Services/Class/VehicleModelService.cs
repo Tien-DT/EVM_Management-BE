@@ -121,6 +121,24 @@ namespace EVMManagement.BLL.Services.Class
             
         }
 
+        public async Task<PagedResult<VehicleModelResponseDto>> GetByDealerAsync(Guid dealerId, int pageNumber = 1, int pageSize = 10)
+        {
+            var modelsQuery = _unitOfWork.VehicleModels.GetByDealerAsync(dealerId)
+                .Where(m => !m.IsDeleted);
+
+            var totalCount = await modelsQuery.CountAsync();
+
+            var items = await modelsQuery
+                .OrderByDescending(x => x.CreatedDate)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            var responses = _mapper.Map<List<VehicleModelResponseDto>>(items);
+
+            return PagedResult<VehicleModelResponseDto>.Create(responses, totalCount, pageNumber, pageSize);
+        }
+
 
     }
 }
