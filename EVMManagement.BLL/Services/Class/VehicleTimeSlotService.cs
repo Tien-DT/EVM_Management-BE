@@ -205,140 +205,74 @@ namespace EVMManagement.BLL.Services.Class
             return true;
         }
 
-       
-        
-       
-       
-        
-
-       
-
-        /// <summary>
-        /// Lấy danh sách ngày và các slot có sẵn trong mỗi ngày cho một variant
-        /// Trả về: Ngày → Danh sách slot (slot ID, số xe trống, thời gian)
-        /// </summary>
-        public async Task<List<DaySlotsummaryDto>> GetAvailableSlotByVariantAsync(
-            Guid modelId, Guid variantId, Guid dealerId, DateTime? fromDate = null, DateTime? toDate = null)
+        public async Task<List<DaySlotsummaryDto>> GetAvailableSlotByModelAsync(
+            Guid modelId, Guid dealerId, DateTime? fromDate = null, DateTime? toDate = null)
         {
-            // Normalize dates to date-only, use today as default
-            var from = (fromDate ?? DateTime.UtcNow).Date;
-            var to = (toDate ?? DateTime.UtcNow).Date;
-
-            // Get all vehicles of this variant at the dealer
-            var allVehicles = await _unitOfWork.VehicleTimeSlots.GetAvailableVehiclesByVariantAndDealerAsync(variantId, dealerId);
-
-            // Get booked/available VehicleTimeSlots for this variant in date range
-            var bookedBySlot = await _unitOfWork.VehicleTimeSlots.GetSlotsByVariantInDateRangeAsync(modelId, variantId, dealerId, from, to);
-
-            // Group by slot
-            var bookedGroupedBySlot = bookedBySlot
-                .GroupBy(s => new { s.SlotDate.Date, s.MasterSlotId, s.MasterSlot.StartOffsetMinutes, s.MasterSlot.DurationMinutes })
-                .Select(g => new
-                {
-                    SlotDate = g.Key.Date,
-                    MasterSlotId = g.Key.MasterSlotId,
-                    StartOffsetMinutes = g.Key.StartOffsetMinutes ?? 0,
-                    DurationMinutes = g.Key.DurationMinutes ?? 0,
-                    BookedVehicleIds = g.Where(x => x.Status == TimeSlotStatus.BOOKED).Select(x => x.VehicleId).ToHashSet()
-                })
-                .ToList();
-
-            var results = new List<DaySlotsummaryDto>();
-
-            // Group by date
-            var groupedByDate = bookedGroupedBySlot
-                .GroupBy(b => b.SlotDate)
-                .OrderBy(g => g.Key);
-
-            foreach (var dateGroup in groupedByDate)
+            DateTime? queryFromDate = fromDate;
+            DateTime? queryToDate = toDate;
+            
+            if (fromDate.HasValue && !toDate.HasValue)
             {
-                var slots = new List<SlotSummaryDto>();
+                queryToDate = fromDate.Value.Date;
+            }
+            else if (!fromDate.HasValue && toDate.HasValue)
+            {
+                queryFromDate = toDate.Value.Date;
+            }
 
-                foreach (var slot in dateGroup)
-                {
-                    // Count available vehicles for this slot (not booked in this slot)
-                    var availableCount = allVehicles.Count(v => !slot.BookedVehicleIds.Contains(v.Id));
+            var slotSummariesByDate = await _unitOfWork.VehicleTimeSlots.GetSlotSummariesByModelAsync(
+                modelId, dealerId, 
+                queryFromDate?.Date, 
+                queryToDate?.Date);
 
-                    slots.Add(new SlotSummaryDto
-                    {
-                        MasterSlotId = slot.MasterSlotId,
-                        AvailableCount = availableCount,
-                        StartOffsetMinutes = slot.StartOffsetMinutes,
-                        DurationMinutes = slot.DurationMinutes
-                    });
-                }
+            if (slotSummariesByDate.Count == 0) return new List<DaySlotsummaryDto>();
 
-                results.Add(new DaySlotsummaryDto
+            var results = slotSummariesByDate
+                .Select(dateGroup => new DaySlotsummaryDto
                 {
                     SlotDate = dateGroup.Key,
-                    Slots = slots.OrderBy(s => s.StartOffsetMinutes).ToList()
-                });
-            }
+                    Slots = dateGroup.Value.Select(slot => new SlotSummaryDto
+                    {
+                        MasterSlotId = slot.MasterSlotId,
+                        AvailableCount = slot.AvailableCount,
+                        StartOffsetMinutes = slot.StartOffsetMinutes,
+                        DurationMinutes = slot.DurationMinutes
+                    }).ToList()
+                })
+                .OrderBy(d => d.SlotDate)
+                .ToList();
 
             return results;
         }
 
-        /// <summary>
-        /// Lấy danh sách xe trống của một time slot cụ thể trong một ngày
-        /// Trả về: Ngày + Slot + Danh sách xe trống lịch trong slot đó
-        /// </summary>
         public async Task<SlotVehiclesDto?> GetAvailableVehiclesBySlotAsync(
-            Guid modelId, Guid variantId, Guid dealerId, DateTime slotDate, Guid masterSlotId)
+            Guid modelId, Guid dealerId, DateTime slotDate, Guid masterSlotId)
         {
-            // Normalize date to date-only
             var date = slotDate.Date;
 
-            // Get all vehicles of this variant at the dealer
-            var allVehicles = await _unitOfWork.VehicleTimeSlots.GetAvailableVehiclesByVariantAndDealerAsync(variantId, dealerId);
-            
-            if (allVehicles.Count == 0) return null;
+            var availableVehicles = await _unitOfWork.VehicleTimeSlots.GetAvailableVehiclesBySlotAsync(
+                modelId, dealerId, date, masterSlotId);
 
-            // Get VehicleTimeSlots for this specific slot from repository
-            var slotsData = await _unitOfWork.VehicleTimeSlots.GetSlotsByDateAndMasterSlotAsync(
-                modelId, variantId, dealerId, date, masterSlotId);
-
-            if (slotsData.Count == 0)
+            if (availableVehicles.Count == 0)
             {
-                // Slot has no bookings yet, all vehicles are available
-                // Get MasterSlot info
-                var masterSlot = await _unitOfWork.MasterTimeSlots.GetQueryable()
-                    .FirstOrDefaultAsync(m => m.Id == masterSlotId);
-                
-                if (masterSlot == null) return null;
-
-                return new SlotVehiclesDto
-                {
-                    SlotDate = date,
-                    MasterSlotId = masterSlotId,
-                    AvailableCount = allVehicles.Count,
-                    Vehicles = allVehicles.Select(v => new VehicleDetailDto { VehicleId = v.Id, Vin = v.Vin }).ToList(),
-                    StartOffsetMinutes = masterSlot.StartOffsetMinutes ?? 0,
-                    DurationMinutes = masterSlot.DurationMinutes ?? 0
-                };
+                return null;
             }
 
-            // Get booked vehicle IDs in this slot
-            var bookedVehicleIds = slotsData
-                .Where(x => x.Status == TimeSlotStatus.BOOKED)
-                .Select(x => x.VehicleId)
-                .ToHashSet();
+            var masterSlot = await _unitOfWork.MasterTimeSlots.GetByIdAsync(masterSlotId);
+            if (masterSlot == null) return null;
 
-            // Get available vehicles (not booked in this slot)
-            var availableVehicles = allVehicles
-                .Where(v => !bookedVehicleIds.Contains(v.Id))
-                .Select(v => new VehicleDetailDto { VehicleId = v.Id, Vin = v.Vin })
+            var vehicleDtos = availableVehicles
+                .Select(v => new VehicleDetailDto { VehicleId = v.VehicleId, Vin = v.Vin })
                 .ToList();
-
-            var masterSlotInfo = slotsData.First().MasterSlot;
 
             return new SlotVehiclesDto
             {
                 SlotDate = date,
                 MasterSlotId = masterSlotId,
-                AvailableCount = availableVehicles.Count,
-                Vehicles = availableVehicles,
-                StartOffsetMinutes = masterSlotInfo.StartOffsetMinutes ?? 0,
-                DurationMinutes = masterSlotInfo.DurationMinutes ?? 0
+                AvailableCount = vehicleDtos.Count,
+                Vehicles = vehicleDtos,
+                StartOffsetMinutes = masterSlot.StartOffsetMinutes ?? 0,
+                DurationMinutes = masterSlot.DurationMinutes ?? 0
             };
         }
 

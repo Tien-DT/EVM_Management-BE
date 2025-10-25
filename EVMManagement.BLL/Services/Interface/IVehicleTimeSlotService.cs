@@ -19,8 +19,8 @@ namespace EVMManagement.BLL.Services.Interface
         Task<VehicleTimeSlotResponseDto?> UpdateStatusAsync(Guid id, TimeSlotStatus status);
         Task<VehicleTimeSlotResponseDto?> UpdateIsDeletedAsync(Guid id, bool isDeleted);
         Task<bool> DeleteAsync(Guid id);
-        Task<List<DaySlotsummaryDto>> GetAvailableSlotByVariantAsync(Guid modelId, Guid variantId, Guid dealerId, DateTime? fromDate = null, DateTime? toDate = null);
-        Task<SlotVehiclesDto?> GetAvailableVehiclesBySlotAsync(Guid modelId, Guid variantId, Guid dealerId, DateTime slotDate, Guid masterSlotId);
+        Task<List<DaySlotsummaryDto>> GetAvailableSlotByModelAsync(Guid modelId, Guid dealerId, DateTime? fromDate = null, DateTime? toDate = null);
+        Task<SlotVehiclesDto?> GetAvailableVehiclesBySlotAsync(Guid modelId, Guid dealerId, DateTime slotDate, Guid masterSlotId);
       
     }
 }

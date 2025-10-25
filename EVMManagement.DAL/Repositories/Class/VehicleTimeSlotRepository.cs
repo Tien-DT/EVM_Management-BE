@@ -16,80 +16,65 @@ namespace EVMManagement.DAL.Repositories.Class
         {
         }
 
-        public async Task<List<(Guid Id, string Vin)>> GetAvailableVehiclesByVariantAndDealerAsync(Guid variantId, Guid dealerId)
+        public async Task<Dictionary<DateTime, List<(Guid MasterSlotId, int StartOffsetMinutes, int DurationMinutes, int AvailableCount)>>> 
+            GetSlotSummariesByModelAsync(Guid modelId, Guid dealerId, DateTime? fromDate, DateTime? toDate)
         {
-            // Get distinct vehicle IDs that have VehicleTimeSlots for this dealer + variant in IN_STOCK status
-            return await _dbSet
+            var results = await _dbSet
+                .Include(s => s.MasterSlot)
+                .Include(s => s.Vehicle)
+                    .ThenInclude(v => v.VehicleVariant)
                 .Where(s => !s.IsDeleted
                             && s.DealerId == dealerId
-                            && s.Vehicle.VehicleVariant.Id == variantId
-                            && s.Vehicle.Status == VehicleStatus.IN_STOCK
-                            && s.Vehicle.Purpose == VehiclePurpose.TEST_DRIVE)
-                .Select(s => new { s.Vehicle.Id, s.Vehicle.Vin })
-                .Distinct()
-                .ToListAsync()
-                .ContinueWith(t => t.Result.Select(x => (x.Id, x.Vin)).ToList());
-        }
-
-        public async Task<List<VehicleTimeSlot>> GetSlotsByVariantInDateRangeAsync(Guid modelId, Guid variantId, Guid dealerId, DateTime? fromDate, DateTime? toDate)
-        {
-            return await _dbSet
-                .Where(s => !s.IsDeleted
-                            && s.DealerId == dealerId
-                            && (!fromDate.HasValue || s.SlotDate >= fromDate.Value.Date)
-                            && (!toDate.HasValue || s.SlotDate <= toDate.Value.Date)
+                            && (!fromDate.HasValue || s.SlotDate.Date >= fromDate.Value.Date)
+                            && (!toDate.HasValue || s.SlotDate.Date <= toDate.Value.Date)
                             && s.Vehicle.VehicleVariant.ModelId == modelId
-                            && s.Vehicle.VehicleVariant.Id == variantId
-                            && (s.Status == TimeSlotStatus.BOOKED || s.Status == TimeSlotStatus.AVAILABLE))
-                .Include(s => s.MasterSlot)
+                            && s.Vehicle.Status == VehicleStatus.IN_STOCK
+                            && s.Vehicle.Purpose == VehiclePurpose.TEST_DRIVE
+                            && s.Status == TimeSlotStatus.AVAILABLE)
+                .GroupBy(s => new { s.SlotDate.Date, s.MasterSlotId, s.MasterSlot.StartOffsetMinutes, s.MasterSlot.DurationMinutes })
+                .Select(g => new
+                {
+                    SlotDate = g.Key.Date,
+                    MasterSlotId = g.Key.MasterSlotId,
+                    StartOffsetMinutes = g.Key.StartOffsetMinutes ?? 0,
+                    DurationMinutes = g.Key.DurationMinutes ?? 0,
+                    AvailableCount = g.Count()
+                })
+                .OrderBy(x => x.SlotDate)
+                .ThenBy(x => x.StartOffsetMinutes)
                 .ToListAsync();
+
+            // Group by date and create dictionary
+            return results
+                .GroupBy(r => r.SlotDate)
+                .ToDictionary(
+                    g => g.Key,
+                    g => g.Select(x => (x.MasterSlotId, x.StartOffsetMinutes, x.DurationMinutes, x.AvailableCount)).ToList()
+                );
         }
 
-        public async Task<List<VehicleTimeSlot>> GetAvailableSlotsByVehicleInDateRangeAsync(Guid vehicleId, DateTime fromDate, DateTime toDate)
+        public async Task<List<(Guid VehicleId, string Vin)>> 
+            GetAvailableVehiclesBySlotAsync(Guid modelId, Guid dealerId, DateTime slotDate, Guid masterSlotId)
         {
-            return await _dbSet
-                .Where(s => !s.IsDeleted
-                            && s.VehicleId == vehicleId
-                            && s.Status == TimeSlotStatus.AVAILABLE
-                            && s.SlotDate >= fromDate.Date
-                            && s.SlotDate <= toDate.Date)
-                .Include(s => s.MasterSlot)
-                .OrderBy(s => s.SlotDate)
-                .ThenBy(s => s.MasterSlot.StartOffsetMinutes)
-                .ToListAsync();
-        }
-
-        public async Task<List<VehicleTimeSlot>> GetAvailableSlotsByDateAsync(Guid dealerId, DateTime slotDate)
-        {
-            return await _dbSet
-                .Where(s => !s.IsDeleted
-                            && s.DealerId == dealerId
-                            && s.Status == TimeSlotStatus.AVAILABLE
-                            && s.SlotDate == slotDate.Date)
-                .Include(s => s.Vehicle)
-                .ThenInclude(v => v.VehicleVariant)
-                .ThenInclude(vv => vv.VehicleModel)
-                .Include(s => s.MasterSlot)
-                .OrderBy(s => s.MasterSlot.StartOffsetMinutes)
-                .ToListAsync();
-        }
-
-        public async Task<List<VehicleTimeSlot>> GetSlotsByDateAndMasterSlotAsync(Guid modelId, Guid variantId, Guid dealerId, DateTime slotDate, Guid masterSlotId)
-        {
+            var targetDate = slotDate.Date;
+            
             return await _dbSet
                 .Include(s => s.Vehicle)
-                .ThenInclude(v => v.VehicleVariant)
-                .ThenInclude(vv => vv.VehicleModel)
-                .Include(s => s.MasterSlot)
+                    .ThenInclude(v => v.VehicleVariant)
                 .Where(s => !s.IsDeleted
                             && s.DealerId == dealerId
-                            && s.SlotDate.Date == slotDate.Date
+                            && s.SlotDate.Date == targetDate
                             && s.MasterSlotId == masterSlotId
                             && s.Vehicle.VehicleVariant.ModelId == modelId
-                            && s.Vehicle.VehicleVariant.Id == variantId
-                            && (s.Status == TimeSlotStatus.BOOKED || s.Status == TimeSlotStatus.AVAILABLE))
-                .ToListAsync();
+                            && s.Vehicle.Status == VehicleStatus.IN_STOCK
+                            && s.Vehicle.Purpose == VehiclePurpose.TEST_DRIVE
+                            && s.Status == TimeSlotStatus.AVAILABLE)
+                .Select(s => new { s.VehicleId, s.Vehicle.Vin })
+                .Distinct()
+                .ToListAsync()
+                .ContinueWith(t => t.Result.Select(x => (x.VehicleId, x.Vin)).ToList());
         }
+      
     }
 }
 

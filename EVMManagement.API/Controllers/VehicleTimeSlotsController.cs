@@ -14,7 +14,7 @@ namespace EVMManagement.API.Controllers
 {
     [Route("api/v1/[controller]")]
     [ApiController]
-    [Authorize]
+    //[Authorize]
     public class VehicleTimeSlotsController : BaseController
     {
         private readonly IServiceFacade _services;
@@ -115,7 +115,7 @@ namespace EVMManagement.API.Controllers
             return Ok(ApiResponse<VehicleTimeSlotResponseDto>.CreateSuccess(updated));
         }
 
-        [HttpPatch("{id}/is-deleted")]
+        [HttpDelete("{id}")]
         public async Task<IActionResult> UpdateIsDeleted(Guid id, [FromQuery] bool isDeleted)
         {
             var updated = await _services.VehicleTimeSlotService.UpdateIsDeletedAsync(id, isDeleted);
@@ -123,59 +123,37 @@ namespace EVMManagement.API.Controllers
             return Ok(ApiResponse<VehicleTimeSlotResponseDto>.CreateSuccess(updated));
         }
 
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> Delete(Guid id)
-        {
-            var deleted = await _services.VehicleTimeSlotService.DeleteAsync(id);
-            if (!deleted) return NotFound(ApiResponse<string>.CreateFail("VehicleTimeSlot not found", null, 404));
-            return Ok(ApiResponse<string>.CreateSuccess("Deleted"));
-        }
-
-       
-
       
-        /// <summary>
-        /// Lấy danh sách ngày và các slot có sẵn trong mỗi ngày cho một variant
-        /// Trả về: Ngày + danh sách slot (slot ID, số xe trống, thời gian)
-        /// fromDate và toDate là optional, nếu không điền sẽ lấy từ ngày hôm nay
-        /// </summary>
         [HttpGet("available-slots-in-date")]
         [Authorize(Roles = "DEALER_MANAGER,DEALER_STAFF")]
         public async Task<IActionResult> GetAvailableSlotsInDate(
             [FromQuery] Guid modelId,
-            [FromQuery] Guid variantId,
             [FromQuery] Guid dealerId,
             [FromQuery] DateTime? fromDate,
             [FromQuery] DateTime? toDate)
         {
            
-            if (modelId == Guid.Empty || variantId == Guid.Empty || dealerId == Guid.Empty)
+            if (modelId == Guid.Empty || dealerId == Guid.Empty)
             {
                 return BadRequest(ApiResponse<List<DaySlotsummaryDto>>.CreateFail(
-                    "ModelId, VariantId and DealerId are required", null, 400));
+                    "ModelId and DealerId are required", null, 400));
             }
             var currentRole = GetCurrentRole();
             if (!currentRole.HasValue)
             {
                 return Unauthorized(ApiResponse<string>.CreateFail("Không tìm thấy thông tin role của tài khoản.", errorCode: 401));
             }
-            var result = await _services.VehicleTimeSlotService.GetAvailableSlotByVariantAsync(
-                modelId, variantId, dealerId, fromDate, toDate);
+            var result = await _services.VehicleTimeSlotService.GetAvailableSlotByModelAsync(
+                modelId, dealerId, fromDate, toDate);
             return Ok(ApiResponse<List<DaySlotsummaryDto>>.CreateSuccess(result));
         }
 
-        /// <summary>
-        /// Lấy xe trống cho một slot cụ thể trong một ngày của một variant
-        /// Chỉ cần truyền slotDate và masterSlotId
-        /// Trả về: Ngày + Slot + Danh sách xe trống
-        /// </summary>
-        [HttpGet("available-by-variant/vehicles-in-slot")]
+        [HttpGet("available-by-model/vehicles-in-slot")]
         [Authorize(Roles = "DEALER_MANAGER,DEALER_STAFF")]
         public async Task<IActionResult> GetAvailableVehiclesInSlot(
             [FromQuery] DateTime slotDate,
             [FromQuery] Guid masterSlotId,
             [FromQuery] Guid modelId,
-            [FromQuery] Guid variantId,
             [FromQuery] Guid dealerId)
         {
             var currentRole = GetCurrentRole();
@@ -183,14 +161,14 @@ namespace EVMManagement.API.Controllers
             {
                 return Unauthorized(ApiResponse<string>.CreateFail("Không tìm thấy thông tin role của tài khoản.", errorCode: 401));
             }
-            if (slotDate == DateTime.MinValue || masterSlotId == Guid.Empty || modelId == Guid.Empty || variantId == Guid.Empty || dealerId == Guid.Empty)
+            if (slotDate == DateTime.MinValue || masterSlotId == Guid.Empty || modelId == Guid.Empty || dealerId == Guid.Empty)
             {
                 return BadRequest(ApiResponse<SlotVehiclesDto>.CreateFail(
-                    "SlotDate, MasterSlotId, ModelId, VariantId and DealerId are required", null, 400));
+                    "SlotDate, MasterSlotId, ModelId and DealerId are required", null, 400));
             }
 
             var result = await _services.VehicleTimeSlotService.GetAvailableVehiclesBySlotAsync(
-                modelId, variantId, dealerId, slotDate, masterSlotId);
+                modelId, dealerId, slotDate, masterSlotId);
             
             if (result == null)
             {
