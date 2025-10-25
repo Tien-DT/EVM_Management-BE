@@ -46,9 +46,10 @@ namespace EVMManagement.BLL.Services.Class
         public async Task<PagedResult<VehicleResponseDto>> GetAllAsync(int pageNumber = 1, int pageSize = 10)
         {
             var query = _unitOfWork.Vehicles.GetQueryable();
-            var totalCount = await query.CountAsync();
+            var totalCount = await query.CountAsync(x => !x.IsDeleted);
 
             var items = await query
+                .Where(x => !x.IsDeleted)
                 .OrderByDescending(x => x.CreatedDate)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)

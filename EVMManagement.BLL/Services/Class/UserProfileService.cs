@@ -26,9 +26,10 @@ namespace EVMManagement.BLL.Services.Class
         {
             var query = _unitOfWork.UserProfiles.GetAllAsync();
 
-            var totalCount = await query.CountAsync();
+            var totalCount = await query.CountAsync(x => !x.IsDeleted);
 
             var items = await query
+                .Where(x => !x.IsDeleted)
                 .OrderByDescending(u => u.CreatedDate)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
@@ -55,7 +56,7 @@ namespace EVMManagement.BLL.Services.Class
         {
             var managerEntity = await _unitOfWork.UserProfiles.GetManagerByDealerIdAsync(dealerId);
 
-            // fallback: if not found (maybe inactive), try looser lookup
+           
             if (managerEntity == null)
             {
                 managerEntity = await _unitOfWork.UserProfiles.GetByDealerIdAsync(dealerId)
@@ -88,9 +89,10 @@ namespace EVMManagement.BLL.Services.Class
         {
             var query = _unitOfWork.UserProfiles.GetByDealerIdAsync(dealerId);
 
-            var totalCount = await query.CountAsync();
+            var totalCount = await query.CountAsync(x => !x.IsDeleted);
 
             var items = await query
+                .Where(x => !x.IsDeleted)
                 .OrderByDescending(u => u.CreatedDate)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)

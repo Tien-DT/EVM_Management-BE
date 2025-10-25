@@ -58,3 +58,4 @@ EVMManagement.API/appsettings.Development.json
 Tools/GmailTokenGenerator/credentials.json
 Tools/GmailTokenGenerator/token.json
 EVMManagement.API/Setup/Database.cs
+/Tools

@@ -37,9 +37,10 @@ namespace EVMManagement.BLL.Services.Class
         {
             var query = _unitOfWork.VehicleModels.GetQueryable();
 
-            var totalCount = await query.CountAsync();
+            var totalCount = await query.CountAsync(x => !x.IsDeleted);
 
             var items = await query
+                .Where(x => !x.IsDeleted)
                 .OrderByDescending(u => u.CreatedDate)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
