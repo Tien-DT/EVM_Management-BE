@@ -240,14 +240,20 @@ namespace EVMManagement.BLL.Services.Class
             return PagedResult<VehicleVariantResponse>.Create(items, totalCount, pageNumber, pageSize);
         }
 
-        public async Task<PagedResult<VehicleVariantResponse>> GetByDealerIdAsync(Guid dealerId, int pageNumber = 1, int pageSize = 10)
+        public async Task<PagedResult<VehicleVariantResponse>> GetByDealerIdAsync(Guid dealerId, DAL.Models.Enums.VehiclePurpose? purpose, int pageNumber = 1, int pageSize = 10)
         {
             var query = _unitOfWork.Vehicles.GetQueryable()
-                .Where(v => !v.IsDeleted && v.Warehouse.DealerId == dealerId && v.Status == DAL.Models.Enums.VehicleStatus.IN_STOCK)
-                .Select(v => v.VariantId)
-                .Distinct();
+                .Where(v => !v.IsDeleted && v.Warehouse.DealerId == dealerId && v.Status == DAL.Models.Enums.VehicleStatus.IN_STOCK);
 
-            var variantIds = await query.ToListAsync();
+            if (purpose.HasValue)
+            {
+                query = query.Where(v => v.Purpose == purpose.Value);
+            }
+
+            var variantIds = await query
+                .Select(v => v.VariantId)
+                .Distinct()
+                .ToListAsync();
 
             var variantsQuery = _unitOfWork.VehicleVariants.GetQueryable()
                 .Where(vv => !vv.IsDeleted && variantIds.Contains(vv.Id))

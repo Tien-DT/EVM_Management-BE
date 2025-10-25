@@ -4,6 +4,7 @@ using EVMManagement.BLL.DTOs.Request.Vehicle;
 using EVMManagement.BLL.DTOs.Response;
 using EVMManagement.BLL.DTOs.Response.Vehicle;
 using EVMManagement.DAL.Models.Entities;
+using EVMManagement.DAL.Models.Enums;
 using System.Threading.Tasks;
 using System;
 using System.Linq;
@@ -98,14 +99,14 @@ namespace EVMManagement.API.Controllers
         }
 
         [HttpGet("by-dealer/{dealerId}")]
-        public async Task<IActionResult> GetByDealerId(Guid dealerId, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
+        public async Task<IActionResult> GetByDealerId(Guid dealerId, [FromQuery] VehiclePurpose? purpose, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
         {
             if (pageNumber < 1 || pageSize < 1)
             {
                 return BadRequest(ApiResponse<string>.CreateFail("PageNumber and PageSize must be greater than 0", null, 400));
             }
 
-            var result = await _services.VehicleVariantService.GetByDealerIdAsync(dealerId, pageNumber, pageSize);
+            var result = await _services.VehicleVariantService.GetByDealerIdAsync(dealerId, purpose, pageNumber, pageSize);
             return Ok(ApiResponse<PagedResult<VehicleVariantResponse>>.CreateSuccess(result));
         }
 
