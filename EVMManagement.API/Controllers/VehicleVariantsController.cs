@@ -109,5 +109,27 @@ namespace EVMManagement.API.Controllers
             var result = await _services.VehicleVariantService.GetByDealerIdAsync(dealerId, purpose, pageNumber, pageSize);
             return Ok(ApiResponse<PagedResult<VehicleVariantResponse>>.CreateSuccess(result));
         }
+
+        [HttpGet("dealer/{dealerId}/models/{modelId}/variants")]
+        public async Task<IActionResult> GetByDealerAndModel(Guid dealerId, Guid modelId, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
+        {
+            if (pageNumber < 1 || pageSize < 1)
+            {
+                return BadRequest(ApiResponse<string>.CreateFail("PageNumber and PageSize must be greater than 0", null, 400));
+            }
+
+            if (dealerId == Guid.Empty)
+            {
+                return BadRequest(ApiResponse<string>.CreateFail("DealerId is required", null, 400));
+            }
+
+            if (modelId == Guid.Empty)
+            {
+                return BadRequest(ApiResponse<string>.CreateFail("ModelId is required", null, 400));
+            }
+
+            var result = await _services.VehicleVariantService.GetByDealerAndModelAsync(dealerId, modelId, pageNumber, pageSize);
+            return Ok(ApiResponse<PagedResult<VehicleVariantResponse>>.CreateSuccess(result));
+        }
     }
 }

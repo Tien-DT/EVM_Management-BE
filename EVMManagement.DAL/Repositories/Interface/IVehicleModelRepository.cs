@@ -8,5 +8,6 @@ namespace EVMManagement.DAL.Repositories.Interface
 
         IQueryable<VehicleModel> GetByRankingAsync(VehicleModelRanking ranking);
         IQueryable<VehicleModel> SearchByQueryAsync(string q);
+        IQueryable<VehicleModel> GetByDealerAsync(Guid dealerId);
     }
 }

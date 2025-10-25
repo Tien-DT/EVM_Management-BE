@@ -142,45 +142,33 @@ namespace EVMManagement.API.Controllers
             return Ok(ApiResponse<StockCheckResponseDto>.CreateSuccess(result));
         }
 
-        [HttpGet("dealer/{dealerId}/models")]
+        [HttpGet("dealer/{dealerId}/variant/{variantId}")]
         [Authorize(Roles = "DEALER_MANAGER,DEALER_STAFF")]
-        public async Task<IActionResult> GetModelsByDealer(Guid dealerId)
+        public async Task<IActionResult> GetVehiclesByDealerAndVariant(Guid dealerId, Guid variantId, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
         {
             var currentRole = GetCurrentRole();
             if (!currentRole.HasValue)
             {
                 return Unauthorized(ApiResponse<string>.CreateFail("Không tìm thấy thông tin role của tài khoản.", errorCode: 401));
             }
+
             if (dealerId == Guid.Empty)
             {
                 return BadRequest(ApiResponse<string>.CreateFail("DealerId is required", null, 400));
             }
 
-            var result = await _services.VehicleService.GetModelsByDealerAsync(dealerId);
-            return Ok(ApiResponse<List<DealerModelListDto>>.CreateSuccess(result));
-        }
-
-        [HttpGet("dealer/{dealerId}/models/{modelId}/variants")]
-        [Authorize(Roles = "DEALER_MANAGER,DEALER_STAFF")]
-        public async Task<IActionResult> GetVariantsByDealerAndModel(Guid dealerId, Guid modelId)
-        {
-            var currentRole = GetCurrentRole();
-            if (!currentRole.HasValue)
+            if (variantId == Guid.Empty)
             {
-                return Unauthorized(ApiResponse<string>.CreateFail("Không tìm thấy thông tin role của tài khoản.", errorCode: 401));
-            }
-            if (dealerId == Guid.Empty)
-            {
-                return BadRequest(ApiResponse<string>.CreateFail("DealerId is required", null, 400));
+                return BadRequest(ApiResponse<string>.CreateFail("VariantId is required", null, 400));
             }
 
-            if (modelId == Guid.Empty)
+            if (pageNumber < 1 || pageSize < 1)
             {
-                return BadRequest(ApiResponse<string>.CreateFail("ModelId is required", null, 400));
+                return BadRequest(ApiResponse<string>.CreateFail("PageNumber and PageSize must be greater than 0", null, 400));
             }
 
-            var result = await _services.VehicleService.GetVariantsByDealerAndModelAsync(dealerId, modelId);
-            return Ok(ApiResponse<List<DealerVariantListDto>>.CreateSuccess(result));
+            var result = await _services.VehicleService.GetVehiclesByDealerAndVariantAsync(dealerId, variantId, pageNumber, pageSize);
+            return Ok(ApiResponse<PagedResult<VehicleResponseDto>>.CreateSuccess(result));
         }
     }
 }

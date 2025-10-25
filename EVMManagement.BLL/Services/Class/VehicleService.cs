@@ -214,33 +214,19 @@ namespace EVMManagement.BLL.Services.Class
             };
         }
 
-        public async Task<List<DealerModelListDto>> GetModelsByDealerAsync(Guid dealerId)
+        public async Task<PagedResult<VehicleResponseDto>> GetVehiclesByDealerAndVariantAsync(Guid dealerId, Guid variantId, int pageNumber = 1, int pageSize = 10)
         {
-            var models = await _unitOfWork.Vehicles.GetModelsByDealerAsync(dealerId);
+            var query = _unitOfWork.Vehicles.GetVehiclesByDealerAndVariantAsync(dealerId, variantId);
 
-            var result = models.Select(m => new DealerModelListDto
-            {
-                Id = m.Id,
-                Name = m.Name,
-                VariantCount = m.VariantCount
-            }).ToList();
+            var totalCount = await query.CountAsync();
 
-            return result;
-        }
+            var items = await query
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ProjectTo<VehicleResponseDto>(_mapper.ConfigurationProvider)
+                .ToListAsync();
 
-        public async Task<List<DealerVariantListDto>> GetVariantsByDealerAndModelAsync(Guid dealerId, Guid modelId)
-        {
-            var variants = await _unitOfWork.Vehicles.GetVariantsByDealerAndModelAsync(dealerId, modelId);
-
-            var result = variants.Select(v => new DealerVariantListDto
-            {
-                Id = v.Id,
-                ModelId = v.ModelId,
-                ModelName = v.ModelName,
-                AvailableCount = v.AvailableCount
-            }).ToList();
-
-            return result;
+            return PagedResult<VehicleResponseDto>.Create(items, totalCount, pageNumber, pageSize);
         }
 
         private VehicleResponseDto MapToDto(Vehicle e)
