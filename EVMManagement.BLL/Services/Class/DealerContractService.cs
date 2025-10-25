@@ -116,8 +116,9 @@ namespace EVMManagement.BLL.Services.Class
         public async Task<PagedResult<DealerContractResponseDto>> GetAllAsync(int pageNumber = 1, int pageSize = 10)
         {
             var query = _unitOfWork.DealerContracts.GetQueryable();
-            var total = await query.CountAsync();
+            var total = await query.CountAsync(x => !x.IsDeleted);
             var items = await query
+                .Where(x => !x.IsDeleted)
                 .OrderByDescending(d => d.CreatedDate)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)

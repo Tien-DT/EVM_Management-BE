@@ -99,9 +99,9 @@ namespace EVMManagement.API.Controllers
             return Ok(ApiResponse<UserProfileResponse>.CreateSuccess(updated));
         }
 
-        
 
-        [HttpPatch("{id}")]
+
+        [HttpDelete("{id}")]
         public async Task<IActionResult> UpdateIsDeleted(Guid id, [FromQuery] bool isDeleted)
         {
             var updated = await _services.UserProfileService.UpdateIsDeletedAsync(id, isDeleted);

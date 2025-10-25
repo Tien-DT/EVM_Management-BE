@@ -67,7 +67,7 @@ namespace EVMManagement.API.Controllers
             return Ok(ApiResponse<HandoverRecordResponseDto>.CreateSuccess(updated));
         }
 
-        [HttpPatch("{id}/is-deleted")]
+        [HttpDelete("{id}")]
         public async Task<IActionResult> UpdateIsDeleted(Guid id, [FromQuery] bool isDeleted)
         {
             var updated = await _service.UpdateIsDeletedAsync(id, isDeleted);
