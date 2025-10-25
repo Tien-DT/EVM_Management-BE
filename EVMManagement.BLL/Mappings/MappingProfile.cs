@@ -179,6 +179,7 @@ namespace EVMManagement.BLL.Mappings
             CreateMap<HandoverRecordUpdateDto, HandoverRecord>()
                 .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
             CreateMap<HandoverRecord, HandoverRecordResponseDto>();
+            CreateMap<TransportDetail, TransportDetailDto>();
 
             // DigitalSignature Mappings
             CreateMap<DigitalSignature, DigitalSignatureResponse>();

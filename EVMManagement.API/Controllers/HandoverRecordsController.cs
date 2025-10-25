@@ -75,6 +75,16 @@ namespace EVMManagement.API.Controllers
             return Ok(ApiResponse<HandoverRecordResponseDto>.CreateSuccess(updated));
         }
 
-       
+        [HttpGet("filter")]
+        public async Task<IActionResult> Filter([FromQuery] HandoverRecordFilterDto filter)
+        {
+            if (filter.PageNumber < 1 || filter.PageSize < 1)
+            {
+                return BadRequest(ApiResponse<string>.CreateFail("PageNumber and PageSize must be greater than 0", null, 400));
+            }
+
+            var result = await _service.GetByFilterAsync(filter);
+            return Ok(ApiResponse<PagedResult<HandoverRecordResponseDto>>.CreateSuccess(result));
+        }
     }
 }
