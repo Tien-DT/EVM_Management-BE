@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using AutoMapper;
@@ -41,6 +42,31 @@ namespace EVMManagement.BLL.Services.Class
             await _unitOfWork.SaveChangesAsync();
 
             return orderDetail;
+        }
+
+        public async Task<List<OrderDetail>> CreateOrderDetailsAsync(List<OrderDetailCreateDto> dtos)
+        {
+            var orderDetails = new List<OrderDetail>();
+
+            foreach (var dto in dtos)
+            {
+                var orderDetail = new OrderDetail
+                {
+                    OrderId = dto.OrderId,
+                    VehicleVariantId = dto.VehicleVariantId,
+                    VehicleId = dto.VehicleId,
+                    Quantity = dto.Quantity,
+                    UnitPrice = dto.UnitPrice,
+                    DiscountPercent = dto.DiscountPercent,
+                    Note = dto.Note
+                };
+                orderDetails.Add(orderDetail);
+            }
+
+            await _unitOfWork.OrderDetails.AddRangeAsync(orderDetails);
+            await _unitOfWork.SaveChangesAsync();
+
+            return orderDetails;
         }
 
         public async Task<PagedResult<OrderDetailResponse>> GetAllAsync(int pageNumber = 1, int pageSize = 10)

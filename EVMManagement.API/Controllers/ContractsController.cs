@@ -90,5 +90,17 @@ namespace EVMManagement.API.Controllers
             if (!deleted) return NotFound(ApiResponse<string>.CreateFail("Contract not found", null, 404));
             return Ok(ApiResponse<string>.CreateSuccess("Deleted"));
         }
+
+        [HttpGet("by-dealer/{dealerId}")]
+        public async Task<IActionResult> GetByDealerId(Guid dealerId, [FromQuery] ContractStatus? status, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
+        {
+            if (pageNumber < 1 || pageSize < 1)
+            {
+                return BadRequest(ApiResponse<string>.CreateFail("PageNumber and PageSize must be greater than 0", null, 400));
+            }
+
+            var result = await _services.ContractService.GetByDealerIdAsync(dealerId, status, pageNumber, pageSize);
+            return Ok(ApiResponse<PagedResult<ContractDetailResponse>>.CreateSuccess(result));
+        }
     }
 }

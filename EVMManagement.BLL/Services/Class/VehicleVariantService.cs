@@ -240,6 +240,57 @@ namespace EVMManagement.BLL.Services.Class
             return PagedResult<VehicleVariantResponse>.Create(items, totalCount, pageNumber, pageSize);
         }
 
-       
+        public async Task<PagedResult<VehicleVariantResponse>> GetByDealerIdAsync(Guid dealerId, int pageNumber = 1, int pageSize = 10)
+        {
+            var query = _unitOfWork.Vehicles.GetQueryable()
+                .Where(v => !v.IsDeleted && v.Warehouse.DealerId == dealerId && v.Status == DAL.Models.Enums.VehicleStatus.IN_STOCK)
+                .Select(v => v.VariantId)
+                .Distinct();
+
+            var variantIds = await query.ToListAsync();
+
+            var variantsQuery = _unitOfWork.VehicleVariants.GetQueryable()
+                .Where(vv => !vv.IsDeleted && variantIds.Contains(vv.Id))
+                .Include(vv => vv.VehicleModel);
+
+            var totalCount = await variantsQuery.CountAsync();
+
+            var items = await variantsQuery
+                .OrderByDescending(x => x.CreatedDate)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .Select(x => new VehicleVariantResponse
+                {
+                    Id = x.Id,
+                    ModelId = x.ModelId,
+                    ModelName = x.VehicleModel!.Name,
+                    Color = x.Color,
+                    ChargingTime = x.ChargingTime,
+                    Engine = x.Engine,
+                    Capacity = x.Capacity,
+                    ShockAbsorbers = x.ShockAbsorbers,
+                    BatteryType = x.BatteryType,
+                    BatteryLife = x.BatteryLife,
+                    MaximumSpeed = x.MaximumSpeed,
+                    DistancePerCharge = x.DistancePerCharge,
+                    Weight = x.Weight,
+                    GroundClearance = x.GroundClearance,
+                    Brakes = x.Brakes,
+                    Length = x.Length,
+                    Width = x.Width,
+                    Height = x.Height,
+                    Price = x.Price,
+                    TrunkWidth = x.TrunkWidth,
+                    Description = x.Description,
+                    ChargingCapacity = x.ChargingCapacity,
+                    ImageUrl = x.ImageUrl,
+                    CreatedDate = x.CreatedDate,
+                    ModifiedDate = x.ModifiedDate,
+                    IsDeleted = x.IsDeleted
+                })
+                .ToListAsync();
+
+            return PagedResult<VehicleVariantResponse>.Create(items, totalCount, pageNumber, pageSize);
+        }
     }
 }

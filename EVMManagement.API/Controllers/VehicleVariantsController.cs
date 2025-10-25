@@ -97,6 +97,16 @@ namespace EVMManagement.API.Controllers
             return Ok(ApiResponse<PagedResult<VehicleVariantResponse>>.CreateSuccess(result));
         }
 
-       
+        [HttpGet("by-dealer/{dealerId}")]
+        public async Task<IActionResult> GetByDealerId(Guid dealerId, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
+        {
+            if (pageNumber < 1 || pageSize < 1)
+            {
+                return BadRequest(ApiResponse<string>.CreateFail("PageNumber and PageSize must be greater than 0", null, 400));
+            }
+
+            var result = await _services.VehicleVariantService.GetByDealerIdAsync(dealerId, pageNumber, pageSize);
+            return Ok(ApiResponse<PagedResult<VehicleVariantResponse>>.CreateSuccess(result));
+        }
     }
 }

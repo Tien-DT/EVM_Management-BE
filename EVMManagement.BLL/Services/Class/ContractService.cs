@@ -123,5 +123,20 @@ namespace EVMManagement.BLL.Services.Class
 
             return true;
         }
+
+        public async Task<PagedResult<ContractDetailResponse>> GetByDealerIdAsync(Guid dealerId, ContractStatus? status, int pageNumber = 1, int pageSize = 10)
+        {
+            var query = _unitOfWork.Contracts.GetContractsByDealerId(dealerId, status);
+            var totalCount = await query.CountAsync();
+
+            var items = await query
+                .OrderByDescending(x => x.CreatedDate)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ProjectTo<ContractDetailResponse>(_mapper.ConfigurationProvider)
+                .ToListAsync();
+
+            return PagedResult<ContractDetailResponse>.Create(items, totalCount, pageNumber, pageSize);
+        }
     }
 }

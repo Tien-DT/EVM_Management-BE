@@ -5,6 +5,7 @@ using EVMManagement.BLL.DTOs.Response.OrderDetail;
 using EVMManagement.DAL.Models.Entities;
 using System.Threading.Tasks;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using EVMManagement.API.Services;
 
@@ -52,6 +53,24 @@ namespace EVMManagement.API.Controllers
 
             var created = await _services.OrderDetailService.CreateOrderDetailAsync(dto);
             return CreatedAtAction(nameof(GetById), new { id = created.Id }, ApiResponse<OrderDetail>.CreateSuccess(created));
+        }
+
+        [HttpPost("bulk")]
+        public async Task<IActionResult> CreateBulk([FromBody] List<OrderDetailCreateDto> dtos)
+        {
+            if (!ModelState.IsValid)
+            {
+                var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
+                return BadRequest(ApiResponse<List<OrderDetail>>.CreateFail("Validation failed", errors, 400));
+            }
+
+            if (dtos == null || dtos.Count == 0)
+            {
+                return BadRequest(ApiResponse<List<OrderDetail>>.CreateFail("Order details list cannot be empty", null, 400));
+            }
+
+            var created = await _services.OrderDetailService.CreateOrderDetailsAsync(dtos);
+            return Ok(ApiResponse<List<OrderDetail>>.CreateSuccess(created));
         }
 
         [HttpPut("{id}")]

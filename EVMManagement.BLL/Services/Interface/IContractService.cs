@@ -16,5 +16,6 @@ namespace EVMManagement.BLL.Services.Interface
         Task<ContractResponse?> UpdateAsync(Guid id, ContractUpdateDto dto);
         Task<ContractResponse?> UpdateIsDeletedAsync(Guid id, bool isDeleted);
         Task<bool> DeleteAsync(Guid id);
+        Task<PagedResult<ContractDetailResponse>> GetByDealerIdAsync(Guid dealerId, ContractStatus? status, int pageNumber = 1, int pageSize = 10);
     }
 }

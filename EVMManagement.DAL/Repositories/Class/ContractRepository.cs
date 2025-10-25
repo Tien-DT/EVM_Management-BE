@@ -44,5 +44,22 @@ namespace EVMManagement.DAL.Repositories.Class
 
             return query;
         }
+
+        public IQueryable<Contract> GetContractsByDealerId(Guid dealerId, ContractStatus? status)
+        {
+            var query = _dbSet
+                .Include(c => c.Order)
+                    .ThenInclude(o => o.Dealer)
+                .Include(c => c.Customer)
+                .Include(c => c.CreatedByUser)
+                .Where(c => !c.IsDeleted && c.Order.DealerId == dealerId);
+
+            if (status.HasValue)
+            {
+                query = query.Where(c => c.Status == status.Value);
+            }
+
+            return query;
+        }
     }
 }
