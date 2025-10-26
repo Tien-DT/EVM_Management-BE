@@ -79,6 +79,26 @@ namespace EVMManagement.BLL.Services.Class
                     await _unitOfWork.OrderDetails.AddRangeAsync(orderDetails);
                 }
 
+                var vehicleIds = orderDetails
+                    .Where(d => d.VehicleId.HasValue)
+                    .Select(d => d.VehicleId.Value)
+                    .Distinct()
+                    .ToList();
+
+                if (vehicleIds.Any())
+                {
+                    var vehicles = await _unitOfWork.Vehicles.GetQueryable()
+                        .Where(v => vehicleIds.Contains(v.Id))
+                        .ToListAsync();
+
+                    foreach (var vehicle in vehicles)
+                    {
+                        vehicle.Status = VehicleStatus.RESERVED;
+                    }
+
+                    _unitOfWork.Vehicles.UpdateRange(vehicles);
+                }
+
                 await _unitOfWork.CommitTransactionAsync();
 
                 return await _unitOfWork.Orders.GetQueryable()

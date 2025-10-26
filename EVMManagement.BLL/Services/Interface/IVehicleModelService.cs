@@ -15,5 +15,6 @@ namespace EVMManagement.BLL.Services.Interface
         Task<VehicleModelResponseDto?> UpdateIsDeletedAsync(Guid id, bool isDeleted);
         Task<PagedResult<VehicleModelResponseDto>> SearchByQueryAsync(string? q, int pageNumber = 1, int pageSize = 10);
         Task<PagedResult<VehicleModelResponseDto>> GetByDealerAsync(Guid dealerId, int pageNumber = 1, int pageSize = 10);
+        Task<PagedResult<VehicleModelWithStockResponseDto>> GetAllWithDealerStockAsync(Guid dealerId, int pageNumber = 1, int pageSize = 10);
     }
 }
