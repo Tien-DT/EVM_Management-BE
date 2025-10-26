@@ -217,6 +217,9 @@ namespace EVMManagement.BLL.Services.Class
             var entity = await _unitOfWork.Orders.GetByIdAsync(id);
             if (entity == null) return null;
 
+            // Track old status to check if order is being canceled
+            var oldStatus = entity.Status;
+
             if (dto.Code != null) entity.Code = dto.Code;
             if (dto.QuotationId.HasValue) entity.QuotationId = dto.QuotationId;
             if (dto.CustomerId.HasValue) entity.CustomerId = dto.CustomerId;
@@ -230,6 +233,38 @@ namespace EVMManagement.BLL.Services.Class
             if (dto.IsFinanced.HasValue) entity.IsFinanced = dto.IsFinanced.Value;
 
             entity.ModifiedDate = DateTime.UtcNow;
+
+            // If order is being canceled, return vehicles to warehouse (IN_STOCK status)
+            if (oldStatus != OrderStatus.CANCELED && entity.Status == OrderStatus.CANCELED)
+            {
+                // Get all vehicles from this order's order details
+                var orderDetails = await _unitOfWork.OrderDetails.GetQueryable()
+                    .Where(od => od.OrderId == id && od.VehicleId.HasValue)
+                    .ToListAsync();
+
+                if (orderDetails.Any())
+                {
+                    var vehicleIds = orderDetails
+                        .Select(od => od.VehicleId.Value)
+                        .Distinct()
+                        .ToList();
+
+                    var vehicles = await _unitOfWork.Vehicles.GetQueryable()
+                        .Where(v => vehicleIds.Contains(v.Id))
+                        .ToListAsync();
+
+                    if (vehicles.Any())
+                    {
+                        foreach (var vehicle in vehicles)
+                        {
+                            // Return vehicle to warehouse - set status back to IN_STOCK
+                            vehicle.Status = VehicleStatus.IN_STOCK;
+                        }
+
+                        _unitOfWork.Vehicles.UpdateRange(vehicles);
+                    }
+                }
+            }
 
             _unitOfWork.Orders.Update(entity);
             await _unitOfWork.SaveChangesAsync();
