@@ -9,6 +9,11 @@ namespace EVMManagement.BLL.DTOs.Request.Order
         [Required]
         [MinLength(1)]
         public List<OrderDetailForOrderCreateDto> OrderDetails { get; set; } = new List<OrderDetailForOrderCreateDto>();
+
+        public int? InstallmentDuration { get; set; }
+        public decimal? MonthlyPayment { get; set; }
+        public decimal? InterestRate { get; set; }
+        public string? InstallmentProvider { get; set; }
     }
 
     public class OrderDetailForOrderCreateDto

@@ -39,6 +39,7 @@ namespace EVMManagement.DAL.UnitOfWork
         private ITransactionRepository? _transactions;
         private IDepositRepository? _deposits;
         private IReportRepository? _reports;
+        private IInstallmentPlanRepository? _installmentPlans;
 
         public UnitOfWork(AppDbContext context)
         {
@@ -71,6 +72,7 @@ namespace EVMManagement.DAL.UnitOfWork
         public ITransactionRepository Transactions => _transactions ??= new TransactionRepository(_context);
         public IDepositRepository Deposits => _deposits ??= new DepositRepository(_context);
         public IReportRepository Reports => _reports ??= new ReportRepository(_context);
+        public IInstallmentPlanRepository InstallmentPlans => _installmentPlans ??= new InstallmentPlanRepository(_context);
 
         public async Task<int> SaveChangesAsync()
         {
