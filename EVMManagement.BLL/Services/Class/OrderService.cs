@@ -65,7 +65,7 @@ namespace EVMManagement.BLL.Services.Class
             }
 
             var totalAmount = orderDetails.Sum(d => d.UnitPrice * d.Quantity);
-            var discountAmount = orderDetails.Sum(d => d.UnitPrice * d.Quantity * d.DiscountPercent / 100m);
+            var discountAmount = dto.DiscountAmount ?? 0;
             order.TotalAmount = totalAmount;
             order.DiscountAmount = discountAmount;
             order.FinalAmount = totalAmount - discountAmount;
@@ -101,6 +101,22 @@ namespace EVMManagement.BLL.Services.Class
                     }
 
                     _unitOfWork.Vehicles.UpdateRange(vehicles);
+                }
+
+                if (order.IsFinanced && dto.InstallmentDuration.HasValue)
+                {
+                    var installmentPlan = new InstallmentPlan
+                    {
+                        OrderId = order.Id,
+                        Provider = dto.InstallmentProvider ?? "Default Provider",
+                        PrincipalAmount = order.FinalAmount ?? 0,
+                        InterestRate = dto.InterestRate ?? 0,
+                        NumberOfInstallments = dto.InstallmentDuration.Value,
+                        Status = InstallmentPlanStatus.ACTIVE,
+                        StartDate = DateTime.UtcNow
+                    };
+
+                    await _unitOfWork.InstallmentPlans.AddAsync(installmentPlan);
                 }
 
                 await _unitOfWork.CommitTransactionAsync();
