@@ -55,42 +55,46 @@ namespace EVMManagement.BLL.Services.Class
 
         public async Task<OrderWithDetailsResponse> CreateOrderWithDetailsAsync(OrderWithDetailsCreateDto dto)
         {
+            var order = _mapper.Map<Order>(dto);
+            order.ExpectedDeliveryAt = DateTimeHelper.ToUtc(dto.ExpectedDeliveryAt);
+
+            var orderDetails = _mapper.Map<List<OrderDetail>>(dto.OrderDetails);
+            foreach (var detail in orderDetails)
+            {
+                detail.OrderId = order.Id;
+            }
+
+            var totalAmount = orderDetails.Sum(d => d.UnitPrice * d.Quantity);
+            var discountAmount = orderDetails.Sum(d => d.UnitPrice * d.Quantity * d.DiscountPercent / 100m);
+            order.TotalAmount = totalAmount;
+            order.DiscountAmount = discountAmount;
+            order.FinalAmount = totalAmount - discountAmount;
+
+            var vehicleIds = orderDetails
+                .Where(d => d.VehicleId.HasValue)
+                .Select(d => d.VehicleId.Value)
+                .Distinct()
+                .ToList();
+
+            List<Vehicle>? vehicles = null;
+            if (vehicleIds.Any())
+            {
+                vehicles = await _unitOfWork.Vehicles.GetQueryable()
+                    .Where(v => vehicleIds.Contains(v.Id))
+                    .ToListAsync();
+            }
+
             await _unitOfWork.BeginTransactionAsync();
             try
             {
-                var order = _mapper.Map<Order>(dto);
-                order.ExpectedDeliveryAt = DateTimeHelper.ToUtc(dto.ExpectedDeliveryAt);
-
-                var orderDetails = _mapper.Map<List<OrderDetail>>(dto.OrderDetails);
-                foreach (var detail in orderDetails)
-                {
-                    detail.OrderId = order.Id;
-                }
-
-                var totalAmount = orderDetails.Sum(d => d.UnitPrice * d.Quantity);
-                var discountAmount = orderDetails.Sum(d => d.UnitPrice * d.Quantity * d.DiscountPercent / 100m);
-                order.TotalAmount = totalAmount;
-                order.DiscountAmount = discountAmount;
-                order.FinalAmount = totalAmount - discountAmount;
-
                 await _unitOfWork.Orders.AddAsync(order);
                 if (orderDetails.Count > 0)
                 {
                     await _unitOfWork.OrderDetails.AddRangeAsync(orderDetails);
                 }
 
-                var vehicleIds = orderDetails
-                    .Where(d => d.VehicleId.HasValue)
-                    .Select(d => d.VehicleId.Value)
-                    .Distinct()
-                    .ToList();
-
-                if (vehicleIds.Any())
+                if (vehicles != null && vehicles.Any())
                 {
-                    var vehicles = await _unitOfWork.Vehicles.GetQueryable()
-                        .Where(v => vehicleIds.Contains(v.Id))
-                        .ToListAsync();
-
                     foreach (var vehicle in vehicles)
                     {
                         vehicle.Status = VehicleStatus.RESERVED;
@@ -100,17 +104,17 @@ namespace EVMManagement.BLL.Services.Class
                 }
 
                 await _unitOfWork.CommitTransactionAsync();
-
-                return await _unitOfWork.Orders.GetQueryable()
-                    .Where(o => o.Id == order.Id)
-                    .ProjectTo<OrderWithDetailsResponse>(_mapper.ConfigurationProvider)
-                    .FirstAsync();
             }
             catch
             {
                 await _unitOfWork.RollbackTransactionAsync();
                 throw;
             }
+
+            return await _unitOfWork.Orders.GetQueryable()
+                .Where(o => o.Id == order.Id)
+                .ProjectTo<OrderWithDetailsResponse>(_mapper.ConfigurationProvider)
+                .FirstAsync();
         }
 
         public async Task<PagedResult<OrderResponse>> GetAllAsync(int pageNumber = 1, int pageSize = 10)

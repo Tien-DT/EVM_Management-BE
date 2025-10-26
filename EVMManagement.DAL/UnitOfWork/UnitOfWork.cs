@@ -12,6 +12,7 @@ namespace EVMManagement.DAL.UnitOfWork
     {
         private readonly AppDbContext _context;
         private IDbContextTransaction? _transaction;
+        private bool _transactionRequested = false;
         private IAccountRepository? _accounts;
         private IUserProfileRepository? _userProfiles;
         private IVehicleVariantRepository? _vehicleVariants;
@@ -30,7 +31,6 @@ namespace EVMManagement.DAL.UnitOfWork
 
         private IVehicleTimeSlotRepository? _vehicleTimeSlots;
         private IMasterTimeSlotRepository? _masterTimeSlots;
-        // private IAvailableSlotRepository? _availableSlots; // Removed - now using VehicleTimeSlots with Status = AVAILABLE
         private IDealerContractRepository? _dealerContracts;
         private ITestDriveBookingRepository? _testDriveBookings;
         private IHandoverRecordRepository? _handoverRecords;
@@ -84,34 +84,51 @@ namespace EVMManagement.DAL.UnitOfWork
             }
         }
 
-        public async Task BeginTransactionAsync()
+        public Task BeginTransactionAsync()
         {
-            _transaction = await _context.Database.BeginTransactionAsync();
+            _transactionRequested = true;
+            return Task.CompletedTask;
         }
 
         public async Task CommitTransactionAsync()
         {
-            try
+            if (!_transactionRequested)
             {
                 await SaveChangesAsync();
-                if (_transaction != null)
-                {
-                    await _transaction.CommitAsync();
-                }
+                return;
             }
-            catch
+
+            var strategy = _context.Database.CreateExecutionStrategy();
+
+            await strategy.ExecuteAsync(async () =>
             {
-                await RollbackTransactionAsync();
-                throw;
-            }
-            finally
-            {
-                if (_transaction != null)
+                _transaction = await _context.Database.BeginTransactionAsync();
+                try
                 {
-                    await _transaction.DisposeAsync();
-                    _transaction = null;
+                    await SaveChangesAsync();
+                    if (_transaction != null)
+                    {
+                        await _transaction.CommitAsync();
+                    }
                 }
-            }
+                catch
+                {
+                    if (_transaction != null)
+                    {
+                        await _transaction.RollbackAsync();
+                    }
+                    throw;
+                }
+                finally
+                {
+                    if (_transaction != null)
+                    {
+                        await _transaction.DisposeAsync();
+                        _transaction = null;
+                    }
+                    _transactionRequested = false;
+                }
+            });
         }
 
         public async Task RollbackTransactionAsync()
@@ -122,6 +139,8 @@ namespace EVMManagement.DAL.UnitOfWork
                 await _transaction.DisposeAsync();
                 _transaction = null;
             }
+
+            _transactionRequested = false;
         }
 
         public void Dispose()
