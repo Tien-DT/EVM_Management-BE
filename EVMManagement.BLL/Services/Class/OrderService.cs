@@ -135,7 +135,8 @@ namespace EVMManagement.BLL.Services.Class
 
         public async Task<PagedResult<OrderResponse>> GetAllAsync(int pageNumber = 1, int pageSize = 10)
         {
-            var query = _unitOfWork.Orders.GetQueryable();
+            var query = _unitOfWork.Orders.GetQueryable()
+                .Include(o => o.Deposits);
             var totalCount = await _unitOfWork.Orders.CountAsync();
 
             var items = await query
@@ -154,7 +155,8 @@ namespace EVMManagement.BLL.Services.Class
                 .Include(o => o.Quotation)
                 .Include(o => o.Customer)
                 .Include(o => o.Dealer)
-                .Include(o => o.CreatedByUser);
+                .Include(o => o.CreatedByUser)
+                .Include(o => o.Deposits);
 
             if (!string.IsNullOrWhiteSpace(filter.Code))
             {

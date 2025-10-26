@@ -1,9 +1,11 @@
 using System;
+using System.Collections.Generic;
 using EVMManagement.DAL.Models.Enums;
 using EVMManagement.BLL.DTOs.Response.Customer;
 using EVMManagement.BLL.DTOs.Response.Dealer;
 using EVMManagement.BLL.DTOs.Response.User;
 using EVMManagement.BLL.DTOs.Response.Quotation;
+using EVMManagement.BLL.DTOs.Response.Deposit;
 
 namespace EVMManagement.BLL.DTOs.Response.Order
 {
@@ -29,5 +31,6 @@ namespace EVMManagement.BLL.DTOs.Response.Order
         public CustomerResponse? Customer { get; set; }
         public DealerResponseDto? Dealer { get; set; }
         public UserProfileResponse? CreatedByUser { get; set; }
+        public List<DepositResponse>? Deposits { get; set; }
     }
 }
