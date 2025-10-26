@@ -69,6 +69,19 @@ namespace EVMManagement.API.Controllers
             return CreatedAtAction(nameof(GetById), new { id = created.Id }, ApiResponse<Order>.CreateSuccess(created));
         }
 
+        [HttpPost("with-details")]
+        public async Task<IActionResult> CreateWithDetails([FromBody] OrderWithDetailsCreateDto dto)
+        {
+            if (!ModelState.IsValid)
+            {
+                var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
+                return BadRequest(ApiResponse<OrderWithDetailsResponse>.CreateFail("Validation failed", errors, 400));
+            }
+
+            var created = await _services.OrderService.CreateOrderWithDetailsAsync(dto);
+            return CreatedAtAction(nameof(GetById), new { id = created.Id }, ApiResponse<OrderWithDetailsResponse>.CreateSuccess(created));
+        }
+
         [HttpPut("{id}")]
         public async Task<IActionResult> Update(Guid id, [FromBody] OrderUpdateDto dto)
         {
