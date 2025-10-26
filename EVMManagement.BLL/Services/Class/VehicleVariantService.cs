@@ -7,6 +7,7 @@ using EVMManagement.BLL.DTOs.Response;
 using EVMManagement.BLL.DTOs.Response.Vehicle;
 using EVMManagement.BLL.Services.Interface;
 using EVMManagement.DAL.Models.Entities;
+using EVMManagement.DAL.Models.Enums;
 using EVMManagement.DAL.UnitOfWork;
 using Microsoft.EntityFrameworkCore;
 
@@ -343,6 +344,67 @@ namespace EVMManagement.BLL.Services.Class
                 .ToListAsync();
 
             return PagedResult<VehicleVariantResponse>.Create(items, totalCount, pageNumber, pageSize);
+        }
+
+        public async Task<PagedResult<VehicleVariantWithStockResponseDto>> GetByDealerAndModelWithStockAsync(Guid dealerId, Guid modelId, int pageNumber = 1, int pageSize = 10)
+        {
+            var warehouseIds = await _unitOfWork.Warehouses.GetQueryable()
+                .Where(w => w.DealerId == dealerId && !w.IsDeleted)
+                .Select(w => w.Id)
+                .ToListAsync();
+
+            var variantsQuery = _unitOfWork.VehicleVariants.GetQueryable()
+                .Where(vv => vv.ModelId == modelId && !vv.IsDeleted);
+
+            var totalCount = await variantsQuery.CountAsync();
+
+            var variants = await variantsQuery
+                .OrderByDescending(x => x.CreatedDate)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            var variantIds = variants.Select(v => v.Id).ToList();
+
+            var stockCounts = await _unitOfWork.Vehicles.GetQueryable()
+                .Where(v => warehouseIds.Contains(v.WarehouseId)
+                    && variantIds.Contains(v.VariantId)
+                    && v.Status == VehicleStatus.IN_STOCK
+                    && !v.IsDeleted)
+                .GroupBy(v => v.VariantId)
+                .Select(g => new { VariantId = g.Key, Count = g.Count() })
+                .ToListAsync();
+
+            var responses = variants.Select(v => new VehicleVariantWithStockResponseDto
+            {
+                Id = v.Id,
+                ModelId = v.ModelId,
+                Color = v.Color,
+                ChargingTime = v.ChargingTime,
+                Engine = v.Engine,
+                Capacity = v.Capacity,
+                ShockAbsorbers = v.ShockAbsorbers,
+                BatteryType = v.BatteryType,
+                BatteryLife = v.BatteryLife,
+                MaximumSpeed = v.MaximumSpeed,
+                DistancePerCharge = v.DistancePerCharge,
+                Weight = v.Weight,
+                GroundClearance = v.GroundClearance,
+                Brakes = v.Brakes,
+                Length = v.Length,
+                Width = v.Width,
+                Height = v.Height,
+                Price = v.Price,
+                TrunkWidth = v.TrunkWidth,
+                Description = v.Description,
+                ChargingCapacity = v.ChargingCapacity,
+                ImageUrl = v.ImageUrl,
+                AvailableStock = stockCounts.FirstOrDefault(s => s.VariantId == v.Id)?.Count ?? 0,
+                CreatedDate = v.CreatedDate,
+                ModifiedDate = v.ModifiedDate
+            }).ToList();
+
+            return PagedResult<VehicleVariantWithStockResponseDto>.Create(responses, totalCount, pageNumber, pageSize);
         }
     }
 }

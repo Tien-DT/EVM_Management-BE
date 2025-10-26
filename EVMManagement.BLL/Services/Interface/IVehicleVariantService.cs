@@ -20,6 +20,7 @@ namespace EVMManagement.BLL.Services.Interface
         Task<bool> DeleteAsync(Guid id);
         Task<PagedResult<VehicleVariantResponse>> GetByModelIdAsync(Guid modelId, int pageNumber = 1, int pageSize = 10);
         Task<PagedResult<VehicleVariantResponse>> GetByDealerAndModelAsync(Guid dealerId, Guid modelId, int pageNumber = 1, int pageSize = 10);
+        Task<PagedResult<VehicleVariantWithStockResponseDto>> GetByDealerAndModelWithStockAsync(Guid dealerId, Guid modelId, int pageNumber = 1, int pageSize = 10);
         Task<PagedResult<VehicleVariantResponse>> GetByDealerIdAsync(Guid dealerId, VehiclePurpose? purpose, int pageNumber = 1, int pageSize = 10);
     }
 }
