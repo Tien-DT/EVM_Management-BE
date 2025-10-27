@@ -176,16 +176,23 @@ namespace EVMManagement.BLL.Services.Class
 
         public async Task<PagedResult<OrderResponse>> GetAllAsync(int pageNumber = 1, int pageSize = 10)
         {
-            var query = _unitOfWork.Orders.GetQueryable()
-                .Include(o => o.Deposits);
             var totalCount = await _unitOfWork.Orders.CountAsync();
 
-            var items = await query
+            var orders = await _unitOfWork.Orders.GetQueryable()
+                .Include(o => o.Quotation)
+                .Include(o => o.Customer)
+                .Include(o => o.Dealer)
+                .Include(o => o.CreatedByUser)
+                .Include(o => o.Deposits)
+                .Include(o => o.OrderDetails)
+                    .ThenInclude(od => od.VehicleVariant)
+                        .ThenInclude(vv => vv.VehicleModel)
                 .OrderByDescending(x => x.CreatedDate)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
-                .ProjectTo<OrderResponse>(_mapper.ConfigurationProvider)
                 .ToListAsync();
+
+            var items = _mapper.Map<List<OrderResponse>>(orders);
 
             return PagedResult<OrderResponse>.Create(items, totalCount, pageNumber, pageSize);
         }
@@ -291,6 +298,21 @@ namespace EVMManagement.BLL.Services.Class
             if (dto.ExpectedDeliveryAt.HasValue) entity.ExpectedDeliveryAt = DateTimeHelper.ToUtc(dto.ExpectedDeliveryAt);
             if (dto.OrderType.HasValue) entity.OrderType = dto.OrderType.Value;
             if (dto.IsFinanced.HasValue) entity.IsFinanced = dto.IsFinanced.Value;
+
+            // If status is changing from QUOTATION_RECEIVED to AWAITING_DEPOSIT, add quotation total to order
+            if (oldStatus == OrderStatus.QUOTATION_RECEIVED &&
+                dto.Status.HasValue &&
+                dto.Status.Value == OrderStatus.AWAITING_DEPOSIT &&
+                entity.QuotationId.HasValue)
+            {
+                var quotation = await _unitOfWork.Quotations.GetByIdAsync(entity.QuotationId.Value);
+                if (quotation != null && quotation.Total.HasValue)
+                {
+                    // Add quotation total to order amounts
+                    entity.TotalAmount = (entity.TotalAmount ?? 0) + quotation.Total.Value;
+                    entity.FinalAmount = (entity.FinalAmount ?? 0) + quotation.Total.Value;
+                }
+            }
 
             entity.ModifiedDate = DateTime.UtcNow;
 

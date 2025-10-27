@@ -73,7 +73,7 @@ namespace EVMManagement.API.Controllers
         }
 
         [HttpGet("vnpay/return")]
-        public IActionResult VnPayReturn()
+        public async Task<IActionResult> VnPayReturn()
         {
             try
             {
@@ -84,7 +84,7 @@ namespace EVMManagement.API.Controllers
                     return BadRequest(ApiResponse<string>.CreateFail("No data received from VNPay", null, 400));
                 }
 
-                var result = _services.VnPayService.ProcessReturnUrl(vnpayData);
+                var result = await _services.VnPayService.ProcessReturnUrlAsync(vnpayData);
 
                 return Ok(ApiResponse<VnPayCallbackResponse>.CreateSuccess(result));
             }

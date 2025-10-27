@@ -31,5 +31,6 @@ namespace EVMManagement.API.Services
         IReportService ReportService { get; }
         IDepositService DepositService { get; }
         IHandoverRecordService HandoverRecordService { get; }
+        ITransportService TransportService { get; }
     }
 }

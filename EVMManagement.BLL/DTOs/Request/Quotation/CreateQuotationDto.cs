@@ -13,6 +13,8 @@ namespace EVMManagement.BLL.DTOs.Request.Quotation
 
         public Guid? CustomerId { get; set; }
 
+        public Guid? OrderId { get; set; }  // Link to existing Order if creating quotation for an order
+
         [Required]
         public Guid CreatedByUserId { get; set; }
 

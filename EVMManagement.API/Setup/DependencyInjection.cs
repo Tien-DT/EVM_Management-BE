@@ -42,6 +42,8 @@ namespace EVMManagement.API.Setup
             services.AddScoped<ITransactionRepository, TransactionRepository>();
             services.AddScoped<IDepositRepository, DepositRepository>();
             services.AddScoped<IReportRepository, ReportRepository>();
+            services.AddScoped<ITransportRepository, TransportRepository>();
+            services.AddScoped<ITransportDetailRepository, TransportDetailRepository>();
 
             services.AddScoped<IUserProfileService, UserProfileService>();
             services.AddScoped<IVehicleVariantService, VehicleVariantService>();
@@ -68,6 +70,7 @@ namespace EVMManagement.API.Setup
             services.AddScoped<IVnPayService, VnPayService>();
             services.AddScoped<IReportService, ReportService>();
             services.AddScoped<IDepositService, DepositService>();
+            services.AddScoped<ITransportService, TransportService>();
 
             services.AddScoped<IHandoverRecordService, HandoverRecordService>();
 
