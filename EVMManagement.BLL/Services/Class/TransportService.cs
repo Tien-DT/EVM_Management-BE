@@ -98,6 +98,7 @@ namespace EVMManagement.BLL.Services.Class
                 .Include(t => t.TransportDetails)
                     .ThenInclude(td => td.Vehicle)
                         .ThenInclude(v => v.VehicleVariant)
+                            .ThenInclude(vv => vv.VehicleModel)
                 .Include(t => t.TransportDetails)
                     .ThenInclude(td => td.Order)
                 .Where(t => !t.IsDeleted)
@@ -127,18 +128,12 @@ namespace EVMManagement.BLL.Services.Class
                     VehicleId = td.VehicleId,
                     OrderId = td.OrderId,
                     VehicleVin = td.Vehicle?.Vin,
-                    VehicleVariantName = td.Vehicle?.VehicleVariant?.Name,
+                    VehicleVariantName = td.Vehicle?.VehicleVariant?.VehicleModel?.Name + " - " + td.Vehicle?.VehicleVariant?.Color,
                     OrderCode = td.Order?.Code
                 }).ToList()
             }).ToList();
 
-            return new PagedResult<TransportResponseDto>
-            {
-                Items = dtos,
-                TotalCount = totalCount,
-                PageNumber = pageNumber,
-                PageSize = pageSize
-            };
+            return PagedResult<TransportResponseDto>.Create(dtos, totalCount, pageNumber, pageSize);
         }
 
         public async Task<TransportResponseDto?> GetByIdAsync(Guid id)
@@ -147,6 +142,7 @@ namespace EVMManagement.BLL.Services.Class
                 .Include(t => t.TransportDetails)
                     .ThenInclude(td => td.Vehicle)
                         .ThenInclude(v => v.VehicleVariant)
+                            .ThenInclude(vv => vv.VehicleModel)
                 .Include(t => t.TransportDetails)
                     .ThenInclude(td => td.Order)
                 .FirstOrDefaultAsync(t => t.Id == id && !t.IsDeleted);
@@ -171,7 +167,7 @@ namespace EVMManagement.BLL.Services.Class
                     VehicleId = td.VehicleId,
                     OrderId = td.OrderId,
                     VehicleVin = td.Vehicle?.Vin,
-                    VehicleVariantName = td.Vehicle?.VehicleVariant?.Name,
+                    VehicleVariantName = td.Vehicle?.VehicleVariant?.VehicleModel?.Name + " - " + td.Vehicle?.VehicleVariant?.Color,
                     OrderCode = td.Order?.Code
                 }).ToList()
             };
