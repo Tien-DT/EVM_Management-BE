@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using EVMManagement.DAL.Models.Enums;
 
 namespace EVMManagement.BLL.DTOs.Response.VehicleTimeSlot
 {

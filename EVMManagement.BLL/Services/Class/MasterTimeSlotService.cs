@@ -110,6 +110,36 @@ namespace EVMManagement.BLL.Services.Class
 
             return true;
         }
+
+        public async Task<PagedResult<MasterTimeSlotResponseDto>> GetByDealerIdAsync(Guid dealerId, int pageNumber = 1, int pageSize = 10)
+        {
+            var items = await _unitOfWork.MasterTimeSlots.GetByDealerIdAsync(dealerId);
+            var totalCount = items.Count();
+
+            var pagedItems = items
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToList();
+
+            var responses = _mapper.Map<List<MasterTimeSlotResponseDto>>(pagedItems);
+
+            return PagedResult<MasterTimeSlotResponseDto>.Create(responses, totalCount, pageNumber, pageSize);
+        }
+
+        public async Task<PagedResult<MasterTimeSlotResponseDto>> GetActiveByDealerIdAsync(Guid dealerId, int pageNumber = 1, int pageSize = 10)
+        {
+            var items = await _unitOfWork.MasterTimeSlots.GetActiveByDealerIdAsync(dealerId);
+            var totalCount = items.Count();
+
+            var pagedItems = items
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToList();
+
+            var responses = _mapper.Map<List<MasterTimeSlotResponseDto>>(pagedItems);
+
+            return PagedResult<MasterTimeSlotResponseDto>.Create(responses, totalCount, pageNumber, pageSize);
+        }
     }
 }
 

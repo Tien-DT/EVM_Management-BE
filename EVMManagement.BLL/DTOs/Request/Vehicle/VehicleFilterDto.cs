@@ -7,6 +7,7 @@ namespace EVMManagement.BLL.DTOs.Request.Vehicle
     {
         public VehicleStatus? Status { get; set; }
         public VehiclePurpose? Purpose { get; set; }
+        public Guid? DealerId { get; set; }
         public Guid? WarehouseId { get; set; }
         public Guid? VariantId { get; set; }
         public string? Q { get; set; }

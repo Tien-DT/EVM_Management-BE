@@ -405,6 +405,11 @@ namespace EVMManagement.DAL.Data
             {
                 entity.HasKey(e => e.Id);
                 entity.HasIndex(e => e.Code).IsUnique();
+                entity.HasOne(e => e.Dealer)
+                    .WithMany(d => d.MasterTimeSlots)
+                    .HasForeignKey(e => e.DealerId)
+                    .OnDelete(DeleteBehavior.Restrict);
+                entity.HasIndex(e => e.DealerId);
             });
 
             // Configure VehicleTimeSlot
