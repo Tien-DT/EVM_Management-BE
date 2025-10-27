@@ -122,7 +122,8 @@ namespace EVMManagement.BLL.Mappings
             // Order Mappings
             CreateMap<OrderCreateDto, Order>();
             CreateMap<OrderWithDetailsCreateDto, Order>()
-                .IncludeBase<OrderCreateDto, Order>();
+                .IncludeBase<OrderCreateDto, Order>()
+                .ForMember(dest => dest.OrderDetails, opt => opt.Ignore());
             CreateMap<OrderUpdateDto, Order>()
                 .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
             CreateMap<Order, OrderResponse>();

@@ -56,6 +56,14 @@ namespace EVMManagement.API.Controllers
             return Ok(ApiResponse<OrderResponse>.CreateSuccess(item));
         }
 
+        [HttpGet("{id}/with-details")]
+        public async Task<IActionResult> GetByIdWithDetails(Guid id)
+        {
+            var item = await _services.OrderService.GetByIdWithDetailsAsync(id);
+            if (item == null) return NotFound(ApiResponse<OrderWithDetailsResponse>.CreateFail("Order not found", null, 404));
+            return Ok(ApiResponse<OrderWithDetailsResponse>.CreateSuccess(item));
+        }
+
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] OrderCreateDto dto)
         {

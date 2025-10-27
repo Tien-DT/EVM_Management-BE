@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using EVMManagement.DAL.Data;
 using EVMManagement.DAL.Models.Entities;
@@ -60,6 +61,22 @@ namespace EVMManagement.DAL.Repositories.Class
             }
 
             return query;
+        }
+
+        public async Task<Contract?> GetByIdWithDetailsAsync(Guid id)
+        {
+            return await _dbSet
+                .Include(c => c.Order)
+                    .ThenInclude(o => o.OrderDetails)
+                        .ThenInclude(od => od.VehicleVariant)
+                            .ThenInclude(vv => vv.VehicleModel)
+                .Include(c => c.Order)
+                    .ThenInclude(o => o.OrderDetails)
+                        .ThenInclude(od => od.Vehicle)
+                .Include(c => c.Customer)
+                .Include(c => c.CreatedByUser)
+                .Include(c => c.DigitalSignatures)
+                .FirstOrDefaultAsync(c => c.Id == id && !c.IsDeleted);
         }
     }
 }

@@ -63,7 +63,7 @@ namespace EVMManagement.BLL.Services.Class
 
         public async Task<ContractResponse?> GetByIdAsync(Guid id)
         {
-            var entity = await _unitOfWork.Contracts.GetByIdAsync(id);
+            var entity = await _unitOfWork.Contracts.GetByIdWithDetailsAsync(id);
             if (entity == null) return null;
 
             return _mapper.Map<ContractResponse>(entity);

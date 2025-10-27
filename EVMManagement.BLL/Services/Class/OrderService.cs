@@ -64,11 +64,52 @@ namespace EVMManagement.BLL.Services.Class
                 detail.OrderId = order.Id;
             }
 
-            var totalAmount = orderDetails.Sum(d => d.UnitPrice * d.Quantity);
+            var baseAmount = orderDetails.Sum(d => d.UnitPrice * d.Quantity);
+
+            var totalAmount = dto.TotalAmount ?? baseAmount;
+            if (totalAmount < 0)
+            {
+                totalAmount = 0;
+            }
+
             var discountAmount = dto.DiscountAmount ?? 0;
+            if (discountAmount < 0)
+            {
+                discountAmount = 0;
+            }
+
+            decimal finalAmount;
+            if (dto.FinalAmount.HasValue)
+            {
+                finalAmount = dto.FinalAmount.Value;
+                if (finalAmount < 0)
+                {
+                    finalAmount = 0;
+                }
+
+                if (!dto.DiscountAmount.HasValue)
+                {
+                    discountAmount = totalAmount - finalAmount;
+                }
+            }
+            else
+            {
+                finalAmount = totalAmount - discountAmount;
+            }
+
+            if (discountAmount > totalAmount)
+            {
+                discountAmount = totalAmount;
+            }
+
+            if (finalAmount < 0)
+            {
+                finalAmount = 0;
+            }
+
             order.TotalAmount = totalAmount;
             order.DiscountAmount = discountAmount;
-            order.FinalAmount = totalAmount - discountAmount;
+            order.FinalAmount = finalAmount;
 
             var vehicleIds = orderDetails
                 .Where(d => d.VehicleId.HasValue)
@@ -212,6 +253,23 @@ namespace EVMManagement.BLL.Services.Class
             if (entity == null) return null;
 
             return _mapper.Map<OrderResponse>(entity);
+        }
+
+        public async Task<OrderWithDetailsResponse?> GetByIdWithDetailsAsync(Guid id)
+        {
+            var order = await _unitOfWork.Orders.GetQueryable()
+                .Include(o => o.Quotation)
+                .Include(o => o.Customer)
+                .Include(o => o.Dealer)
+                .Include(o => o.CreatedByUser)
+                .Include(o => o.Deposits)
+                .Include(o => o.OrderDetails)
+                .Where(o => o.Id == id)
+                .FirstOrDefaultAsync();
+
+            if (order == null) return null;
+
+            return _mapper.Map<OrderWithDetailsResponse>(order);
         }
 
         public async Task<OrderResponse?> UpdateAsync(Guid id, OrderUpdateDto dto)
