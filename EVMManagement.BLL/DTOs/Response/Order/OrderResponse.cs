@@ -6,6 +6,7 @@ using EVMManagement.BLL.DTOs.Response.Dealer;
 using EVMManagement.BLL.DTOs.Response.User;
 using EVMManagement.BLL.DTOs.Response.Quotation;
 using EVMManagement.BLL.DTOs.Response.Deposit;
+using EVMManagement.BLL.DTOs.Response.OrderDetail;
 
 namespace EVMManagement.BLL.DTOs.Response.Order
 {
@@ -32,5 +33,6 @@ namespace EVMManagement.BLL.DTOs.Response.Order
         public DealerResponseDto? Dealer { get; set; }
         public UserProfileResponse? CreatedByUser { get; set; }
         public List<DepositResponse>? Deposits { get; set; }
+        public List<OrderDetailResponse>? OrderDetails { get; set; }
     }
 }
