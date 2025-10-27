@@ -79,11 +79,52 @@ namespace EVMManagement.BLL.Services.Class
             if (dto.CustomerId.HasValue) entity.CustomerId = dto.CustomerId.Value;
             if (dto.CreatedByUserId.HasValue) entity.CreatedByUserId = dto.CreatedByUserId.Value;
             if (dto.Terms != null) entity.Terms = dto.Terms;
-            if (dto.Status.HasValue) entity.Status = dto.Status.Value;
-            if (dto.SignedAt.HasValue) entity.SignedAt = DateTimeHelper.ToUtc(dto.SignedAt);
-            if (dto.ContractLink != null) entity.ContractLink = dto.ContractLink;
+
+            bool hasSignedContract = false;
+
+            if (dto.ContractLink != null)
+            {
+                var trimmedLink = string.IsNullOrWhiteSpace(dto.ContractLink)
+                    ? null
+                    : dto.ContractLink.Trim();
+                entity.ContractLink = trimmedLink;
+
+                if (!string.IsNullOrWhiteSpace(trimmedLink))
+                {
+                    hasSignedContract = true;
+                }
+            }
+
+            if (dto.Status.HasValue)
+            {
+                entity.Status = dto.Status.Value;
+            }
+            else if (hasSignedContract)
+            {
+                entity.Status = ContractStatus.ACTIVE;
+            }
+
+            if (dto.SignedAt.HasValue)
+            {
+                entity.SignedAt = DateTimeHelper.ToUtc(dto.SignedAt);
+            }
+            else if (hasSignedContract && !entity.SignedAt.HasValue)
+            {
+                entity.SignedAt = DateTime.UtcNow;
+            }
 
             entity.ModifiedDate = DateTime.UtcNow;
+
+            if (hasSignedContract)
+            {
+                var order = await _unitOfWork.Orders.GetByIdAsync(entity.OrderId);
+                if (order != null)
+                {
+                    order.Status = OrderStatus.IN_PROGRESS;
+                    order.ModifiedDate = DateTime.UtcNow;
+                    _unitOfWork.Orders.Update(order);
+                }
+            }
 
             _unitOfWork.Contracts.Update(entity);
             await _unitOfWork.SaveChangesAsync();
