@@ -34,6 +34,18 @@ namespace EVMManagement.API.Controllers
             return Ok(ApiResponse<PagedResult<TransportResponseDto>>.CreateSuccess(result));
         }
 
+        [HttpGet("dealer/{dealerId}")]
+        public async Task<IActionResult> GetByDealer(Guid dealerId, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
+        {
+            if (pageNumber < 1 || pageSize < 1)
+            {
+                return BadRequest(ApiResponse<string>.CreateFail("PageNumber and PageSize must be greater than 0", null, 400));
+            }
+
+            var result = await _services.TransportService.GetByDealerAsync(dealerId, pageNumber, pageSize);
+            return Ok(ApiResponse<PagedResult<TransportResponseDto>>.CreateSuccess(result));
+        }
+
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(Guid id)
         {

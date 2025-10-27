@@ -271,6 +271,10 @@ namespace EVMManagement.BLL.Services.Class
                 .Include(o => o.CreatedByUser)
                 .Include(o => o.Deposits)
                 .Include(o => o.OrderDetails)
+                    .ThenInclude(od => od.Vehicle)
+                .Include(o => o.OrderDetails)
+                    .ThenInclude(od => od.VehicleVariant)
+                        .ThenInclude(vv => vv.VehicleModel)
                 .Where(o => o.Id == id)
                 .FirstOrDefaultAsync();
 

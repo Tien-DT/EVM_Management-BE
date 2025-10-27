@@ -10,6 +10,7 @@ namespace EVMManagement.BLL.Services.Interface
     {
         Task<TransportResponseDto> CreateAsync(TransportCreateDto dto);
         Task<PagedResult<TransportResponseDto>> GetAllAsync(int pageNumber = 1, int pageSize = 10);
+        Task<PagedResult<TransportResponseDto>> GetByDealerAsync(Guid dealerId, int pageNumber = 1, int pageSize = 10);
         Task<TransportResponseDto?> GetByIdAsync(Guid id);
         Task<TransportResponseDto?> UpdateAsync(Guid id, TransportUpdateDto dto);
         Task<bool> DeleteAsync(Guid id);

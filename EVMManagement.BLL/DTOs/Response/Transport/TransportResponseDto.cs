@@ -15,7 +15,12 @@ namespace EVMManagement.BLL.DTOs.Response.Transport
         public DateTime? DeliveredAt { get; set; }
         public DateTime CreatedDate { get; set; }
         public DateTime? ModifiedDate { get; set; }
-        
+
+        // Dealer info (from orders)
+        public Guid? DealerId { get; set; }
+        public string? DealerName { get; set; }
+        public string? DealerAddress { get; set; }
+
         public List<TransportDetailDto> TransportDetails { get; set; } = new List<TransportDetailDto>();
     }
 
