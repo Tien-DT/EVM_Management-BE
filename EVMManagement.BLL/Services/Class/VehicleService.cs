@@ -152,6 +152,14 @@ namespace EVMManagement.BLL.Services.Class
 
             if (filter.Status.HasValue) query = query.Where(v => v.Status == filter.Status.Value);
             if (filter.Purpose.HasValue) query = query.Where(v => v.Purpose == filter.Purpose.Value);
+            if (filter.DealerId.HasValue)
+            {
+                var warehouseIds = await _unitOfWork.Warehouses.GetQueryable()
+                    .Where(w => w.DealerId == filter.DealerId.Value && !w.IsDeleted)
+                    .Select(w => w.Id)
+                    .ToListAsync();
+                query = query.Where(v => warehouseIds.Contains(v.WarehouseId));
+            }
             if (filter.WarehouseId.HasValue) query = query.Where(v => v.WarehouseId == filter.WarehouseId.Value);
             if (filter.VariantId.HasValue) query = query.Where(v => v.VariantId == filter.VariantId.Value);
 

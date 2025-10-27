@@ -18,5 +18,7 @@ namespace EVMManagement.DAL.Models.Entities
 
         public bool IsActive { get; set; } = true;
         public virtual ICollection<VehicleTimeSlot> VehicleTimeSlots { get; set; } = new HashSet<VehicleTimeSlot>();
+        public Guid? DealerId { get; set; }
+        public virtual Dealer? Dealer { get; set; }
     }
 }

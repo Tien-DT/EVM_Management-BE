@@ -179,6 +179,84 @@ namespace EVMManagement.API.Controllers
             return Ok(ApiResponse<SlotVehiclesDto>.CreateSuccess(result));
         }
 
+        [HttpPost("bulk-assign")]
+        [Authorize(Roles = "DEALER_MANAGER")]
+        public async Task<IActionResult> BulkAssignVehicles([FromBody] BulkAssignVehiclesDto dto)
+        {
+            if (!ModelState.IsValid)
+            {
+                var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
+                return BadRequest(ApiResponse<BulkAssignResultDto>.CreateFail("Validation failed", errors, 400));
+            }
+
+            var dealerId = await GetCurrentUserDealerIdAsync();
+            if (!dealerId.HasValue)
+            {
+                return Unauthorized(ApiResponse<BulkAssignResultDto>.CreateFail(
+                    "Dealer manager must belong to a dealer", errorCode: 401));
+            }
+
+            var masterSlot = await _services.MasterTimeSlotService.GetByIdAsync(dto.MasterSlotId);
+            if (masterSlot == null)
+            {
+                return NotFound(ApiResponse<BulkAssignResultDto>.CreateFail(
+                    "Master time slot not found", errorCode: 404));
+            }
+
+            var result = await _services.VehicleTimeSlotService.BulkAssignVehiclesToSlotAsync(dto, dealerId.Value);
+
+            if (result.FailureCount == result.TotalRequested)
+            {
+                return BadRequest(ApiResponse<BulkAssignResultDto>.CreateFail(
+                    "All vehicle assignments failed", 
+                    new List<string> { $"{result.FailureCount} out of {result.TotalRequested} vehicles could not be assigned" }, 
+                    400));
+            }
+
+            if (result.FailureCount > 0)
+            {
+                return Ok(ApiResponse<BulkAssignResultDto>.CreateSuccess(
+                    result, $"Partially successful: {result.SuccessCount} assigned, {result.FailureCount} failed"));
+            }
+
+            return Ok(ApiResponse<BulkAssignResultDto>.CreateSuccess(
+                result, $"Successfully assigned {result.SuccessCount} vehicles to slot"));
+        }
+
+        [HttpGet("slots-by-date")]
+        [Authorize(Roles = "DEALER_MANAGER,DEALER_STAFF")]
+        public async Task<IActionResult> GetSlotsByDate(
+            [FromQuery] Guid dealerId,
+            [FromQuery] DateTime? fromDate = null,
+            [FromQuery] DateTime? toDate = null,
+            [FromQuery] TimeSlotStatus? status = null)
+        {
+            if (dealerId == Guid.Empty)
+            {
+                return BadRequest(ApiResponse<List<DateSlotGroupDto>>.CreateFail(
+                    "DealerId is required",
+                    new List<string> { "DealerId parameter is required" },
+                    400));
+            }
+
+            // Default date range: today to +7 days
+            var from = fromDate ?? DateTime.Today;
+            var to = toDate ?? DateTime.Today.AddDays(7);
+
+            // Call service without modelId parameter - get all vehicles for test drive schedule
+            var result = await _services.VehicleTimeSlotService.GetSlotsByDateAsync(
+                dealerId, from, to, status);
+
+            if (result == null || result.Count == 0)
+            {
+                return NotFound(ApiResponse<List<DateSlotGroupDto>>.CreateFail(
+                    "No slots found",
+                    new List<string> { "No vehicle time slots found for the given date range" },
+                    404));
+            }
+
+            return Ok(ApiResponse<List<DateSlotGroupDto>>.CreateSuccess(result));
+        }
       
     }
 }

@@ -160,8 +160,8 @@ namespace EVMManagement.BLL.Services.Class
             var modelIds = models.Select(m => m.Id).ToList();
 
             var stockCounts = await _unitOfWork.Vehicles.GetQueryable()
-                .Where(v => warehouseIds.Contains(v.WarehouseId) 
-                    && v.Status == VehicleStatus.IN_STOCK 
+                .Where(v => warehouseIds.Contains(v.WarehouseId)
+                    && v.Status == VehicleStatus.IN_STOCK
                     && !v.IsDeleted)
                 .Join(
                     _unitOfWork.VehicleVariants.GetQueryable(),
@@ -191,7 +191,5 @@ namespace EVMManagement.BLL.Services.Class
 
             return PagedResult<VehicleModelWithStockResponseDto>.Create(responses, totalCount, pageNumber, pageSize);
         }
-
-
     }
 }

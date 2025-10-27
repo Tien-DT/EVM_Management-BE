@@ -15,6 +15,8 @@ namespace EVMManagement.BLL.Services.Interface
         Task<MasterTimeSlotResponseDto?> UpdateAsync(Guid id, MasterTimeSlotUpdateDto dto);
         Task<MasterTimeSlotResponseDto?> UpdateIsActiveAsync(Guid id, bool isActive);
         Task<bool> DeleteAsync(Guid id);
+        Task<PagedResult<MasterTimeSlotResponseDto>> GetByDealerIdAsync(Guid dealerId, int pageNumber = 1, int pageSize = 10);
+        Task<PagedResult<MasterTimeSlotResponseDto>> GetActiveByDealerIdAsync(Guid dealerId, int pageNumber = 1, int pageSize = 10);
     }
 }
 
