@@ -11,7 +11,7 @@ namespace EVMManagement.DAL.Models.Entities
         public Guid OrderId { get; set; }
 
         [Required]
-        [Column(TypeName = "decimal(18,2)")]
+        [Column(TypeName = "decimal(15,2)")]
         public decimal Amount { get; set; }
 
         [Required]

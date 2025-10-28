@@ -18,7 +18,7 @@ namespace EVMManagement.DAL.Models.Entities
         public int Quantity { get; set; }
 
         [Required]
-        [Column(TypeName = "decimal(18,2)")]
+        [Column(TypeName = "decimal(15,2)")]
         public decimal UnitPrice { get; set; }
 
         public int DiscountPercent { get; set; } = 0;
