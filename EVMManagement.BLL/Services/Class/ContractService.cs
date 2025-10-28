@@ -189,5 +189,17 @@ namespace EVMManagement.BLL.Services.Class
 
             return PagedResult<ContractDetailResponse>.Create(items, totalCount, pageNumber, pageSize);
         }
+
+        public IQueryable<Contract> GetQueryableForOData()
+        {
+            return _unitOfWork.Contracts.GetQueryable()
+                .Include(c => c.Order)
+                .Include(c => c.Customer)
+                .Include(c => c.Dealer)
+                .Include(c => c.CreatedByUser)
+                .Include(c => c.SignedByUser)
+                .Include(c => c.DigitalSignatures)
+                .Where(c => !c.IsDeleted);
+        }
     }
 }

@@ -637,5 +637,15 @@ namespace EVMManagement.BLL.Services.Class
                 IsDeleted = w.IsDeleted
             };
         }
+
+        public IQueryable<Warehouse> GetQueryableForOData()
+        {
+            return _unitOfWork.Warehouses.GetQueryable()
+                .Include(w => w.Dealer)
+                .Include(w => w.Vehicles)
+                    .ThenInclude(v => v.VehicleVariant)
+                        .ThenInclude(vv => vv.VehicleModel)
+                .Where(w => !w.IsDeleted);
+        }
     }
 }

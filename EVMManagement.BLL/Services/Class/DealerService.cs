@@ -7,6 +7,7 @@ using EVMManagement.BLL.DTOs.Response.Dealer;
 using EVMManagement.BLL.Services.Interface;
 using EVMManagement.DAL.Models.Entities;
 using EVMManagement.DAL.UnitOfWork;
+using Microsoft.EntityFrameworkCore;
 
 namespace EVMManagement.BLL.Services.Class
 {
@@ -142,6 +143,16 @@ namespace EVMManagement.BLL.Services.Class
             await _unitOfWork.SaveChangesAsync();
 
             return true;
+        }
+
+        public IQueryable<Dealer> GetQueryableForOData()
+        {
+            return _unitOfWork.Dealers.GetQueryable()
+                .Include(d => d.DealerContract)
+                .Include(d => d.Warehouses)
+                .Include(d => d.Orders)
+                .Include(d => d.UserProfiles)
+                .Where(d => !d.IsDeleted);
         }
     }
 }

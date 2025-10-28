@@ -705,5 +705,21 @@ namespace EVMManagement.BLL.Services.Class
             await _unitOfWork.Reports.AddAsync(report);
             await _unitOfWork.SaveChangesAsync();
         }
+
+        public IQueryable<Order> GetQueryableForOData()
+        {
+            return _unitOfWork.Orders.GetQueryable()
+                .Include(o => o.Quotation)
+                .Include(o => o.Customer)
+                .Include(o => o.Dealer)
+                .Include(o => o.CreatedByUser)
+                .Include(o => o.OrderDetails)
+                    .ThenInclude(od => od.VehicleVariant)
+                        .ThenInclude(vv => vv!.VehicleModel)
+                .Include(o => o.Contract)
+                .Include(o => o.Deposits)
+                .Include(o => o.HandoverRecord)
+                .Where(o => !o.IsDeleted);
+        }
     }
 }

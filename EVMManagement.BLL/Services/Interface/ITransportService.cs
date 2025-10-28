@@ -1,8 +1,10 @@
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 using EVMManagement.BLL.DTOs.Request.Transport;
 using EVMManagement.BLL.DTOs.Response;
 using EVMManagement.BLL.DTOs.Response.Transport;
+using EVMManagement.DAL.Models.Entities;
 
 namespace EVMManagement.BLL.Services.Interface
 {
@@ -14,6 +16,7 @@ namespace EVMManagement.BLL.Services.Interface
         Task<TransportResponseDto?> GetByIdAsync(Guid id);
         Task<TransportResponseDto?> UpdateAsync(Guid id, TransportUpdateDto dto);
         Task<bool> DeleteAsync(Guid id);
+        IQueryable<Transport> GetQueryableForOData();
     }
 }
 

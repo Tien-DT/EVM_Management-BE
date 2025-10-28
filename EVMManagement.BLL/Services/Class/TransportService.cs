@@ -285,6 +285,18 @@ namespace EVMManagement.BLL.Services.Class
 
             return true;
         }
+
+        public IQueryable<Transport> GetQueryableForOData()
+        {
+            return _unitOfWork.Transports.GetQueryable()
+                .Include(t => t.TransportDetails)
+                    .ThenInclude(td => td.Vehicle)
+                        .ThenInclude(v => v!.VehicleVariant)
+                            .ThenInclude(vv => vv.VehicleModel)
+                .Include(t => t.TransportDetails)
+                    .ThenInclude(td => td.Order)
+                .Where(t => !t.IsDeleted);
+        }
     }
 }
 

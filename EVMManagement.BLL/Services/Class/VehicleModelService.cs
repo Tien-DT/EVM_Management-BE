@@ -191,5 +191,12 @@ namespace EVMManagement.BLL.Services.Class
 
             return PagedResult<VehicleModelWithStockResponseDto>.Create(responses, totalCount, pageNumber, pageSize);
         }
+
+        public IQueryable<VehicleModel> GetQueryableForOData()
+        {
+            return _unitOfWork.VehicleModels.GetQueryable()
+                .Include(vm => vm.VehicleVariants)
+                .Where(vm => !vm.IsDeleted);
+        }
     }
 }

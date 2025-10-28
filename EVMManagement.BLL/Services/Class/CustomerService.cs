@@ -153,5 +153,14 @@ namespace EVMManagement.BLL.Services.Class
 
             return _mapper.Map<CustomerResponse>(entity);
         }
+
+        public IQueryable<Customer> GetQueryableForOData()
+        {
+            return _unitOfWork.Customers.GetQueryable()
+                .Include(c => c.Quotations)
+                .Include(c => c.Orders)
+                .Include(c => c.TestDriveBookings)
+                .Where(c => !c.IsDeleted);
+        }
     }
 }

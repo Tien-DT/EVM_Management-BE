@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 using EVMManagement.BLL.DTOs.Request.Order;
 using EVMManagement.BLL.DTOs.Response;
@@ -24,5 +25,6 @@ namespace EVMManagement.BLL.Services.Interface
         Task<bool> NotifyCustomerAsync(Guid orderId, CustomerNotificationRequestDto dto);
         Task<OrderResponse> UpdateCustomerConfirmationAsync(Guid orderId, CustomerConfirmationRequestDto dto);
         Task<OrderFlowResponseDto> ConfirmPaymentAsync(Guid orderId, ConfirmPaymentRequestDto dto);
+        IQueryable<Order> GetQueryableForOData();
     }
 }

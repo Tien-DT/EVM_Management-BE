@@ -1,11 +1,13 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using EVMManagement.BLL.DTOs.Request.Warehouse;
 using EVMManagement.BLL.DTOs.Response;
 using EVMManagement.BLL.DTOs.Response.Vehicle;
 using EVMManagement.BLL.DTOs.Response.Warehouse;
 using EVMManagement.DAL.Models.Enums;
+using EVMManagement.DAL.Models.Entities;
 
 namespace EVMManagement.BLL.Services.Interface
 {
@@ -20,5 +22,6 @@ namespace EVMManagement.BLL.Services.Interface
         Task<ApiResponse<List<VehicleResponseDto>>> AddVehiclesToWarehouseAsync(AddVehiclesToWarehouseRequestDto dto, Guid addedByUserId);
         Task<ApiResponse<List<VehicleResponseDto>>> AddVehiclesToEvmWarehouseAsync(AddVehiclesToEvmWarehouseDto dto, Guid addedByUserId);
         Task<ApiResponse<List<VehicleResponseDto>>> AddVehiclesToDealerWarehouseAsync(AddVehiclesToDealerWarehouseDto dto, Guid addedByUserId);
+        IQueryable<Warehouse> GetQueryableForOData();
     }
 }
