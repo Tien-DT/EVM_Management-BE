@@ -46,9 +46,10 @@ namespace EVMManagement.BLL.Services.Class
         public async Task<PagedResult<VehicleResponseDto>> GetAllAsync(int pageNumber = 1, int pageSize = 10)
         {
             var query = _unitOfWork.Vehicles.GetQueryable();
-            var totalCount = await query.CountAsync();
+            var totalCount = await query.CountAsync(x => !x.IsDeleted);
 
             var items = await query
+                .Where(x => !x.IsDeleted)
                 .OrderByDescending(x => x.CreatedDate)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
@@ -60,7 +61,12 @@ namespace EVMManagement.BLL.Services.Class
 
         public async Task<PagedResult<VehicleDetailResponseDto>> GetAllWithDetailsAsync(int pageNumber = 1, int pageSize = 10)
         {
-            var query = _unitOfWork.Vehicles.GetQueryable();
+            var query = _unitOfWork.Vehicles.GetQueryable()
+                .Include(v => v.VehicleVariant)
+                    .ThenInclude(vv => vv.VehicleModel)
+                .Include(v => v.Warehouse)
+                    .ThenInclude(w => w.Dealer);
+            
             var totalCount = await query.CountAsync();
 
             var items = await query
@@ -146,6 +152,14 @@ namespace EVMManagement.BLL.Services.Class
 
             if (filter.Status.HasValue) query = query.Where(v => v.Status == filter.Status.Value);
             if (filter.Purpose.HasValue) query = query.Where(v => v.Purpose == filter.Purpose.Value);
+            if (filter.DealerId.HasValue)
+            {
+                var warehouseIds = await _unitOfWork.Warehouses.GetQueryable()
+                    .Where(w => w.DealerId == filter.DealerId.Value && !w.IsDeleted)
+                    .Select(w => w.Id)
+                    .ToListAsync();
+                query = query.Where(v => warehouseIds.Contains(v.WarehouseId));
+            }
             if (filter.WarehouseId.HasValue) query = query.Where(v => v.WarehouseId == filter.WarehouseId.Value);
             if (filter.VariantId.HasValue) query = query.Where(v => v.VariantId == filter.VariantId.Value);
 
@@ -203,6 +217,21 @@ namespace EVMManagement.BLL.Services.Class
                 WarehouseName = primaryWarehouse?.Name,
                 AvailableVehicleIds = availableVehicles.Select(v => v.Id).ToList()
             };
+        }
+
+        public async Task<PagedResult<VehicleResponseDto>> GetVehiclesByDealerAndVariantAsync(Guid dealerId, Guid variantId, int pageNumber = 1, int pageSize = 10)
+        {
+            var query = _unitOfWork.Vehicles.GetVehiclesByDealerAndVariantAsync(dealerId, variantId);
+
+            var totalCount = await query.CountAsync();
+
+            var items = await query
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ProjectTo<VehicleResponseDto>(_mapper.ConfigurationProvider)
+                .ToListAsync();
+
+            return PagedResult<VehicleResponseDto>.Create(items, totalCount, pageNumber, pageSize);
         }
 
         private VehicleResponseDto MapToDto(Vehicle e)

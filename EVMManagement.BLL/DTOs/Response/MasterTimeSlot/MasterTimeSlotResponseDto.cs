@@ -9,6 +9,7 @@ namespace EVMManagement.BLL.DTOs.Response.MasterTimeSlot
         public int? StartOffsetMinutes { get; set; }
         public int? DurationMinutes { get; set; }
         public bool IsActive { get; set; }
+        public Guid? DealerId { get; set; }
     }
 }
 

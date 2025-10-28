@@ -29,11 +29,20 @@ namespace EVMManagement.BLL.Services.Class
 
         public async Task<QuotationResponseDto> CreateQuotationAsync(CreateQuotationDto dto)
         {
+            // Find UserProfile by AccountId (in case dto.CreatedByUserId is AccountId)
+            var userProfile = await _unitOfWork.UserProfiles.GetQueryable()
+                .FirstOrDefaultAsync(up => up.Id == dto.CreatedByUserId || up.AccountId == dto.CreatedByUserId);
+
+            if (userProfile == null)
+            {
+                throw new Exception($"User profile not found for ID: {dto.CreatedByUserId}");
+            }
+
             var quotation = new Quotation
             {
                 Code = dto.Code,
                 CustomerId = dto.CustomerId,
-                CreatedByUserId = dto.CreatedByUserId,
+                CreatedByUserId = userProfile.Id, // Use UserProfile.Id
                 Note = dto.Note,
                 Status = dto.Status,
                 ValidUntil = DateTimeHelper.ToUtc(dto.ValidUntil)
@@ -63,6 +72,19 @@ namespace EVMManagement.BLL.Services.Class
 
             await _unitOfWork.Quotations.AddAsync(quotation);
             await _unitOfWork.SaveChangesAsync();
+
+            // If quotation is created for an existing order, update order status and link quotation
+            if (dto.OrderId.HasValue)
+            {
+                var order = await _unitOfWork.Orders.GetByIdAsync(dto.OrderId.Value);
+                if (order != null)
+                {
+                    order.QuotationId = quotation.Id;
+                    order.Status = OrderStatus.QUOTATION_RECEIVED;
+                    _unitOfWork.Orders.Update(order);
+                    await _unitOfWork.SaveChangesAsync();
+                }
+            }
 
             return (await GetByIdAsync(quotation.Id))!;
         }

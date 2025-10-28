@@ -15,5 +15,6 @@ namespace EVMManagement.BLL.Services.Interface
         Task<HandoverRecordResponseDto?> UpdateAsync(Guid id, HandoverRecordUpdateDto dto);
         Task<HandoverRecordResponseDto?> UpdateIsDeletedAsync(Guid id, bool isDeleted);
         Task<HandoverRecordResponseDto> CreateHandoverWithVehicleAssignmentAsync(Guid orderId, OrderHandoverRequestDto dto);
+        Task<PagedResult<HandoverRecordResponseDto>> GetByFilterAsync(HandoverRecordFilterDto filter);
     }
 }

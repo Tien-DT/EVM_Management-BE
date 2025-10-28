@@ -15,7 +15,7 @@ namespace EVMManagement.DAL.Models.Entities
         public string? Provider { get; set; }
 
         [Required]
-        [Column(TypeName = "decimal(18,2)")]
+        [Column(TypeName = "decimal(15,2)")]
         public decimal PrincipalAmount { get; set; }
 
         [Required]

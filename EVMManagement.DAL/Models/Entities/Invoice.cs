@@ -16,7 +16,7 @@ namespace EVMManagement.DAL.Models.Entities
         public string InvoiceCode { get; set; } = string.Empty;
 
         [Required]
-        [Column(TypeName = "decimal(18,2)")]
+        [Column(TypeName = "decimal(15,2)")]
         public decimal TotalAmount { get; set; }
 
         [Required]

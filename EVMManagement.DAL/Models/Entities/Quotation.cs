@@ -19,13 +19,13 @@ namespace EVMManagement.DAL.Models.Entities
 
         public string? Note { get; set; }
 
-        [Column(TypeName = "decimal(18,2)")]
+        [Column(TypeName = "decimal(15,2)")]
         public decimal? Subtotal { get; set; }
 
-        [Column(TypeName = "decimal(18,2)")]
+        [Column(TypeName = "decimal(15,2)")]
         public decimal? Tax { get; set; }
 
-        [Column(TypeName = "decimal(18,2)")]
+        [Column(TypeName = "decimal(15,2)")]
         public decimal? Total { get; set; }
 
         [Required]

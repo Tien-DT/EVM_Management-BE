@@ -1,4 +1,9 @@
 using System;
+using System.Collections.Generic;
+using EVMManagement.BLL.DTOs.Response.Customer;
+using EVMManagement.BLL.DTOs.Response.DigitalSignature;
+using EVMManagement.BLL.DTOs.Response.Order;
+using EVMManagement.BLL.DTOs.Response.User;
 using EVMManagement.DAL.Models.Enums;
 
 namespace EVMManagement.BLL.DTOs.Response.Contract
@@ -17,5 +22,9 @@ namespace EVMManagement.BLL.DTOs.Response.Contract
         public DateTime CreatedDate { get; set; }
         public DateTime? ModifiedDate { get; set; }
         public bool IsDeleted { get; set; }
+    public EVMManagement.BLL.DTOs.Response.Order.OrderWithDetailsResponse? Order { get; set; }
+        public CustomerResponse? Customer { get; set; }
+        public UserProfileResponse? CreatedByUser { get; set; }
+        public ICollection<DigitalSignatureResponse> DigitalSignatures { get; set; } = new List<DigitalSignatureResponse>();
     }
 }

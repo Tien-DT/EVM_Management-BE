@@ -79,7 +79,7 @@ namespace EVMManagement.API.Controllers
             return Ok(ApiResponse<VehicleModelResponseDto>.CreateSuccess(updated));
         }
 
-        [HttpPatch("{id}/is-deleted")]
+        [HttpDelete("{id}")]
         public async Task<IActionResult> UpdateIsDeleted([FromRoute] Guid id, [FromQuery] bool isDeleted)
         {
             var updated = await _services.VehicleModelService.UpdateIsDeletedAsync(id, isDeleted);
@@ -93,6 +93,40 @@ namespace EVMManagement.API.Controllers
             var results = await _services.VehicleModelService.SearchByQueryAsync(q, pageNumber, pageSize);
             return Ok(ApiResponse<PagedResult<VehicleModelResponseDto>>.CreateSuccess(results));
 
+        }
+
+        [HttpGet("dealer/{dealerId}/models")]
+        public async Task<IActionResult> GetByDealer(Guid dealerId, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
+        {
+            if (pageNumber < 1 || pageSize < 1)
+            {
+                return BadRequest(ApiResponse<string>.CreateFail("PageNumber and PageSize must be greater than 0", null, 400));
+            }
+
+            if (dealerId == Guid.Empty)
+            {
+                return BadRequest(ApiResponse<string>.CreateFail("DealerId is required", null, 400));
+            }
+
+            var result = await _services.VehicleModelService.GetByDealerAsync(dealerId, pageNumber, pageSize);
+            return Ok(ApiResponse<PagedResult<VehicleModelResponseDto>>.CreateSuccess(result));
+        }
+
+        [HttpGet("with-stock")]
+        public async Task<IActionResult> GetAllWithDealerStock([FromQuery] Guid dealerId, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
+        {
+            if (pageNumber < 1 || pageSize < 1)
+            {
+                return BadRequest(ApiResponse<string>.CreateFail("PageNumber and PageSize must be greater than 0", null, 400));
+            }
+
+            if (dealerId == Guid.Empty)
+            {
+                return BadRequest(ApiResponse<string>.CreateFail("DealerId is required", null, 400));
+            }
+
+            var result = await _services.VehicleModelService.GetAllWithDealerStockAsync(dealerId, pageNumber, pageSize);
+            return Ok(ApiResponse<PagedResult<VehicleModelWithStockResponseDto>>.CreateSuccess(result));
         }
     }
 }

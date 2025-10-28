@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using AutoMapper;
@@ -52,19 +53,205 @@ namespace EVMManagement.BLL.Services.Class
             return order;
         }
 
+        public async Task<OrderWithDetailsResponse> CreateOrderWithDetailsAsync(OrderWithDetailsCreateDto dto)
+        {
+            var order = _mapper.Map<Order>(dto);
+            order.ExpectedDeliveryAt = DateTimeHelper.ToUtc(dto.ExpectedDeliveryAt);
+
+            var orderDetails = _mapper.Map<List<OrderDetail>>(dto.OrderDetails);
+            foreach (var detail in orderDetails)
+            {
+                detail.OrderId = order.Id;
+            }
+
+            var baseAmount = orderDetails.Sum(d => d.UnitPrice * d.Quantity);
+
+            var totalAmount = dto.TotalAmount ?? baseAmount;
+            if (totalAmount < 0)
+            {
+                totalAmount = 0;
+            }
+
+            var discountAmount = dto.DiscountAmount ?? 0;
+            if (discountAmount < 0)
+            {
+                discountAmount = 0;
+            }
+
+            decimal finalAmount;
+            if (dto.FinalAmount.HasValue)
+            {
+                finalAmount = dto.FinalAmount.Value;
+                if (finalAmount < 0)
+                {
+                    finalAmount = 0;
+                }
+
+                if (!dto.DiscountAmount.HasValue)
+                {
+                    discountAmount = totalAmount - finalAmount;
+                }
+            }
+            else
+            {
+                finalAmount = totalAmount - discountAmount;
+            }
+
+            if (discountAmount > totalAmount)
+            {
+                discountAmount = totalAmount;
+            }
+
+            if (finalAmount < 0)
+            {
+                finalAmount = 0;
+            }
+
+            order.TotalAmount = totalAmount;
+            order.DiscountAmount = discountAmount;
+            order.FinalAmount = finalAmount;
+
+            var vehicleIds = orderDetails
+                .Where(d => d.VehicleId.HasValue)
+                .Select(d => d.VehicleId.Value)
+                .Distinct()
+                .ToList();
+
+            List<Vehicle>? vehicles = null;
+            if (vehicleIds.Any())
+            {
+                vehicles = await _unitOfWork.Vehicles.GetQueryable()
+                    .Where(v => vehicleIds.Contains(v.Id))
+                    .ToListAsync();
+            }
+
+            await _unitOfWork.BeginTransactionAsync();
+            try
+            {
+                await _unitOfWork.Orders.AddAsync(order);
+                if (orderDetails.Count > 0)
+                {
+                    await _unitOfWork.OrderDetails.AddRangeAsync(orderDetails);
+                }
+
+                if (vehicles != null && vehicles.Any())
+                {
+                    foreach (var vehicle in vehicles)
+                    {
+                        vehicle.Status = VehicleStatus.RESERVED;
+                    }
+
+                    _unitOfWork.Vehicles.UpdateRange(vehicles);
+                }
+
+                if (order.IsFinanced && dto.InstallmentDuration.HasValue)
+                {
+                    var installmentPlan = new InstallmentPlan
+                    {
+                        OrderId = order.Id,
+                        Provider = dto.InstallmentProvider ?? "Default Provider",
+                        PrincipalAmount = order.FinalAmount ?? 0,
+                        InterestRate = dto.InterestRate ?? 0,
+                        NumberOfInstallments = dto.InstallmentDuration.Value,
+                        Status = InstallmentPlanStatus.ACTIVE,
+                        StartDate = DateTime.UtcNow
+                    };
+
+                    await _unitOfWork.InstallmentPlans.AddAsync(installmentPlan);
+                }
+
+                await _unitOfWork.CommitTransactionAsync();
+            }
+            catch
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                throw;
+            }
+
+            return await _unitOfWork.Orders.GetQueryable()
+                .Where(o => o.Id == order.Id)
+                .ProjectTo<OrderWithDetailsResponse>(_mapper.ConfigurationProvider)
+                .FirstAsync();
+        }
+
         public async Task<PagedResult<OrderResponse>> GetAllAsync(int pageNumber = 1, int pageSize = 10)
         {
-            var query = _unitOfWork.Orders.GetQueryable();
             var totalCount = await _unitOfWork.Orders.CountAsync();
 
-            var items = await query
+            var orders = await _unitOfWork.Orders.GetQueryable()
+                .Include(o => o.Quotation)
+                .Include(o => o.Customer)
+                .Include(o => o.Dealer)
+                .Include(o => o.CreatedByUser)
+                .Include(o => o.Deposits)
+                .Include(o => o.OrderDetails)
+                    .ThenInclude(od => od.VehicleVariant)
+                        .ThenInclude(vv => vv.VehicleModel)
                 .OrderByDescending(x => x.CreatedDate)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
+                .ToListAsync();
+
+            var items = _mapper.Map<List<OrderResponse>>(orders);
+
+            return PagedResult<OrderResponse>.Create(items, totalCount, pageNumber, pageSize);
+        }
+
+        public async Task<PagedResult<OrderResponse>> GetByFilterAsync(OrderFilterDto filter)
+        {
+            IQueryable<Order> query = _unitOfWork.Orders.GetQueryable()
+                .Include(o => o.Quotation)
+                .Include(o => o.Customer)
+                .Include(o => o.Dealer)
+                .Include(o => o.CreatedByUser)
+                .Include(o => o.Deposits);
+
+            if (!string.IsNullOrWhiteSpace(filter.Code))
+            {
+                var code = filter.Code.ToLower();
+                query = query.Where(o => o.Code.ToLower().Contains(code));
+            }
+
+            if (filter.QuotationId.HasValue)
+            {
+                query = query.Where(o => o.QuotationId == filter.QuotationId.Value);
+            }
+
+            if (filter.CustomerId.HasValue)
+            {
+                query = query.Where(o => o.CustomerId == filter.CustomerId.Value);
+            }
+
+            if (filter.DealerId.HasValue)
+            {
+                query = query.Where(o => o.DealerId == filter.DealerId.Value);
+            }
+
+            if (filter.CreatedByUserId.HasValue)
+            {
+                query = query.Where(o => o.CreatedByUserId == filter.CreatedByUserId.Value);
+            }
+
+            if (filter.OrderType.HasValue)
+            {
+                query = query.Where(o => o.OrderType == filter.OrderType.Value);
+            }
+
+            if (filter.Status.HasValue)
+            {
+                query = query.Where(o => o.Status == filter.Status.Value);
+            }
+
+            var totalCount = await query.CountAsync();
+
+            var items = await query
+                .OrderByDescending(x => x.CreatedDate)
+                .Skip((filter.PageNumber - 1) * filter.PageSize)
+                .Take(filter.PageSize)
                 .ProjectTo<OrderResponse>(_mapper.ConfigurationProvider)
                 .ToListAsync();
 
-            return PagedResult<OrderResponse>.Create(items, totalCount, pageNumber, pageSize);
+            return PagedResult<OrderResponse>.Create(items, totalCount, filter.PageNumber, filter.PageSize);
         }
 
         public async Task<OrderResponse?> GetByIdAsync(Guid id)
@@ -75,10 +262,34 @@ namespace EVMManagement.BLL.Services.Class
             return _mapper.Map<OrderResponse>(entity);
         }
 
+        public async Task<OrderWithDetailsResponse?> GetByIdWithDetailsAsync(Guid id)
+        {
+            var order = await _unitOfWork.Orders.GetQueryable()
+                .Include(o => o.Quotation)
+                .Include(o => o.Customer)
+                .Include(o => o.Dealer)
+                .Include(o => o.CreatedByUser)
+                .Include(o => o.Deposits)
+                .Include(o => o.OrderDetails)
+                    .ThenInclude(od => od.Vehicle)
+                .Include(o => o.OrderDetails)
+                    .ThenInclude(od => od.VehicleVariant)
+                        .ThenInclude(vv => vv.VehicleModel)
+                .Where(o => o.Id == id)
+                .FirstOrDefaultAsync();
+
+            if (order == null) return null;
+
+            return _mapper.Map<OrderWithDetailsResponse>(order);
+        }
+
         public async Task<OrderResponse?> UpdateAsync(Guid id, OrderUpdateDto dto)
         {
             var entity = await _unitOfWork.Orders.GetByIdAsync(id);
             if (entity == null) return null;
+
+            // Track old status to check if order is being canceled
+            var oldStatus = entity.Status;
 
             if (dto.Code != null) entity.Code = dto.Code;
             if (dto.QuotationId.HasValue) entity.QuotationId = dto.QuotationId;
@@ -92,7 +303,54 @@ namespace EVMManagement.BLL.Services.Class
             if (dto.OrderType.HasValue) entity.OrderType = dto.OrderType.Value;
             if (dto.IsFinanced.HasValue) entity.IsFinanced = dto.IsFinanced.Value;
 
+            // If status is changing from QUOTATION_RECEIVED to AWAITING_DEPOSIT, add quotation total to order
+            if (oldStatus == OrderStatus.QUOTATION_RECEIVED &&
+                dto.Status.HasValue &&
+                dto.Status.Value == OrderStatus.AWAITING_DEPOSIT &&
+                entity.QuotationId.HasValue)
+            {
+                var quotation = await _unitOfWork.Quotations.GetByIdAsync(entity.QuotationId.Value);
+                if (quotation != null && quotation.Total.HasValue)
+                {
+                    // Add quotation total to order amounts
+                    entity.TotalAmount = (entity.TotalAmount ?? 0) + quotation.Total.Value;
+                    entity.FinalAmount = (entity.FinalAmount ?? 0) + quotation.Total.Value;
+                }
+            }
+
             entity.ModifiedDate = DateTime.UtcNow;
+
+            // If order is being canceled, return vehicles to warehouse (IN_STOCK status)
+            if (oldStatus != OrderStatus.CANCELED && entity.Status == OrderStatus.CANCELED)
+            {
+                // Get all vehicles from this order's order details
+                var orderDetails = await _unitOfWork.OrderDetails.GetQueryable()
+                    .Where(od => od.OrderId == id && od.VehicleId.HasValue)
+                    .ToListAsync();
+
+                if (orderDetails.Any())
+                {
+                    var vehicleIds = orderDetails
+                        .Select(od => od.VehicleId.Value)
+                        .Distinct()
+                        .ToList();
+
+                    var vehicles = await _unitOfWork.Vehicles.GetQueryable()
+                        .Where(v => vehicleIds.Contains(v.Id))
+                        .ToListAsync();
+
+                    if (vehicles.Any())
+                    {
+                        foreach (var vehicle in vehicles)
+                        {
+                            // Return vehicle to warehouse - set status back to IN_STOCK
+                            vehicle.Status = VehicleStatus.IN_STOCK;
+                        }
+
+                        _unitOfWork.Vehicles.UpdateRange(vehicles);
+                    }
+                }
+            }
 
             _unitOfWork.Orders.Update(entity);
             await _unitOfWork.SaveChangesAsync();

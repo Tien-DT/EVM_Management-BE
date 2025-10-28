@@ -190,6 +190,15 @@ namespace EVMManagement.BLL.Services.Class
                         deposit.Status = DepositStatus.PAID;
                         deposit.ModifiedDate = DateTime.UtcNow;
                         _unitOfWork.Deposits.Update(deposit);
+
+                        // Update Order status to IN_PROGRESS after successful deposit
+                        var order = await _unitOfWork.Orders.GetByIdAsync(deposit.OrderId);
+                        if (order != null && order.Status == OrderStatus.AWAITING_DEPOSIT)
+                        {
+                            order.Status = OrderStatus.IN_PROGRESS;
+                            order.ModifiedDate = DateTime.UtcNow;
+                            _unitOfWork.Orders.Update(order);
+                        }
                     }
                 }
 
@@ -249,7 +258,7 @@ namespace EVMManagement.BLL.Services.Class
             };
         }
 
-        public VnPayCallbackResponse ProcessReturnUrl(Dictionary<string, string> vnpayData)
+        public async Task<VnPayCallbackResponse> ProcessReturnUrlAsync(Dictionary<string, string> vnpayData)
         {
             var vnpay = new VnPayLibrary();
             foreach (var (key, value) in vnpayData)
@@ -282,15 +291,77 @@ namespace EVMManagement.BLL.Services.Class
                 .FirstOrDefault(t => t.VnpayTransactionCode == vnpayTxnRef);
 
             Guid? orderId = null;
-            if (transaction?.InvoiceId.HasValue == true)
+
+            // Update transaction, deposit, and order status if payment is successful
+            if (checkSignature && vnpayResponseCode == "00" && transaction != null)
             {
-                var invoice = _unitOfWork.Invoices.GetQueryable().FirstOrDefault(i => i.Id == transaction.InvoiceId.Value);
-                orderId = invoice?.OrderId;
+                transaction.VnpayTransactionNo = vnpayTransactionNo;
+                transaction.BankCode = vnpayBankCode;
+                transaction.CardType = vnpayCardType;
+                transaction.ResponseCode = vnpayResponseCode;
+                transaction.SecureHash = vnpaySecureHash;
+                transaction.Status = TransactionStatus.SUCCESS;
+                transaction.TransactionTime = payDate;
+                transaction.ModifiedDate = DateTime.UtcNow;
+                _unitOfWork.Transactions.Update(transaction);
+
+                if (transaction.DepositId.HasValue)
+                {
+                    var deposit = await _unitOfWork.Deposits.GetByIdAsync(transaction.DepositId.Value);
+                    if (deposit != null && deposit.Status != DepositStatus.PAID)
+                    {
+                        deposit.Status = DepositStatus.PAID;
+                        deposit.ModifiedDate = DateTime.UtcNow;
+                        _unitOfWork.Deposits.Update(deposit);
+
+                        // Update Order status to IN_PROGRESS after successful deposit
+                        var order = await _unitOfWork.Orders.GetByIdAsync(deposit.OrderId);
+                        if (order != null && order.Status == OrderStatus.AWAITING_DEPOSIT)
+                        {
+                            order.Status = OrderStatus.IN_PROGRESS;
+                            order.ModifiedDate = DateTime.UtcNow;
+                            _unitOfWork.Orders.Update(order);
+                        }
+
+                        orderId = deposit.OrderId;
+                    }
+                }
+                else if (transaction.InvoiceId.HasValue)
+                {
+                    var invoice = await _unitOfWork.Invoices.GetByIdAsync(transaction.InvoiceId.Value);
+                    if (invoice != null && invoice.Status != InvoiceStatus.PAID)
+                    {
+                        invoice.Status = InvoiceStatus.PAID;
+                        invoice.ModifiedDate = DateTime.UtcNow;
+                        _unitOfWork.Invoices.Update(invoice);
+
+                        var order = await _unitOfWork.Orders.GetByIdAsync(invoice.OrderId);
+                        if (order != null)
+                        {
+                            order.Status = OrderStatus.CONFIRMED;
+                            order.ModifiedDate = DateTime.UtcNow;
+                            _unitOfWork.Orders.Update(order);
+                        }
+
+                        orderId = invoice.OrderId;
+                    }
+                }
+
+                await _unitOfWork.SaveChangesAsync();
             }
-            else if (transaction?.DepositId.HasValue == true)
+            else
             {
-                var deposit = _unitOfWork.Deposits.GetQueryable().FirstOrDefault(d => d.Id == transaction.DepositId.Value);
-                orderId = deposit?.OrderId;
+                // Just get orderId for response
+                if (transaction?.InvoiceId.HasValue == true)
+                {
+                    var invoice = _unitOfWork.Invoices.GetQueryable().FirstOrDefault(i => i.Id == transaction.InvoiceId.Value);
+                    orderId = invoice?.OrderId;
+                }
+                else if (transaction?.DepositId.HasValue == true)
+                {
+                    var deposit = _unitOfWork.Deposits.GetQueryable().FirstOrDefault(d => d.Id == transaction.DepositId.Value);
+                    orderId = deposit?.OrderId;
+                }
             }
 
             return new VnPayCallbackResponse

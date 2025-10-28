@@ -24,13 +24,13 @@ namespace EVMManagement.DAL.Models.Entities
         [Required]
         public OrderStatus Status { get; set; }
 
-        [Column(TypeName = "decimal(18,2)")]
+        [Column(TypeName = "decimal(15,2)")]
         public decimal? TotalAmount { get; set; }
 
-        [Column(TypeName = "decimal(18,2)")]
+        [Column(TypeName = "decimal(15,2)")]
         public decimal? DiscountAmount { get; set; }
 
-        [Column(TypeName = "decimal(18,2)")]
+        [Column(TypeName = "decimal(15,2)")]
         public decimal? FinalAmount { get; set; }
 
         public DateTime? ExpectedDeliveryAt { get; set; }

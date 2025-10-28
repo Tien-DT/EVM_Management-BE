@@ -356,11 +356,7 @@ namespace EVMManagement.DAL.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<decimal>("Amount")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<string>("BillImageUrl")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
+                        .HasColumnType("decimal(15,2)");
 
                     b.Property<DateTime>("CreatedDate")
                         .HasColumnType("timestamp without time zone");
@@ -547,7 +543,7 @@ namespace EVMManagement.DAL.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<decimal>("AmountDue")
-                        .HasColumnType("decimal(18,2)");
+                        .HasColumnType("decimal(15,2)");
 
                     b.Property<DateTime>("CreatedDate")
                         .HasColumnType("timestamp without time zone");
@@ -608,7 +604,7 @@ namespace EVMManagement.DAL.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<decimal>("PrincipalAmount")
-                        .HasColumnType("decimal(18,2)");
+                        .HasColumnType("decimal(15,2)");
 
                     b.Property<string>("Provider")
                         .HasMaxLength(100)
@@ -658,7 +654,7 @@ namespace EVMManagement.DAL.Migrations
                         .HasColumnType("integer");
 
                     b.Property<decimal>("TotalAmount")
-                        .HasColumnType("decimal(18,2)");
+                        .HasColumnType("decimal(15,2)");
 
                     b.HasKey("Id");
 
@@ -682,6 +678,9 @@ namespace EVMManagement.DAL.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
 
+                    b.Property<Guid?>("DealerId")
+                        .HasColumnType("uuid");
+
                     b.Property<int?>("DurationMinutes")
                         .HasColumnType("integer");
 
@@ -695,6 +694,8 @@ namespace EVMManagement.DAL.Migrations
 
                     b.HasIndex("Code")
                         .IsUnique();
+
+                    b.HasIndex("DealerId");
 
                     b.ToTable("MasterTimeSlots");
                 });
@@ -726,13 +727,13 @@ namespace EVMManagement.DAL.Migrations
                         .HasColumnType("timestamp without time zone");
 
                     b.Property<decimal?>("DiscountAmount")
-                        .HasColumnType("decimal(18,2)");
+                        .HasColumnType("decimal(15,2)");
 
                     b.Property<DateTime?>("ExpectedDeliveryAt")
                         .HasColumnType("timestamp without time zone");
 
                     b.Property<decimal?>("FinalAmount")
-                        .HasColumnType("decimal(18,2)");
+                        .HasColumnType("decimal(15,2)");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
@@ -753,7 +754,7 @@ namespace EVMManagement.DAL.Migrations
                         .HasColumnType("integer");
 
                     b.Property<decimal?>("TotalAmount")
-                        .HasColumnType("decimal(18,2)");
+                        .HasColumnType("decimal(15,2)");
 
                     b.HasKey("Id");
 
@@ -803,7 +804,7 @@ namespace EVMManagement.DAL.Migrations
                         .HasColumnType("integer");
 
                     b.Property<decimal>("UnitPrice")
-                        .HasColumnType("decimal(18,2)");
+                        .HasColumnType("decimal(15,2)");
 
                     b.Property<Guid?>("VehicleId")
                         .HasColumnType("uuid");
@@ -908,13 +909,13 @@ namespace EVMManagement.DAL.Migrations
                         .HasColumnType("integer");
 
                     b.Property<decimal?>("Subtotal")
-                        .HasColumnType("decimal(18,2)");
+                        .HasColumnType("decimal(15,2)");
 
                     b.Property<decimal?>("Tax")
-                        .HasColumnType("decimal(18,2)");
+                        .HasColumnType("decimal(15,2)");
 
                     b.Property<decimal?>("Total")
-                        .HasColumnType("decimal(18,2)");
+                        .HasColumnType("decimal(15,2)");
 
                     b.Property<DateTime?>("ValidUntil")
                         .HasColumnType("timestamp without time zone");
@@ -962,7 +963,7 @@ namespace EVMManagement.DAL.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<decimal>("UnitPrice")
-                        .HasColumnType("decimal(18,2)");
+                        .HasColumnType("decimal(15,2)");
 
                     b.Property<Guid>("VehicleVariantId")
                         .HasColumnType("uuid");
@@ -1088,7 +1089,7 @@ namespace EVMManagement.DAL.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<decimal>("Amount")
-                        .HasColumnType("decimal(18,2)");
+                        .HasColumnType("decimal(15,2)");
 
                     b.Property<string>("BankCode")
                         .HasMaxLength(50)
@@ -1769,6 +1770,16 @@ namespace EVMManagement.DAL.Migrations
                     b.Navigation("Order");
                 });
 
+            modelBuilder.Entity("EVMManagement.DAL.Models.Entities.MasterTimeSlot", b =>
+                {
+                    b.HasOne("EVMManagement.DAL.Models.Entities.Dealer", "Dealer")
+                        .WithMany("MasterTimeSlots")
+                        .HasForeignKey("DealerId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Dealer");
+                });
+
             modelBuilder.Entity("EVMManagement.DAL.Models.Entities.Order", b =>
                 {
                     b.HasOne("EVMManagement.DAL.Models.Entities.UserProfile", "CreatedByUser")
@@ -2105,6 +2116,8 @@ namespace EVMManagement.DAL.Migrations
                     b.Navigation("BankAccounts");
 
                     b.Navigation("DealerContract");
+
+                    b.Navigation("MasterTimeSlots");
 
                     b.Navigation("Orders");
 

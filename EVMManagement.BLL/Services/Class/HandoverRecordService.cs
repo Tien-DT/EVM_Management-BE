@@ -49,9 +49,11 @@ namespace EVMManagement.BLL.Services.Class
         public async Task<PagedResult<HandoverRecordResponseDto>> GetAllAsync(int pageNumber = 1, int pageSize = 10)
         {
             var query = _unitOfWork.HandoverRecords.GetQueryableWithIncludes();
-            var total = await _unitOfWork.HandoverRecords.CountAsync();
+            var total = await _unitOfWork.HandoverRecords.CountAsync(x => !x.IsDeleted);
 
-            var entities = await query.OrderByDescending(x => x.CreatedDate)
+            var entities = await query
+                .Where(x => !x.IsDeleted)
+                .OrderByDescending(x => x.CreatedDate)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
@@ -180,6 +182,36 @@ namespace EVMManagement.BLL.Services.Class
 
             return await GetByIdAsync(firstHandoverRecord!.Id) 
                 ?? throw new Exception("Failed to create HandoverRecord");
+        }
+
+        public async Task<PagedResult<HandoverRecordResponseDto>> GetByFilterAsync(HandoverRecordFilterDto filter)
+        {
+            var query = _unitOfWork.HandoverRecords.GetQueryableWithIncludes();
+
+            query = query.Where(x => !x.IsDeleted);
+
+            if (filter.OrderId.HasValue)
+                query = query.Where(x => x.OrderId == filter.OrderId.Value);
+
+            if (filter.VehicleId.HasValue)
+                query = query.Where(x => x.VehicleId == filter.VehicleId.Value);
+
+            if (filter.TransportDetailId.HasValue)
+                query = query.Where(x => x.TransportDetailId == filter.TransportDetailId.Value);
+
+            if (filter.IsAccepted.HasValue)
+                query = query.Where(x => x.IsAccepted == filter.IsAccepted.Value);
+
+            var totalCount = await query.CountAsync();
+
+            var entities = await query
+                .OrderByDescending(x => x.CreatedDate)
+                .Skip((filter.PageNumber - 1) * filter.PageSize)
+                .Take(filter.PageSize)
+                .ToListAsync();
+
+            var items = entities.Select(e => _mapper.Map<HandoverRecordResponseDto>(e)).ToList();
+            return PagedResult<HandoverRecordResponseDto>.Create(items, totalCount, filter.PageNumber, filter.PageSize);
         }
     }
 }

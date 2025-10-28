@@ -15,6 +15,8 @@ namespace EVMManagement.BLL.DTOs.Request.MasterTimeSlot
         public int? DurationMinutes { get; set; }
 
         public bool IsActive { get; set; } = true;
+   
+        public Guid? DealerId { get; set; }
     }
 }
 

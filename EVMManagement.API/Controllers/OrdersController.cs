@@ -36,12 +36,32 @@ namespace EVMManagement.API.Controllers
             return Ok(ApiResponse<PagedResult<OrderResponse>>.CreateSuccess(result));
         }
 
+        [HttpGet("filter")]
+        public async Task<IActionResult> Filter([FromQuery] OrderFilterDto filter)
+        {
+            if (filter.PageNumber < 1 || filter.PageSize < 1)
+            {
+                return BadRequest(ApiResponse<string>.CreateFail("PageNumber and PageSize must be greater than 0", null, 400));
+            }
+
+            var result = await _services.OrderService.GetByFilterAsync(filter);
+            return Ok(ApiResponse<PagedResult<OrderResponse>>.CreateSuccess(result));
+        }
+
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(Guid id)
         {
             var item = await _services.OrderService.GetByIdAsync(id);
             if (item == null) return NotFound(ApiResponse<OrderResponse>.CreateFail("Order not found", null, 404));
             return Ok(ApiResponse<OrderResponse>.CreateSuccess(item));
+        }
+
+        [HttpGet("{id}/with-details")]
+        public async Task<IActionResult> GetByIdWithDetails(Guid id)
+        {
+            var item = await _services.OrderService.GetByIdWithDetailsAsync(id);
+            if (item == null) return NotFound(ApiResponse<OrderWithDetailsResponse>.CreateFail("Order not found", null, 404));
+            return Ok(ApiResponse<OrderWithDetailsResponse>.CreateSuccess(item));
         }
 
         [HttpPost]
@@ -55,6 +75,19 @@ namespace EVMManagement.API.Controllers
 
             var created = await _services.OrderService.CreateOrderAsync(dto);
             return CreatedAtAction(nameof(GetById), new { id = created.Id }, ApiResponse<Order>.CreateSuccess(created));
+        }
+
+        [HttpPost("with-details")]
+        public async Task<IActionResult> CreateWithDetails([FromBody] OrderWithDetailsCreateDto dto)
+        {
+            if (!ModelState.IsValid)
+            {
+                var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
+                return BadRequest(ApiResponse<OrderWithDetailsResponse>.CreateFail("Validation failed", errors, 400));
+            }
+
+            var created = await _services.OrderService.CreateOrderWithDetailsAsync(dto);
+            return CreatedAtAction(nameof(GetById), new { id = created.Id }, ApiResponse<OrderWithDetailsResponse>.CreateSuccess(created));
         }
 
         [HttpPut("{id}")]

@@ -173,9 +173,10 @@ namespace EVMManagement.BLL.Services.Class
         public async Task<PagedResult<TestDriveBookingResponseDto>> GetAllAsync(int pageNumber = 1, int pageSize = 10)
         {
             var query = _unitOfWork.TestDriveBookings.GetQueryableWithIncludes();
-            var total = await _unitOfWork.TestDriveBookings.CountAsync();
+            var total = await _unitOfWork.TestDriveBookings.CountAsync(x => !x.IsDeleted);
 
             var entities = await query
+                .Where(x => !x.IsDeleted)
                 .OrderByDescending(x => x.CreatedDate)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
@@ -192,7 +193,13 @@ namespace EVMManagement.BLL.Services.Class
             var pageNumber = filterDto?.PageNumber ?? 1;
             var pageSize = filterDto?.PageSize ?? 10;
 
-            var query = _unitOfWork.TestDriveBookings.GetQueryableWithFilter(filterDto?.DealerId, filterDto?.CustomerId, filterDto?.Status);
+            var query = _unitOfWork.TestDriveBookings.GetQueryableWithFilter(
+                filterDto?.VehicleTimeSlotId, 
+                filterDto?.CustomerId, 
+                filterDto?.DealerStaffId, 
+                filterDto?.Status, 
+                filterDto?.DealerId
+            );
 
             var total = await query.CountAsync();
 
@@ -247,6 +254,23 @@ namespace EVMManagement.BLL.Services.Class
                     CreatedDate = entity.Customer.CreatedDate,
                     ModifiedDate = entity.Customer.ModifiedDate,
                     IsDeleted = entity.Customer.IsDeleted
+                };
+            }
+
+            if (entity.DealerStaff != null)
+            {
+                dto.DealerStaff = new EVMManagement.BLL.DTOs.Response.User.UserProfileResponse
+                {
+                    Id = entity.DealerStaff.Id,
+                    AccountId = entity.DealerStaff.AccountId,
+                    DealerId = entity.DealerStaff.DealerId,
+                    FullName = entity.DealerStaff.FullName,
+                    Phone = entity.DealerStaff.Phone,
+                    CardId = entity.DealerStaff.CardId,
+                    CreatedDate = entity.DealerStaff.CreatedDate,
+                    ModifiedDate = entity.DealerStaff.ModifiedDate,
+                    DeletedDate = entity.DealerStaff.DeletedDate,
+                    IsDeleted = entity.DealerStaff.IsDeleted
                 };
             }
 

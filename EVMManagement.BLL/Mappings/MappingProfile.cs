@@ -38,6 +38,7 @@ using EVMManagement.BLL.DTOs.Response.User;
 using EVMManagement.BLL.DTOs.Response.Vehicle;
 using EVMManagement.BLL.DTOs.Response.VehicleTimeSlot;
 using EVMManagement.BLL.DTOs.Response.Warehouse;
+using UserDealerDto = EVMManagement.BLL.DTOs.Response.User.DealerDto;
 using EVMManagement.DAL.Models.Entities;
 
 namespace EVMManagement.BLL.Mappings
@@ -62,7 +63,11 @@ namespace EVMManagement.BLL.Mappings
             CreateMap<VehicleUpdateDto, Vehicle>()
                 .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
             CreateMap<Vehicle, VehicleResponseDto>();
-            CreateMap<Vehicle, VehicleDetailResponseDto>();
+            CreateMap<Vehicle, VehicleDetailResponseDto>()
+                .ForMember(dest => dest.Warehouse, opt => opt.MapFrom(src => src.Warehouse))
+                .ForMember(dest => dest.Dealer, opt => opt.MapFrom(src => src.Warehouse != null ? src.Warehouse.Dealer : null));
+            CreateMap<Warehouse, WarehouseDetailDto>();
+            CreateMap<Dealer, DealerDetailDto>();
 
             // VehicleVariant Mappings
             CreateMap<VehicleVariantCreateDto, VehicleVariant>();
@@ -92,6 +97,7 @@ namespace EVMManagement.BLL.Mappings
             CreateMap<UpdateDealerDto, Dealer>()
                 .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
             CreateMap<Dealer, DealerResponseDto>();
+            CreateMap<Dealer, UserDealerDto>();
 
             // Promotion Mappings
             CreateMap<PromotionCreateDto, Promotion>();
@@ -115,12 +121,18 @@ namespace EVMManagement.BLL.Mappings
 
             // Order Mappings
             CreateMap<OrderCreateDto, Order>();
+            CreateMap<OrderWithDetailsCreateDto, Order>()
+                .IncludeBase<OrderCreateDto, Order>()
+                .ForMember(dest => dest.OrderDetails, opt => opt.Ignore());
             CreateMap<OrderUpdateDto, Order>()
                 .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
             CreateMap<Order, OrderResponse>();
+            CreateMap<Order, OrderWithDetailsResponse>()
+                .IncludeBase<Order, OrderResponse>();
 
             // OrderDetail Mappings
             CreateMap<OrderDetailCreateDto, OrderDetail>();
+            CreateMap<OrderDetailForOrderCreateDto, OrderDetail>();
             CreateMap<OrderDetailUpdateDto, OrderDetail>()
                 .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
             CreateMap<OrderDetail, OrderDetailResponse>();
@@ -143,13 +155,14 @@ namespace EVMManagement.BLL.Mappings
             CreateMap<QuotationDetail, QuotationDetailResponseDto>()
                 .ForMember(dest => dest.VehicleVariantColor, opt => opt.MapFrom(src => src.VehicleVariant != null ? src.VehicleVariant.Color : null))
                 .ForMember(dest => dest.VehicleModelName, opt => opt.MapFrom(src => src.VehicleVariant != null && src.VehicleVariant.VehicleModel != null ? src.VehicleVariant.VehicleModel.Name : null))
-                .ForMember(dest => dest.LineTotal, opt => opt.MapFrom(src => src.UnitPrice * src.Quantity * (1m - src.DiscountPercent / 100m)));
+                .ForMember(dest => dest.LineTotal, opt => opt.MapFrom(src => System.Math.Round(src.UnitPrice * src.Quantity * (1m - src.DiscountPercent / 100m), 2)));
 
             // Contract Mappings
             CreateMap<ContractCreateDto, Contract>();
             CreateMap<ContractUpdateDto, Contract>()
                 .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
             CreateMap<Contract, ContractResponse>();
+            CreateMap<Contract, ContractDetailResponse>();
 
             // Invoice Mappings
             CreateMap<InvoiceCreateDto, Invoice>();
@@ -164,6 +177,7 @@ namespace EVMManagement.BLL.Mappings
             // UserProfile Mappings
             CreateMap<UserProfileUpdateDto, UserProfile>()
                 .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
+            CreateMap<Account, AccountDto>();
             CreateMap<UserProfile, UserProfileResponse>();
 
             // HandoverRecord Mappings
@@ -171,6 +185,7 @@ namespace EVMManagement.BLL.Mappings
             CreateMap<HandoverRecordUpdateDto, HandoverRecord>()
                 .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
             CreateMap<HandoverRecord, HandoverRecordResponseDto>();
+            CreateMap<TransportDetail, TransportDetailDto>();
 
             // DigitalSignature Mappings
             CreateMap<DigitalSignature, DigitalSignatureResponse>();

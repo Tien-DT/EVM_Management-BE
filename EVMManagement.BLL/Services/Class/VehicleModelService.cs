@@ -37,9 +37,10 @@ namespace EVMManagement.BLL.Services.Class
         {
             var query = _unitOfWork.VehicleModels.GetQueryable();
 
-            var totalCount = await query.CountAsync();
+            var totalCount = await query.CountAsync(x => !x.IsDeleted);
 
             var items = await query
+                .Where(x => !x.IsDeleted)
                 .OrderByDescending(u => u.CreatedDate)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
@@ -120,6 +121,75 @@ namespace EVMManagement.BLL.Services.Class
             
         }
 
+        public async Task<PagedResult<VehicleModelResponseDto>> GetByDealerAsync(Guid dealerId, int pageNumber = 1, int pageSize = 10)
+        {
+            var modelsQuery = _unitOfWork.VehicleModels.GetByDealerAsync(dealerId)
+                .Where(m => !m.IsDeleted);
 
+            var totalCount = await modelsQuery.CountAsync();
+
+            var items = await modelsQuery
+                .OrderByDescending(x => x.CreatedDate)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            var responses = _mapper.Map<List<VehicleModelResponseDto>>(items);
+
+            return PagedResult<VehicleModelResponseDto>.Create(responses, totalCount, pageNumber, pageSize);
+        }
+
+        public async Task<PagedResult<VehicleModelWithStockResponseDto>> GetAllWithDealerStockAsync(Guid dealerId, int pageNumber = 1, int pageSize = 10)
+        {
+            var warehouseIds = await _unitOfWork.Warehouses.GetQueryable()
+                .Where(w => w.DealerId == dealerId && !w.IsDeleted)
+                .Select(w => w.Id)
+                .ToListAsync();
+
+            var modelsQuery = _unitOfWork.VehicleModels.GetQueryable()
+                .Where(m => !m.IsDeleted);
+
+            var totalCount = await modelsQuery.CountAsync();
+
+            var models = await modelsQuery
+                .OrderByDescending(x => x.CreatedDate)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            var modelIds = models.Select(m => m.Id).ToList();
+
+            var stockCounts = await _unitOfWork.Vehicles.GetQueryable()
+                .Where(v => warehouseIds.Contains(v.WarehouseId)
+                    && v.Status == VehicleStatus.IN_STOCK
+                    && !v.IsDeleted)
+                .Join(
+                    _unitOfWork.VehicleVariants.GetQueryable(),
+                    v => v.VariantId,
+                    vv => vv.Id,
+                    (v, vv) => new { v, vv.ModelId }
+                )
+                .Where(x => modelIds.Contains(x.ModelId))
+                .GroupBy(x => x.ModelId)
+                .Select(g => new { ModelId = g.Key, Count = g.Count() })
+                .ToListAsync();
+
+            var responses = models.Select(m => new VehicleModelWithStockResponseDto
+            {
+                Id = m.Id,
+                Code = m.Code,
+                Name = m.Name,
+                LaunchDate = m.LaunchDate,
+                Description = m.Description,
+                ImageUrl = m.ImageUrl,
+                Status = m.Status,
+                Ranking = m.Ranking,
+                AvailableStock = stockCounts.FirstOrDefault(s => s.ModelId == m.Id)?.Count ?? 0,
+                CreatedDate = m.CreatedDate,
+                ModifiedDate = m.ModifiedDate
+            }).ToList();
+
+            return PagedResult<VehicleModelWithStockResponseDto>.Create(responses, totalCount, pageNumber, pageSize);
+        }
     }
 }

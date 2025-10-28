@@ -175,17 +175,6 @@ namespace EVMManagement.BLL.Services.Class
             order.ModifiedDate = DateTime.UtcNow;
             _unitOfWork.Orders.Update(order);
 
-            var report = new Report
-            {
-                Type = "DEPOSIT_PAID_10_PERCENT",
-                Title = "Pre-order deposit received",
-                Content = $"Received 10% deposit ({depositAmount:N2} VND) for Order {order.Code}",
-                OrderId = order.Id,
-                DealerId = order.DealerId,
-                AccountId = order.CreatedByUserId
-            };
-            await _unitOfWork.Reports.AddAsync(report);
-
             await _unitOfWork.SaveChangesAsync();
 
             return _mapper.Map<DepositResponse>(deposit);

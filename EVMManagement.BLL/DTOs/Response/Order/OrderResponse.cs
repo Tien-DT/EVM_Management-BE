@@ -1,5 +1,12 @@
 using System;
+using System.Collections.Generic;
 using EVMManagement.DAL.Models.Enums;
+using EVMManagement.BLL.DTOs.Response.Customer;
+using EVMManagement.BLL.DTOs.Response.Dealer;
+using EVMManagement.BLL.DTOs.Response.User;
+using EVMManagement.BLL.DTOs.Response.Quotation;
+using EVMManagement.BLL.DTOs.Response.Deposit;
+using EVMManagement.BLL.DTOs.Response.OrderDetail;
 
 namespace EVMManagement.BLL.DTOs.Response.Order
 {
@@ -21,5 +28,11 @@ namespace EVMManagement.BLL.DTOs.Response.Order
         public DateTime CreatedDate { get; set; }
         public DateTime? ModifiedDate { get; set; }
         public bool IsDeleted { get; set; }
+        public QuotationResponseDto? Quotation { get; set; }
+        public CustomerResponse? Customer { get; set; }
+        public DealerResponseDto? Dealer { get; set; }
+        public UserProfileResponse? CreatedByUser { get; set; }
+        public List<DepositResponse>? Deposits { get; set; }
+        public List<OrderDetailResponse>? OrderDetails { get; set; }
     }
 }

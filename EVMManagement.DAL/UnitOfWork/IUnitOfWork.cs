@@ -31,6 +31,9 @@ namespace EVMManagement.DAL.UnitOfWork
         ITransactionRepository Transactions { get; }
         IDepositRepository Deposits { get; }
         IReportRepository Reports { get; }
+        IInstallmentPlanRepository InstallmentPlans { get; }
+        ITransportRepository Transports { get; }
+        ITransportDetailRepository TransportDetails { get; }
 
         Task<int> SaveChangesAsync();
         Task BeginTransactionAsync();

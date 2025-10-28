@@ -10,6 +10,6 @@ namespace EVMManagement.BLL.Services.Interface
     {
         Task<VnPayPaymentResponse> CreatePaymentUrlAsync(VnPayPaymentRequest request, string ipAddress);
         Task<VnPayCallbackResponse> ProcessCallbackAsync(Dictionary<string, string> vnpayData);
-        VnPayCallbackResponse ProcessReturnUrl(Dictionary<string, string> vnpayData);
+        Task<VnPayCallbackResponse> ProcessReturnUrlAsync(Dictionary<string, string> vnpayData);
     }
 }

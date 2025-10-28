@@ -4,6 +4,7 @@ using EVMManagement.BLL.DTOs.Request.Vehicle;
 using EVMManagement.BLL.DTOs.Response;
 using EVMManagement.BLL.DTOs.Response.Vehicle;
 using EVMManagement.DAL.Models.Entities;
+using EVMManagement.DAL.Models.Enums;
 using System.Threading.Tasks;
 using System;
 using System.Linq;
@@ -83,6 +84,74 @@ namespace EVMManagement.API.Controllers
             var deleted = await _services.VehicleVariantService.DeleteAsync(id);
             if (!deleted) return NotFound(ApiResponse<string>.CreateFail("VehicleVariant not found", null, 404));
             return Ok(ApiResponse<string>.CreateSuccess("Deleted"));
+        }
+
+        [HttpGet("by-model/{modelId}")]
+        public async Task<IActionResult> GetByModelId(Guid modelId, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
+        {
+            if (pageNumber < 1 || pageSize < 1)
+            {
+                return BadRequest(ApiResponse<string>.CreateFail("PageNumber and PageSize must be greater than 0", null, 400));
+            }
+
+            var result = await _services.VehicleVariantService.GetByModelIdAsync(modelId, pageNumber, pageSize);
+            return Ok(ApiResponse<PagedResult<VehicleVariantResponse>>.CreateSuccess(result));
+        }
+
+        [HttpGet("by-dealer/{dealerId}")]
+        public async Task<IActionResult> GetByDealerId(Guid dealerId, [FromQuery] VehiclePurpose? purpose, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
+        {
+            if (pageNumber < 1 || pageSize < 1)
+            {
+                return BadRequest(ApiResponse<string>.CreateFail("PageNumber and PageSize must be greater than 0", null, 400));
+            }
+
+            var result = await _services.VehicleVariantService.GetByDealerIdAsync(dealerId, purpose, pageNumber, pageSize);
+            return Ok(ApiResponse<PagedResult<VehicleVariantResponse>>.CreateSuccess(result));
+        }
+
+        [HttpGet("dealer/{dealerId}/models/{modelId}/variants")]
+        public async Task<IActionResult> GetByDealerAndModel(Guid dealerId, Guid modelId, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
+        {
+            if (pageNumber < 1 || pageSize < 1)
+            {
+                return BadRequest(ApiResponse<string>.CreateFail("PageNumber and PageSize must be greater than 0", null, 400));
+            }
+
+            if (dealerId == Guid.Empty)
+            {
+                return BadRequest(ApiResponse<string>.CreateFail("DealerId is required", null, 400));
+            }
+
+            if (modelId == Guid.Empty)
+            {
+                return BadRequest(ApiResponse<string>.CreateFail("ModelId is required", null, 400));
+            }
+
+            var result = await _services.VehicleVariantService.GetByDealerAndModelAsync(dealerId, modelId, pageNumber, pageSize);
+            return Ok(ApiResponse<PagedResult<VehicleVariantResponse>>.CreateSuccess(result));
+        }
+
+        [HttpGet("dealer/{dealerId}/models/{modelId}/variants-with-stock")]
+        public async Task<IActionResult> GetByDealerAndModelWithStock(Guid dealerId, Guid modelId, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
+        {
+            if (pageNumber < 1 || pageSize < 1)
+            {
+                return BadRequest(ApiResponse<string>.CreateFail("PageNumber and PageSize must be greater than 0", null, 400));
+            }
+
+            if (dealerId == Guid.Empty)
+            {
+                return BadRequest(ApiResponse<string>.CreateFail("DealerId is required", null, 400));
+            }
+
+            if (modelId == Guid.Empty)
+            {
+                return BadRequest(ApiResponse<string>.CreateFail("ModelId is required", null, 400));
+            }
+
+            var result = await _services.VehicleVariantService.GetByDealerAndModelWithStockAsync(dealerId, modelId, pageNumber, pageSize);
+            return Ok(ApiResponse<PagedResult<VehicleVariantWithStockResponseDto>>.CreateSuccess(result));
         }
     }
 }

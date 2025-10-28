@@ -3,6 +3,7 @@ using EVMManagement.BLL.DTOs.Request.Contract;
 using EVMManagement.BLL.DTOs.Response;
 using EVMManagement.BLL.DTOs.Response.Contract;
 using EVMManagement.DAL.Models.Entities;
+using EVMManagement.DAL.Models.Enums;
 using EVMManagement.API.Services;
 using System.Threading.Tasks;
 using System;
@@ -22,15 +23,15 @@ namespace EVMManagement.API.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetAll([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
+        public async Task<IActionResult> GetAll([FromQuery] Guid? orderId, [FromQuery] Guid? customerId, [FromQuery] Guid? createdByUserId, [FromQuery] ContractStatus? status, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
         {
             if (pageNumber < 1 || pageSize < 1)
             {
                 return BadRequest(ApiResponse<string>.CreateFail("PageNumber and PageSize must be greater than 0", null, 400));
             }
 
-            var result = await _services.ContractService.GetAllAsync(pageNumber, pageSize);
-            return Ok(ApiResponse<PagedResult<ContractResponse>>.CreateSuccess(result));
+            var result = await _services.ContractService.GetAllAsync(orderId, customerId, createdByUserId, status, pageNumber, pageSize);
+            return Ok(ApiResponse<PagedResult<ContractDetailResponse>>.CreateSuccess(result));
         }
 
         [HttpGet("{id}")]
@@ -88,6 +89,18 @@ namespace EVMManagement.API.Controllers
             var deleted = await _services.ContractService.DeleteAsync(id);
             if (!deleted) return NotFound(ApiResponse<string>.CreateFail("Contract not found", null, 404));
             return Ok(ApiResponse<string>.CreateSuccess("Deleted"));
+        }
+
+        [HttpGet("by-dealer/{dealerId}")]
+        public async Task<IActionResult> GetByDealerId(Guid dealerId, [FromQuery] ContractStatus? status, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
+        {
+            if (pageNumber < 1 || pageSize < 1)
+            {
+                return BadRequest(ApiResponse<string>.CreateFail("PageNumber and PageSize must be greater than 0", null, 400));
+            }
+
+            var result = await _services.ContractService.GetByDealerIdAsync(dealerId, status, pageNumber, pageSize);
+            return Ok(ApiResponse<PagedResult<ContractDetailResponse>>.CreateSuccess(result));
         }
     }
 }

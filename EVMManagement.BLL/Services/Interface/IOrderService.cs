@@ -10,8 +10,11 @@ namespace EVMManagement.BLL.Services.Interface
     public interface IOrderService
     {
         Task<Order> CreateOrderAsync(OrderCreateDto dto);
+        Task<OrderWithDetailsResponse> CreateOrderWithDetailsAsync(OrderWithDetailsCreateDto dto);
         Task<PagedResult<OrderResponse>> GetAllAsync(int pageNumber = 1, int pageSize = 10);
+        Task<PagedResult<OrderResponse>> GetByFilterAsync(OrderFilterDto filter);
         Task<OrderResponse?> GetByIdAsync(Guid id);
+        Task<OrderWithDetailsResponse?> GetByIdWithDetailsAsync(Guid id);
         Task<OrderResponse?> UpdateAsync(Guid id, OrderUpdateDto dto);
         Task<OrderResponse?> UpdateIsDeletedAsync(Guid id, bool isDeleted);
         Task<bool> DeleteAsync(Guid id);

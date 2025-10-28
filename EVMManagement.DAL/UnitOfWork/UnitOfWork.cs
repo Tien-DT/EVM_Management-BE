@@ -12,6 +12,7 @@ namespace EVMManagement.DAL.UnitOfWork
     {
         private readonly AppDbContext _context;
         private IDbContextTransaction? _transaction;
+        private bool _transactionRequested = false;
         private IAccountRepository? _accounts;
         private IUserProfileRepository? _userProfiles;
         private IVehicleVariantRepository? _vehicleVariants;
@@ -25,7 +26,7 @@ namespace EVMManagement.DAL.UnitOfWork
         private IOrderDetailRepository? _orderDetails;
         private IQuotationRepository? _quotations;
         private IQuotationDetailRepository? _quotationDetails;
-       
+        
         private IVehicleRepository? _vehicles;
 
         private IVehicleTimeSlotRepository? _vehicleTimeSlots;
@@ -37,6 +38,10 @@ namespace EVMManagement.DAL.UnitOfWork
         private IDigitalSignatureRepository? _digitalSignatures;
         private ITransactionRepository? _transactions;
         private IDepositRepository? _deposits;
+        private IReportRepository? _reports;
+        private IInstallmentPlanRepository? _installmentPlans;
+        private ITransportRepository? _transports;
+        private ITransportDetailRepository? _transportDetails;
 
         public UnitOfWork(AppDbContext context)
         {
@@ -56,7 +61,7 @@ namespace EVMManagement.DAL.UnitOfWork
         public IOrderDetailRepository OrderDetails => _orderDetails ??= new OrderDetailRepository(_context);
         public IQuotationRepository Quotations => _quotations ??= new QuotationRepository(_context);
         public IQuotationDetailRepository QuotationDetails => _quotationDetails ??= new QuotationDetailRepository(_context);
-       
+        
         public IVehicleRepository Vehicles => _vehicles ??= new VehicleRepository(_context);
         public IVehicleTimeSlotRepository VehicleTimeSlots => _vehicleTimeSlots ??= new VehicleTimeSlotRepository(_context);
         public IMasterTimeSlotRepository MasterTimeSlots => _masterTimeSlots ??= new MasterTimeSlotRepository(_context);
@@ -67,6 +72,10 @@ namespace EVMManagement.DAL.UnitOfWork
         public IDigitalSignatureRepository DigitalSignatures => _digitalSignatures ??= new DigitalSignatureRepository(_context);
         public ITransactionRepository Transactions => _transactions ??= new TransactionRepository(_context);
         public IDepositRepository Deposits => _deposits ??= new DepositRepository(_context);
+        public IReportRepository Reports => _reports ??= new ReportRepository(_context);
+        public IInstallmentPlanRepository InstallmentPlans => _installmentPlans ??= new InstallmentPlanRepository(_context);
+        public ITransportRepository Transports => _transports ??= new TransportRepository(_context);
+        public ITransportDetailRepository TransportDetails => _transportDetails ??= new TransportDetailRepository(_context);
 
         public async Task<int> SaveChangesAsync()
         {
@@ -80,34 +89,51 @@ namespace EVMManagement.DAL.UnitOfWork
             }
         }
 
-        public async Task BeginTransactionAsync()
+        public Task BeginTransactionAsync()
         {
-            _transaction = await _context.Database.BeginTransactionAsync();
+            _transactionRequested = true;
+            return Task.CompletedTask;
         }
 
         public async Task CommitTransactionAsync()
         {
-            try
+            if (!_transactionRequested)
             {
                 await SaveChangesAsync();
-                if (_transaction != null)
-                {
-                    await _transaction.CommitAsync();
-                }
+                return;
             }
-            catch
+
+            var strategy = _context.Database.CreateExecutionStrategy();
+
+            await strategy.ExecuteAsync(async () =>
             {
-                await RollbackTransactionAsync();
-                throw;
-            }
-            finally
-            {
-                if (_transaction != null)
+                _transaction = await _context.Database.BeginTransactionAsync();
+                try
                 {
-                    await _transaction.DisposeAsync();
-                    _transaction = null;
+                    await SaveChangesAsync();
+                    if (_transaction != null)
+                    {
+                        await _transaction.CommitAsync();
+                    }
                 }
-            }
+                catch
+                {
+                    if (_transaction != null)
+                    {
+                        await _transaction.RollbackAsync();
+                    }
+                    throw;
+                }
+                finally
+                {
+                    if (_transaction != null)
+                    {
+                        await _transaction.DisposeAsync();
+                        _transaction = null;
+                    }
+                    _transactionRequested = false;
+                }
+            });
         }
 
         public async Task RollbackTransactionAsync()
@@ -118,6 +144,8 @@ namespace EVMManagement.DAL.UnitOfWork
                 await _transaction.DisposeAsync();
                 _transaction = null;
             }
+
+            _transactionRequested = false;
         }
 
         public void Dispose()

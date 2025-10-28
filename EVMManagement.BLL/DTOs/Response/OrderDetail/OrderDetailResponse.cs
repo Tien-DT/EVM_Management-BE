@@ -15,5 +15,7 @@ namespace EVMManagement.BLL.DTOs.Response.OrderDetail
         public DateTime CreatedDate { get; set; }
         public DateTime? ModifiedDate { get; set; }
         public bool IsDeleted { get; set; }
+        public EVMManagement.BLL.DTOs.Response.Vehicle.VehicleVariantDetailDto? VehicleVariant { get; set; }
+        public EVMManagement.BLL.DTOs.Response.Vehicle.VehicleDetailResponseDto? Vehicle { get; set; }
     }
 }
