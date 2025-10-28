@@ -210,23 +210,23 @@ namespace EVMManagement.API.Controllers
             return Ok(result);
         }
 
-        [HttpPost("{warehouseId}/add-vehicles")]
-        [Authorize(Roles = "EVM_STAFF,EVM_ADMIN")]
-        public async Task<IActionResult> AddVehiclesToWarehouse(Guid warehouseId, [FromBody] AddVehiclesToWarehouseRequestDto dto)
+        [HttpPost("add-vehicles")]
+        [Authorize(Roles = "EVM_STAFF,EVM_ADMIN,DEALER_MANAGER")]
+        public async Task<IActionResult> AddVehiclesToWarehouse([FromBody] AddVehiclesToWarehouseRequestDto dto)
         {
             if (!ModelState.IsValid)
             {
                 var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
-                return BadRequest(ApiResponse<string>.CreateFail("Validation failed", errors, 400));
+                return BadRequest(ApiResponse<string>.CreateFail("Dữ liệu không hợp lệ", errors, 400));
             }
 
             var currentAccountId = GetCurrentAccountId();
             if (!currentAccountId.HasValue)
             {
-                return Unauthorized(ApiResponse<string>.CreateFail("User ID not found", null, 401));
+                return Unauthorized(ApiResponse<string>.CreateFail("Không tìm thấy ID người dùng", null, 401));
             }
 
-            var result = await Services.WarehouseService.AddVehiclesToWarehouseAsync(warehouseId, dto, currentAccountId.Value);
+            var result = await Services.WarehouseService.AddVehiclesToWarehouseAsync(dto, currentAccountId.Value);
 
             if (!result.Success)
             {

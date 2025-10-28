@@ -7,11 +7,15 @@ namespace EVMManagement.BLL.DTOs.Request.Warehouse
 {
     public class AddVehiclesToWarehouseRequestDto
     {
-        [Required]
+        public Guid? WarehouseId { get; set; }
+
+        public Guid? DealerId { get; set; }
+
+        [Required(ErrorMessage = "VehicleVariantId là bắt buộc")]
         public Guid VehicleVariantId { get; set; }
 
-        [Required]
-        [MinLength(1, ErrorMessage = "At least one VIN number is required")]
+        [Required(ErrorMessage = "Danh sách VIN là bắt buộc")]
+        [MinLength(1, ErrorMessage = "Cần ít nhất một số VIN")]
         public List<string> VinNumbers { get; set; } = new List<string>();
 
         public VehiclePurpose Purpose { get; set; } = VehiclePurpose.FOR_SALE;

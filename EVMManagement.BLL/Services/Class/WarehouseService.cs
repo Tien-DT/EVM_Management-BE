@@ -261,50 +261,71 @@ namespace EVMManagement.BLL.Services.Class
             }
         }
 
-        public async Task<ApiResponse<List<VehicleResponseDto>>> AddVehiclesToWarehouseAsync(Guid warehouseId, AddVehiclesToWarehouseRequestDto dto, Guid addedByUserId)
+        public async Task<ApiResponse<List<VehicleResponseDto>>> AddVehiclesToWarehouseAsync(AddVehiclesToWarehouseRequestDto dto, Guid addedByUserId)
         {
             try
             {
-                // Kiểm tra warehouse tồn tại
-                var warehouse = await _unitOfWork.Warehouses.GetByIdAsync(warehouseId);
-                if (warehouse == null || warehouse.IsDeleted)
+                if (!dto.WarehouseId.HasValue && !dto.DealerId.HasValue)
                 {
-                    return ApiResponse<List<VehicleResponseDto>>.CreateFail("Warehouse not found or has been deleted", errorCode: 404);
+                    return ApiResponse<List<VehicleResponseDto>>.CreateFail("Phải cung cấp WarehouseId hoặc DealerId", errorCode: 400);
                 }
 
-                // kiểm tra variant tồn tại
+                Warehouse? warehouse = null;
+
+                if (dto.WarehouseId.HasValue)
+                {
+                    warehouse = await _unitOfWork.Warehouses.GetByIdAsync(dto.WarehouseId.Value);
+                    if (warehouse == null || warehouse.IsDeleted)
+                    {
+                        return ApiResponse<List<VehicleResponseDto>>.CreateFail("Không tìm thấy kho hoặc kho đã bị xóa", errorCode: 404);
+                    }
+                }
+                else if (dto.DealerId.HasValue)
+                {
+                    var warehouses = await _unitOfWork.Warehouses.GetQueryable()
+                        .Where(w => w.DealerId == dto.DealerId.Value && !w.IsDeleted)
+                        .OrderBy(w => w.CreatedDate)
+                        .ToListAsync();
+
+                    if (!warehouses.Any())
+                    {
+                        return ApiResponse<List<VehicleResponseDto>>.CreateFail($"Không tìm thấy kho nào cho dealer với ID '{dto.DealerId.Value}'", errorCode: 404);
+                    }
+
+                    warehouse = warehouses.First();
+                    _logger.LogInformation("Sử dụng kho mặc định {WarehouseId} cho dealer {DealerId}", warehouse.Id, dto.DealerId.Value);
+                }
+
                 var variant = await _unitOfWork.VehicleVariants.GetByIdAsync(dto.VehicleVariantId);
                 if (variant == null || variant.IsDeleted)
                 {
-                    return ApiResponse<List<VehicleResponseDto>>.CreateFail("Vehicle variant not found or has been deleted", errorCode: 404);
+                    return ApiResponse<List<VehicleResponseDto>>.CreateFail("Không tìm thấy biến thể xe hoặc biến thể đã bị xóa", errorCode: 404);
                 }
 
                 var createdVehicles = new List<VehicleResponseDto>();
 
-                // tạo vehicle cho từng VIN
                 foreach (var vin in dto.VinNumbers)
                 {
                     if (string.IsNullOrWhiteSpace(vin))
                     {
-                        _logger.LogWarning("Empty VIN number detected, skipping...");
+                        _logger.LogWarning("Phát hiện số VIN trống, bỏ qua...");
                         continue;
                     }
 
-                    // kiểm tra VIN tồn tại
                     var existingVehicle = await _unitOfWork.Vehicles.GetQueryable()
                         .Where(v => v.Vin == vin)
                         .FirstOrDefaultAsync();
 
                     if (existingVehicle != null)
                     {
-                        _logger.LogWarning("VIN {VIN} already exists, skipping...", vin);
+                        _logger.LogWarning("VIN {VIN} đã tồn tại, bỏ qua...", vin);
                         continue;
                     }
 
                     var vehicle = new Vehicle
                     {
                         VariantId = dto.VehicleVariantId,
-                        WarehouseId = warehouseId,
+                        WarehouseId = warehouse!.Id,
                         Vin = vin,
                         Status = VehicleStatus.IN_STOCK,
                         Purpose = dto.Purpose
@@ -328,12 +349,11 @@ namespace EVMManagement.BLL.Services.Class
                     });
                 }
 
-                // report log
                 var report = new Report
                 {
                     Type = "VEHICLES_ADDED_TO_WAREHOUSE",
-                    Title = "Vehicles added to warehouse",
-                    Content = $"{createdVehicles.Count} vehicle(s) added to warehouse {warehouse.Name}. Variant: {variant.Color}",
+                    Title = "Xe đã được thêm vào kho",
+                    Content = $"{createdVehicles.Count} xe đã được thêm vào kho {warehouse.Name}. Biến thể: {variant.Color}",
                     DealerId = warehouse.DealerId,
                     AccountId = addedByUserId
                 };
@@ -341,18 +361,18 @@ namespace EVMManagement.BLL.Services.Class
 
                 await _unitOfWork.SaveChangesAsync();
 
-                _logger.LogInformation("{Count} vehicles added to warehouse {WarehouseId} by user {UserId}", 
-                    createdVehicles.Count, warehouseId, addedByUserId);
+                _logger.LogInformation("{Count} xe đã được thêm vào kho {WarehouseId} bởi user {UserId}", 
+                    createdVehicles.Count, warehouse.Id, addedByUserId);
 
                 return ApiResponse<List<VehicleResponseDto>>.CreateSuccess(
                     createdVehicles, 
-                    $"Successfully added {createdVehicles.Count} vehicle(s) to warehouse {warehouse.Name}"
+                    $"Đã thêm thành công {createdVehicles.Count} xe vào kho {warehouse.Name}"
                 );
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error adding vehicles to warehouse {WarehouseId}", warehouseId);
-                return ApiResponse<List<VehicleResponseDto>>.CreateFail("An error occurred while adding vehicles to warehouse", errorCode: 500);
+                _logger.LogError(ex, "Lỗi khi thêm xe vào kho");
+                return ApiResponse<List<VehicleResponseDto>>.CreateFail("Đã xảy ra lỗi khi thêm xe vào kho", errorCode: 500);
             }
         }
 

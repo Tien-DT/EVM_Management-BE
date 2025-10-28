@@ -27,7 +27,7 @@ namespace EVMManagement.API.Controllers
         {
             if (pageNumber < 1 || pageSize < 1)
             {
-                return BadRequest(ApiResponse<string>.CreateFail("PageNumber and PageSize must be greater than 0", null, 400));
+                return BadRequest(ApiResponse<string>.CreateFail("Số trang và kích thước trang phải lớn hơn 0", null, 400));
             }
 
             var result = await _services.ContractService.GetAllAsync(orderId, customerId, createdByUserId, status, pageNumber, pageSize);
@@ -38,7 +38,7 @@ namespace EVMManagement.API.Controllers
         public async Task<IActionResult> GetById(Guid id)
         {
             var item = await _services.ContractService.GetByIdAsync(id);
-            if (item == null) return NotFound(ApiResponse<ContractResponse>.CreateFail("Contract not found", null, 404));
+            if (item == null) return NotFound(ApiResponse<ContractResponse>.CreateFail("Không tìm thấy hợp đồng", null, 404));
             return Ok(ApiResponse<ContractResponse>.CreateSuccess(item));
         }
 
@@ -48,7 +48,7 @@ namespace EVMManagement.API.Controllers
             if (!ModelState.IsValid)
             {
                 var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
-                return BadRequest(ApiResponse<Contract>.CreateFail("Validation failed", errors, 400));
+                return BadRequest(ApiResponse<Contract>.CreateFail("Dữ liệu không hợp lệ", errors, 400));
             }
 
             var created = await _services.ContractService.CreateContractAsync(dto);
@@ -61,11 +61,11 @@ namespace EVMManagement.API.Controllers
             if (!ModelState.IsValid)
             {
                 var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
-                return BadRequest(ApiResponse<ContractResponse>.CreateFail("Validation failed", errors, 400));
+                return BadRequest(ApiResponse<ContractResponse>.CreateFail("Dữ liệu không hợp lệ", errors, 400));
             }
 
             var updated = await _services.ContractService.UpdateAsync(id, dto);
-            if (updated == null) return NotFound(ApiResponse<ContractResponse>.CreateFail("Contract not found", null, 404));
+            if (updated == null) return NotFound(ApiResponse<ContractResponse>.CreateFail("Không tìm thấy hợp đồng", null, 404));
             return Ok(ApiResponse<ContractResponse>.CreateSuccess(updated));
         }
 
@@ -75,11 +75,11 @@ namespace EVMManagement.API.Controllers
             if (!ModelState.IsValid)
             {
                 var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
-                return BadRequest(ApiResponse<ContractResponse>.CreateFail("Validation failed", errors, 400));
+                return BadRequest(ApiResponse<ContractResponse>.CreateFail("Dữ liệu không hợp lệ", errors, 400));
             }
 
             var updated = await _services.ContractService.UpdateAsync(id, dto);
-            if (updated == null) return NotFound(ApiResponse<ContractResponse>.CreateFail("Contract not found", null, 404));
+            if (updated == null) return NotFound(ApiResponse<ContractResponse>.CreateFail("Không tìm thấy hợp đồng", null, 404));
             return Ok(ApiResponse<ContractResponse>.CreateSuccess(updated));
         }
 
@@ -87,8 +87,8 @@ namespace EVMManagement.API.Controllers
         public async Task<IActionResult> Delete(Guid id)
         {
             var deleted = await _services.ContractService.DeleteAsync(id);
-            if (!deleted) return NotFound(ApiResponse<string>.CreateFail("Contract not found", null, 404));
-            return Ok(ApiResponse<string>.CreateSuccess("Deleted"));
+            if (!deleted) return NotFound(ApiResponse<string>.CreateFail("Không tìm thấy hợp đồng", null, 404));
+            return Ok(ApiResponse<string>.CreateSuccess("Đã xóa"));
         }
 
         [HttpGet("by-dealer/{dealerId}")]
@@ -96,7 +96,7 @@ namespace EVMManagement.API.Controllers
         {
             if (pageNumber < 1 || pageSize < 1)
             {
-                return BadRequest(ApiResponse<string>.CreateFail("PageNumber and PageSize must be greater than 0", null, 400));
+                return BadRequest(ApiResponse<string>.CreateFail("Số trang và kích thước trang phải lớn hơn 0", null, 400));
             }
 
             var result = await _services.ContractService.GetByDealerIdAsync(dealerId, status, pageNumber, pageSize);

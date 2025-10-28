@@ -17,6 +17,6 @@ namespace EVMManagement.BLL.Services.Interface
         Task<ApiResponse<WarehouseResponseDto>> CreateWarehouseAsync(WarehouseCreateDto dto, AccountRole currentUserRole, Guid? currentUserDealerId = null);
         Task<ApiResponse<WarehouseResponseDto>> UpdateWarehouseAsync(Guid id, WarehouseUpdateDto dto, AccountRole currentUserRole, Guid? currentUserDealerId = null);
         Task<ApiResponse<WarehouseResponseDto>> UpdateIsDeletedAsync(Guid id, bool isDeleted, AccountRole currentUserRole, Guid? currentUserDealerId = null);
-        Task<ApiResponse<List<VehicleResponseDto>>> AddVehiclesToWarehouseAsync(Guid warehouseId, AddVehiclesToWarehouseRequestDto dto, Guid addedByUserId);
+        Task<ApiResponse<List<VehicleResponseDto>>> AddVehiclesToWarehouseAsync(AddVehiclesToWarehouseRequestDto dto, Guid addedByUserId);
     }
 }

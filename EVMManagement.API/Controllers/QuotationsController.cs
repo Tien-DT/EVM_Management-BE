@@ -40,7 +40,7 @@ namespace EVMManagement.API.Controllers
         {
             if (pageNumber < 1 || pageSize < 1)
             {
-                return BadRequest(ApiResponse<string>.CreateFail("PageNumber and PageSize must be greater than 0", null, 400));
+                return BadRequest(ApiResponse<string>.CreateFail("Số trang và kích thước trang phải lớn hơn 0", null, 400));
             }
 
             var result = await _services.QuotationService.GetAllAsync(pageNumber, pageSize, search, status);
@@ -51,7 +51,7 @@ namespace EVMManagement.API.Controllers
         public async Task<IActionResult> GetById(Guid id)
         {
             var item = await _services.QuotationService.GetByIdAsync(id);
-            if (item == null) return NotFound(ApiResponse<QuotationResponseDto>.CreateFail("Quotation not found", null, 404));
+            if (item == null) return NotFound(ApiResponse<QuotationResponseDto>.CreateFail("Không tìm thấy báo giá", null, 404));
             return Ok(ApiResponse<QuotationResponseDto>.CreateSuccess(item));
         }
 
@@ -61,7 +61,7 @@ namespace EVMManagement.API.Controllers
             if (!ModelState.IsValid)
             {
                 var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
-                return BadRequest(ApiResponse<QuotationResponseDto>.CreateFail("Validation failed", errors, 400));
+                return BadRequest(ApiResponse<QuotationResponseDto>.CreateFail("Dữ liệu không hợp lệ", errors, 400));
             }
 
             var created = await _services.QuotationService.CreateQuotationAsync(dto);
@@ -74,11 +74,11 @@ namespace EVMManagement.API.Controllers
             if (!ModelState.IsValid)
             {
                 var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
-                return BadRequest(ApiResponse<QuotationResponseDto>.CreateFail("Validation failed", errors, 400));
+                return BadRequest(ApiResponse<QuotationResponseDto>.CreateFail("Dữ liệu không hợp lệ", errors, 400));
             }
 
             var updated = await _services.QuotationService.UpdateAsync(id, dto);
-            if (updated == null) return NotFound(ApiResponse<QuotationResponseDto>.CreateFail("Quotation not found", null, 404));
+            if (updated == null) return NotFound(ApiResponse<QuotationResponseDto>.CreateFail("Không tìm thấy báo giá", null, 404));
             return Ok(ApiResponse<QuotationResponseDto>.CreateSuccess(updated));
         }
 
@@ -86,7 +86,7 @@ namespace EVMManagement.API.Controllers
         public async Task<IActionResult> Delete(Guid id)
         {
             var updated = await _services.QuotationService.UpdateIsDeletedAsync(id, true);
-            if (updated == null) return NotFound(ApiResponse<QuotationResponseDto>.CreateFail("Quotation not found", null, 404));
+            if (updated == null) return NotFound(ApiResponse<QuotationResponseDto>.CreateFail("Không tìm thấy báo giá", null, 404));
             return Ok(ApiResponse<QuotationResponseDto>.CreateSuccess(updated));
         }
     }

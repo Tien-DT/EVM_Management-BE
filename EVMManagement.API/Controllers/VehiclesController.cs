@@ -28,7 +28,7 @@ namespace EVMManagement.API.Controllers
         {
             if (pageNumber < 1 || pageSize < 1)
             {
-                return BadRequest(ApiResponse<string>.CreateFail("PageNumber and PageSize must be greater than 0", null, 400));
+                return BadRequest(ApiResponse<string>.CreateFail("Số trang và kích thước trang phải lớn hơn 0", null, 400));
             }
 
             var result = await _services.VehicleService.GetAllAsync(pageNumber, pageSize);
@@ -40,7 +40,7 @@ namespace EVMManagement.API.Controllers
         {
             if (pageNumber < 1 || pageSize < 1)
             {
-                return BadRequest(ApiResponse<string>.CreateFail("PageNumber and PageSize must be greater than 0", null, 400));
+                return BadRequest(ApiResponse<string>.CreateFail("Số trang và kích thước trang phải lớn hơn 0", null, 400));
             }
 
             var result = await _services.VehicleService.GetAllWithDetailsAsync(pageNumber, pageSize);
@@ -51,7 +51,7 @@ namespace EVMManagement.API.Controllers
         public async Task<IActionResult> GetById(Guid id)
         {
             var item = await _services.VehicleService.GetByIdAsync(id);
-            if (item == null) return NotFound(ApiResponse<VehicleResponseDto>.CreateFail("Vehicle not found", null, 404));
+            if (item == null) return NotFound(ApiResponse<VehicleResponseDto>.CreateFail("Không tìm thấy xe", null, 404));
             return Ok(ApiResponse<VehicleResponseDto>.CreateSuccess(item));
         }
 
@@ -61,7 +61,7 @@ namespace EVMManagement.API.Controllers
             if (!ModelState.IsValid)
             {
                 var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
-                return BadRequest(ApiResponse<VehicleResponseDto>.CreateFail("Validation failed", errors, 400));
+                return BadRequest(ApiResponse<VehicleResponseDto>.CreateFail("Dữ liệu không hợp lệ", errors, 400));
             }
 
             var created = await _services.VehicleService.CreateVehicleAsync(dto);
@@ -74,11 +74,11 @@ namespace EVMManagement.API.Controllers
             if (!ModelState.IsValid)
             {
                 var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
-                return BadRequest(ApiResponse<VehicleResponseDto>.CreateFail("Validation failed", errors, 400));
+                return BadRequest(ApiResponse<VehicleResponseDto>.CreateFail("Dữ liệu không hợp lệ", errors, 400));
             }
 
             var updated = await _services.VehicleService.UpdateAsync(id, dto);
-            if (updated == null) return NotFound(ApiResponse<VehicleResponseDto>.CreateFail("Vehicle not found", null, 404));
+            if (updated == null) return NotFound(ApiResponse<VehicleResponseDto>.CreateFail("Không tìm thấy xe", null, 404));
             return Ok(ApiResponse<VehicleResponseDto>.CreateSuccess(updated));
         }
 
@@ -86,7 +86,7 @@ namespace EVMManagement.API.Controllers
         public async Task<IActionResult> UpdateIsDeleted([FromRoute] Guid id, [FromQuery] bool isDeleted)
         {
             var updated = await _services.VehicleService.UpdateIsDeletedAsync(id, isDeleted);
-            if (updated == null) return NotFound(ApiResponse<VehicleResponseDto>.CreateFail("Vehicle not found", null, 404));
+            if (updated == null) return NotFound(ApiResponse<VehicleResponseDto>.CreateFail("Không tìm thấy xe", null, 404));
             return Ok(ApiResponse<VehicleResponseDto>.CreateSuccess(updated));
         }
 
@@ -106,7 +106,7 @@ namespace EVMManagement.API.Controllers
         public async Task<IActionResult> Filter([FromQuery] EVMManagement.BLL.DTOs.Request.Vehicle.VehicleFilterDto filter)
         {
             if (filter.PageNumber < 1 || filter.PageSize < 1)
-                return BadRequest(ApiResponse<string>.CreateFail("PageNumber and PageSize must be greater than 0", null, 400));
+                return BadRequest(ApiResponse<string>.CreateFail("Số trang và kích thước trang phải lớn hơn 0", null, 400));
 
             var results = await _services.VehicleService.GetByFilterAsync(filter);
             return Ok(ApiResponse<PagedResult<VehicleResponseDto>>.CreateSuccess(results));
@@ -116,7 +116,7 @@ namespace EVMManagement.API.Controllers
         public async Task<IActionResult> UpdateStatus([FromRoute] Guid id, [FromQuery] VehicleStatus status)
         {
             var updated = await _services.VehicleService.UpdateStatusAsync(id, status);
-            if (updated == null) return NotFound(ApiResponse<VehicleResponseDto>.CreateFail("Vehicle not found", null, 404));
+            if (updated == null) return NotFound(ApiResponse<VehicleResponseDto>.CreateFail("Không tìm thấy xe", null, 404));
             return Ok(ApiResponse<VehicleResponseDto>.CreateSuccess(updated));
         }
 
@@ -125,17 +125,17 @@ namespace EVMManagement.API.Controllers
         {
             if (variantId == Guid.Empty)
             {
-                return BadRequest(ApiResponse<string>.CreateFail("VariantId is required", null, 400));
+                return BadRequest(ApiResponse<string>.CreateFail("VariantId là bắt buộc", null, 400));
             }
 
             if (dealerId == Guid.Empty)
             {
-                return BadRequest(ApiResponse<string>.CreateFail("DealerId is required", null, 400));
+                return BadRequest(ApiResponse<string>.CreateFail("DealerId là bắt buộc", null, 400));
             }
 
             if (quantity < 1)
             {
-                return BadRequest(ApiResponse<string>.CreateFail("Quantity must be greater than 0", null, 400));
+                return BadRequest(ApiResponse<string>.CreateFail("Số lượng phải lớn hơn 0", null, 400));
             }
 
             var result = await _services.VehicleService.CheckStockAvailabilityAsync(variantId, dealerId, quantity);
@@ -154,17 +154,17 @@ namespace EVMManagement.API.Controllers
 
             if (dealerId == Guid.Empty)
             {
-                return BadRequest(ApiResponse<string>.CreateFail("DealerId is required", null, 400));
+                return BadRequest(ApiResponse<string>.CreateFail("DealerId là bắt buộc", null, 400));
             }
 
             if (variantId == Guid.Empty)
             {
-                return BadRequest(ApiResponse<string>.CreateFail("VariantId is required", null, 400));
+                return BadRequest(ApiResponse<string>.CreateFail("VariantId là bắt buộc", null, 400));
             }
 
             if (pageNumber < 1 || pageSize < 1)
             {
-                return BadRequest(ApiResponse<string>.CreateFail("PageNumber and PageSize must be greater than 0", null, 400));
+                return BadRequest(ApiResponse<string>.CreateFail("Số trang và kích thước trang phải lớn hơn 0", null, 400));
             }
 
             var result = await _services.VehicleService.GetVehiclesByDealerAndVariantAsync(dealerId, variantId, pageNumber, pageSize);
