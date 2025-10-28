@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using EVMManagement.BLL.DTOs.Request.Contract;
 using EVMManagement.BLL.DTOs.Response;
 using EVMManagement.BLL.DTOs.Response.Contract;
@@ -23,14 +23,14 @@ namespace EVMManagement.API.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetAll([FromQuery] Guid? orderId, [FromQuery] Guid? customerId, [FromQuery] Guid? createdByUserId, [FromQuery] ContractStatus? status, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
+        public async Task<IActionResult> GetAll([FromQuery] Guid? orderId, [FromQuery] Guid? customerId, [FromQuery] Guid? dealerId, [FromQuery] Guid? createdByUserId, [FromQuery] Guid? signedByUserId, [FromQuery] ContractStatus? status, [FromQuery] ContractType? contractType, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
         {
             if (pageNumber < 1 || pageSize < 1)
             {
                 return BadRequest(ApiResponse<string>.CreateFail("Số trang và kích thước trang phải lớn hơn 0", null, 400));
             }
 
-            var result = await _services.ContractService.GetAllAsync(orderId, customerId, createdByUserId, status, pageNumber, pageSize);
+            var result = await _services.ContractService.GetAllAsync(orderId, customerId, dealerId, createdByUserId, signedByUserId, status, contractType, pageNumber, pageSize);
             return Ok(ApiResponse<PagedResult<ContractDetailResponse>>.CreateSuccess(result));
         }
 
@@ -104,3 +104,7 @@ namespace EVMManagement.API.Controllers
         }
     }
 }
+
+
+
+
