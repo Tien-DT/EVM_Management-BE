@@ -30,6 +30,7 @@ namespace EVMManagement.BLL.Services.Class
 
         public async Task<TestDriveBookingResponseDto> CreateAsync(TestDriveBookingCreateDto dto)
         {
+            // Create the booking entity
             var entity = new TestDriveBooking
             {
                 VehicleTimeslotId = dto.VehicleTimeslotId,
@@ -44,6 +45,20 @@ namespace EVMManagement.BLL.Services.Class
 
             var result = await GetByIdAsync(entity.Id) ?? throw new Exception("Failed to create TestDriveBooking");
 
+            // Update VehicleTimeSlot status to BOOKED if booking status is BOOKED
+            if (dto.Status == TestDriveBookingStatus.BOOKED)
+            {
+                var vehicleTimeSlot = await _unitOfWork.VehicleTimeSlots.GetByIdAsync(dto.VehicleTimeslotId);
+                if (vehicleTimeSlot != null)
+                {
+                    vehicleTimeSlot.Status = TimeSlotStatus.BOOKED;
+                    vehicleTimeSlot.ModifiedDate = DateTime.UtcNow;
+                    _unitOfWork.VehicleTimeSlots.Update(vehicleTimeSlot);
+                    await _unitOfWork.SaveChangesAsync();
+                }
+            }
+
+            // Try to send confirmation email (don't fail the whole operation if email fails)
             try
             {
                 await SendTestDriveConfirmationEmailAsync(result);
@@ -70,24 +85,21 @@ namespace EVMManagement.BLL.Services.Class
                 throw new Exception($"VehicleTimeSlot with ID {dto.VehicleTimeslotId} not found");
             }
 
-            
             if (vehicleTimeSlot.Status != TimeSlotStatus.AVAILABLE)
             {
                 throw new Exception($"VehicleTimeSlot is not available. Current status: {vehicleTimeSlot.Status}");
             }
 
-            
+            // Find or create customer
             Customer customer = null;
             var existingCustomer = await _customerService.SearchCustomerByPhoneAsync(dto.Phone);
 
             if (existingCustomer != null)
             {
-                
                 customer = await _unitOfWork.Customers.GetByIdAsync(existingCustomer.Id);
             }
             else
             {
-                
                 if (string.IsNullOrWhiteSpace(dto.FullName))
                 {
                     throw new ArgumentException("FullName is required when creating a new customer", nameof(dto.FullName));
@@ -108,7 +120,7 @@ namespace EVMManagement.BLL.Services.Class
                 throw new Exception("Failed to get or create customer");
             }
 
-            
+            // Create booking (this will also update VehicleTimeSlot status via CreateAsync)
             var bookingCreateDto = new TestDriveBookingCreateDto
             {
                 VehicleTimeslotId = dto.VehicleTimeslotId,
@@ -117,6 +129,7 @@ namespace EVMManagement.BLL.Services.Class
                 Note = dto.Note
             };
 
+            // CreateAsync already handles VehicleTimeSlot status update and email sending
             var booking = await CreateAsync(bookingCreateDto);
 
             vehicleTimeSlot.Status = TimeSlotStatus.BOOKED;
