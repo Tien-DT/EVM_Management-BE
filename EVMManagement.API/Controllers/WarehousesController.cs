@@ -247,5 +247,81 @@ namespace EVMManagement.API.Controllers
 
             return Ok(result);
         }
+
+        [HttpPost("evm/add-vehicles")]
+        [Authorize(Roles = "EVM_STAFF,EVM_ADMIN")]
+        public async Task<IActionResult> AddVehiclesToEvmWarehouse([FromBody] AddVehiclesToEvmWarehouseDto dto)
+        {
+            if (!ModelState.IsValid)
+            {
+                var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
+                return BadRequest(ApiResponse<string>.CreateFail("Dữ liệu không hợp lệ", errors, 400));
+            }
+
+            var currentAccountId = GetCurrentAccountId();
+            if (!currentAccountId.HasValue)
+            {
+                return Unauthorized(ApiResponse<string>.CreateFail("Không tìm thấy ID người dùng", null, 401));
+            }
+
+            var result = await Services.WarehouseService.AddVehiclesToEvmWarehouseAsync(dto, currentAccountId.Value);
+
+            if (!result.Success)
+            {
+                var statusCode = result.ErrorCode ?? StatusCodes.Status400BadRequest;
+
+                if (statusCode == StatusCodes.Status404NotFound)
+                {
+                    return NotFound(result);
+                }
+
+                if (statusCode == StatusCodes.Status500InternalServerError)
+                {
+                    return StatusCode(StatusCodes.Status500InternalServerError, result);
+                }
+
+                return StatusCode(statusCode, result);
+            }
+
+            return Ok(result);
+        }
+
+        [HttpPost("dealer/add-vehicles")]
+        [Authorize(Roles = "EVM_STAFF,EVM_ADMIN,DEALER_MANAGER")]
+        public async Task<IActionResult> AddVehiclesToDealerWarehouse([FromBody] AddVehiclesToDealerWarehouseDto dto)
+        {
+            if (!ModelState.IsValid)
+            {
+                var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
+                return BadRequest(ApiResponse<string>.CreateFail("Dữ liệu không hợp lệ", errors, 400));
+            }
+
+            var currentAccountId = GetCurrentAccountId();
+            if (!currentAccountId.HasValue)
+            {
+                return Unauthorized(ApiResponse<string>.CreateFail("Không tìm thấy ID người dùng", null, 401));
+            }
+
+            var result = await Services.WarehouseService.AddVehiclesToDealerWarehouseAsync(dto, currentAccountId.Value);
+
+            if (!result.Success)
+            {
+                var statusCode = result.ErrorCode ?? StatusCodes.Status400BadRequest;
+
+                if (statusCode == StatusCodes.Status404NotFound)
+                {
+                    return NotFound(result);
+                }
+
+                if (statusCode == StatusCodes.Status500InternalServerError)
+                {
+                    return StatusCode(StatusCodes.Status500InternalServerError, result);
+                }
+
+                return StatusCode(statusCode, result);
+            }
+
+            return Ok(result);
+        }
     }
 }

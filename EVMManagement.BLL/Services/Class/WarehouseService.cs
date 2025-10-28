@@ -376,6 +376,230 @@ namespace EVMManagement.BLL.Services.Class
             }
         }
 
+        public async Task<ApiResponse<List<VehicleResponseDto>>> AddVehiclesToEvmWarehouseAsync(AddVehiclesToEvmWarehouseDto dto, Guid addedByUserId)
+        {
+            try
+            {
+                var warehouse = await _unitOfWork.Warehouses.GetByIdAsync(dto.WarehouseId);
+                if (warehouse == null || warehouse.IsDeleted)
+                {
+                    return ApiResponse<List<VehicleResponseDto>>.CreateFail("Không tìm thấy kho hoặc kho đã bị xóa", errorCode: 404);
+                }
+
+                if (warehouse.Type != WarehouseType.EVM)
+                {
+                    return ApiResponse<List<VehicleResponseDto>>.CreateFail("Kho này không phải là kho của EVM", errorCode: 400);
+                }
+
+                var createdVehicles = new List<VehicleResponseDto>();
+                var variantIds = dto.Vehicles.Select(v => v.VariantId).Distinct().ToList();
+                var variants = await _unitOfWork.VehicleVariants.GetQueryable()
+                    .Where(v => variantIds.Contains(v.Id) && !v.IsDeleted)
+                    .ToDictionaryAsync(v => v.Id, v => v);
+
+                foreach (var vehicleDto in dto.Vehicles)
+                {
+                    if (!variants.ContainsKey(vehicleDto.VariantId))
+                    {
+                        _logger.LogWarning("Biến thể xe {VariantId} không tồn tại, bỏ qua...", vehicleDto.VariantId);
+                        continue;
+                    }
+
+                    if (string.IsNullOrWhiteSpace(vehicleDto.Vin))
+                    {
+                        _logger.LogWarning("Phát hiện số VIN trống, bỏ qua...");
+                        continue;
+                    }
+
+                    var existingVehicle = await _unitOfWork.Vehicles.GetQueryable()
+                        .Where(v => v.Vin == vehicleDto.Vin)
+                        .FirstOrDefaultAsync();
+
+                    if (existingVehicle != null)
+                    {
+                        _logger.LogWarning("VIN {VIN} đã tồn tại, bỏ qua...", vehicleDto.Vin);
+                        continue;
+                    }
+
+                    var vehicle = new Vehicle
+                    {
+                        VariantId = vehicleDto.VariantId,
+                        WarehouseId = warehouse.Id,
+                        Vin = vehicleDto.Vin,
+                        Status = vehicleDto.Status,
+                        Purpose = vehicleDto.Purpose,
+                        ImageUrl = vehicleDto.ImageUrl
+                    };
+
+                    await _unitOfWork.Vehicles.AddAsync(vehicle);
+
+                    createdVehicles.Add(new VehicleResponseDto
+                    {
+                        Id = vehicle.Id,
+                        VariantId = vehicle.VariantId,
+                        WarehouseId = vehicle.WarehouseId,
+                        Vin = vehicle.Vin,
+                        ImageUrl = vehicle.ImageUrl,
+                        Status = vehicle.Status,
+                        Purpose = vehicle.Purpose,
+                        CreatedDate = vehicle.CreatedDate,
+                        ModifiedDate = vehicle.ModifiedDate,
+                        DeletedDate = vehicle.DeletedDate,
+                        IsDeleted = vehicle.IsDeleted
+                    });
+                }
+
+                var report = new Report
+                {
+                    Type = "VEHICLES_ADDED_TO_EVM_WAREHOUSE",
+                    Title = "Xe đã được thêm vào kho EVM",
+                    Content = $"{createdVehicles.Count} xe đã được thêm vào kho EVM {warehouse.Name}",
+                    AccountId = addedByUserId
+                };
+                await _unitOfWork.Reports.AddAsync(report);
+
+                await _unitOfWork.SaveChangesAsync();
+
+                _logger.LogInformation("{Count} xe đã được thêm vào kho EVM {WarehouseId} bởi user {UserId}", 
+                    createdVehicles.Count, warehouse.Id, addedByUserId);
+
+                return ApiResponse<List<VehicleResponseDto>>.CreateSuccess(
+                    createdVehicles, 
+                    $"Đã thêm thành công {createdVehicles.Count} xe vào kho EVM {warehouse.Name}"
+                );
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi thêm xe vào kho EVM");
+                return ApiResponse<List<VehicleResponseDto>>.CreateFail("Đã xảy ra lỗi khi thêm xe vào kho EVM", errorCode: 500);
+            }
+        }
+
+        public async Task<ApiResponse<List<VehicleResponseDto>>> AddVehiclesToDealerWarehouseAsync(AddVehiclesToDealerWarehouseDto dto, Guid addedByUserId)
+        {
+            try
+            {
+                if (!dto.WarehouseId.HasValue && !dto.DealerId.HasValue)
+                {
+                    return ApiResponse<List<VehicleResponseDto>>.CreateFail("Phải cung cấp WarehouseId hoặc DealerId", errorCode: 400);
+                }
+
+                Warehouse? warehouse = null;
+
+                if (dto.WarehouseId.HasValue)
+                {
+                    warehouse = await _unitOfWork.Warehouses.GetByIdAsync(dto.WarehouseId.Value);
+                    if (warehouse == null || warehouse.IsDeleted)
+                    {
+                        return ApiResponse<List<VehicleResponseDto>>.CreateFail("Không tìm thấy kho hoặc kho đã bị xóa", errorCode: 404);
+                    }
+
+                    if (warehouse.Type != WarehouseType.DEALER)
+                    {
+                        return ApiResponse<List<VehicleResponseDto>>.CreateFail("Kho này không phải là kho của Dealer", errorCode: 400);
+                    }
+                }
+                else if (dto.DealerId.HasValue)
+                {
+                    var warehouses = await _unitOfWork.Warehouses.GetQueryable()
+                        .Where(w => w.DealerId == dto.DealerId.Value && w.Type == WarehouseType.DEALER && !w.IsDeleted)
+                        .OrderBy(w => w.CreatedDate)
+                        .ToListAsync();
+
+                    if (!warehouses.Any())
+                    {
+                        return ApiResponse<List<VehicleResponseDto>>.CreateFail($"Không tìm thấy kho Dealer nào cho dealer với ID '{dto.DealerId.Value}'", errorCode: 404);
+                    }
+
+                    warehouse = warehouses.First();
+                    _logger.LogInformation("Sử dụng kho Dealer mặc định {WarehouseId} cho dealer {DealerId}", warehouse.Id, dto.DealerId.Value);
+                }
+
+                var createdVehicles = new List<VehicleResponseDto>();
+                var variantIds = dto.Vehicles.Select(v => v.VariantId).Distinct().ToList();
+                var variants = await _unitOfWork.VehicleVariants.GetQueryable()
+                    .Where(v => variantIds.Contains(v.Id) && !v.IsDeleted)
+                    .ToDictionaryAsync(v => v.Id, v => v);
+
+                foreach (var vehicleDto in dto.Vehicles)
+                {
+                    if (!variants.ContainsKey(vehicleDto.VariantId))
+                    {
+                        _logger.LogWarning("Biến thể xe {VariantId} không tồn tại, bỏ qua...", vehicleDto.VariantId);
+                        continue;
+                    }
+
+                    if (string.IsNullOrWhiteSpace(vehicleDto.Vin))
+                    {
+                        _logger.LogWarning("Phát hiện số VIN trống, bỏ qua...");
+                        continue;
+                    }
+
+                    var existingVehicle = await _unitOfWork.Vehicles.GetQueryable()
+                        .Where(v => v.Vin == vehicleDto.Vin)
+                        .FirstOrDefaultAsync();
+
+                    if (existingVehicle != null)
+                    {
+                        _logger.LogWarning("VIN {VIN} đã tồn tại, bỏ qua...", vehicleDto.Vin);
+                        continue;
+                    }
+
+                    var vehicle = new Vehicle
+                    {
+                        VariantId = vehicleDto.VariantId,
+                        WarehouseId = warehouse!.Id,
+                        Vin = vehicleDto.Vin,
+                        Status = vehicleDto.Status,
+                        Purpose = vehicleDto.Purpose,
+                        ImageUrl = vehicleDto.ImageUrl
+                    };
+
+                    await _unitOfWork.Vehicles.AddAsync(vehicle);
+
+                    createdVehicles.Add(new VehicleResponseDto
+                    {
+                        Id = vehicle.Id,
+                        VariantId = vehicle.VariantId,
+                        WarehouseId = vehicle.WarehouseId,
+                        Vin = vehicle.Vin,
+                        ImageUrl = vehicle.ImageUrl,
+                        Status = vehicle.Status,
+                        Purpose = vehicle.Purpose,
+                        CreatedDate = vehicle.CreatedDate,
+                        ModifiedDate = vehicle.ModifiedDate,
+                        DeletedDate = vehicle.DeletedDate,
+                        IsDeleted = vehicle.IsDeleted
+                    });
+                }
+
+                var report = new Report
+                {
+                    Type = "VEHICLES_ADDED_TO_DEALER_WAREHOUSE",
+                    Title = "Xe đã được thêm vào kho Dealer",
+                    Content = $"{createdVehicles.Count} xe đã được thêm vào kho Dealer {warehouse.Name}",
+                    DealerId = warehouse.DealerId,
+                    AccountId = addedByUserId
+                };
+                await _unitOfWork.Reports.AddAsync(report);
+
+                await _unitOfWork.SaveChangesAsync();
+
+                _logger.LogInformation("{Count} xe đã được thêm vào kho Dealer {WarehouseId} bởi user {UserId}", 
+                    createdVehicles.Count, warehouse.Id, addedByUserId);
+
+                return ApiResponse<List<VehicleResponseDto>>.CreateSuccess(
+                    createdVehicles, 
+                    $"Đã thêm thành công {createdVehicles.Count} xe vào kho Dealer {warehouse.Name}"
+                );
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi thêm xe vào kho Dealer");
+                return ApiResponse<List<VehicleResponseDto>>.CreateFail("Đã xảy ra lỗi khi thêm xe vào kho Dealer", errorCode: 500);
+            }
+        }
+
         private static WarehouseResponseDto MapToDto(Warehouse w)
         {
             return new WarehouseResponseDto
