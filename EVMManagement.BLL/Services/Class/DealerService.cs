@@ -1,12 +1,9 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
-using AutoMapper;
-using AutoMapper.QueryableExtensions;
 using EVMManagement.BLL.DTOs.Request.Dealer;
 using EVMManagement.BLL.DTOs.Response;
 using EVMManagement.BLL.DTOs.Response.Dealer;
-using EVMManagement.BLL.Helpers;
 using EVMManagement.BLL.Services.Interface;
 using EVMManagement.DAL.Models.Entities;
 using EVMManagement.DAL.UnitOfWork;
@@ -16,12 +13,10 @@ namespace EVMManagement.BLL.Services.Class
     public class DealerService : IDealerService
     {
         private readonly IUnitOfWork _unitOfWork;
-        private readonly IMapper _mapper;
 
-        public DealerService(IUnitOfWork unitOfWork, IMapper mapper)
+        public DealerService(IUnitOfWork unitOfWork)
         {
             _unitOfWork = unitOfWork;
-            _mapper = mapper;
         }
 
         public async Task<Dealer> CreateDealerAsync(CreateDealerDto dto)
@@ -32,7 +27,7 @@ namespace EVMManagement.BLL.Services.Class
                 Address = dto.Address,
                 Phone = dto.Phone,
                 Email = dto.Email,
-                EstablishedAt = DateTimeHelper.ToUtc(dto.EstablishedAt),
+                EstablishedAt = dto.EstablishedAt,
                 IsActive = dto.IsActive
             };
 
@@ -46,7 +41,6 @@ namespace EVMManagement.BLL.Services.Class
         {
             var query = _unitOfWork.Dealers.GetQueryable();
 
-            // Apply filters
             if (!string.IsNullOrWhiteSpace(search))
             {
                 query = query.Where(x => x.Name.Contains(search) || x.Email.Contains(search));
@@ -63,7 +57,19 @@ namespace EVMManagement.BLL.Services.Class
                 .OrderByDescending(x => x.CreatedDate)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
-                .ProjectTo<DealerResponseDto>(_mapper.ConfigurationProvider)
+                .Select(x => new DealerResponseDto
+                {
+                    Id = x.Id,
+                    Name = x.Name,
+                    Address = x.Address,
+                    Phone = x.Phone,
+                    Email = x.Email,
+                    EstablishedAt = x.EstablishedAt,
+                    IsActive = x.IsActive,
+                    CreatedDate = x.CreatedDate,
+                    ModifiedDate = x.ModifiedDate,
+                    IsDeleted = x.IsDeleted
+                })
                 .ToList();
 
             return Task.FromResult(PagedResult<DealerResponseDto>.Create(items, totalCount, pageNumber, pageSize));
@@ -74,7 +80,19 @@ namespace EVMManagement.BLL.Services.Class
             var entity = await _unitOfWork.Dealers.GetByIdAsync(id);
             if (entity == null) return null;
 
-            return _mapper.Map<DealerResponseDto>(entity);
+            return new DealerResponseDto
+            {
+                Id = entity.Id,
+                Name = entity.Name,
+                Address = entity.Address,
+                Phone = entity.Phone,
+                Email = entity.Email,
+                EstablishedAt = entity.EstablishedAt,
+                IsActive = entity.IsActive,
+                CreatedDate = entity.CreatedDate,
+                ModifiedDate = entity.ModifiedDate,
+                IsDeleted = entity.IsDeleted
+            };
         }
 
         public async Task<DealerResponseDto?> UpdateAsync(Guid id, UpdateDealerDto dto)
@@ -86,7 +104,7 @@ namespace EVMManagement.BLL.Services.Class
             if (dto.Address != null) entity.Address = dto.Address;
             if (dto.Phone != null) entity.Phone = dto.Phone;
             if (dto.Email != null) entity.Email = dto.Email;
-            if (dto.EstablishedAt.HasValue) entity.EstablishedAt = DateTimeHelper.ToUtc(dto.EstablishedAt);
+            if (dto.EstablishedAt.HasValue) entity.EstablishedAt = dto.EstablishedAt;
             if (dto.IsActive.HasValue) entity.IsActive = dto.IsActive.Value;
 
             entity.ModifiedDate = DateTime.UtcNow;

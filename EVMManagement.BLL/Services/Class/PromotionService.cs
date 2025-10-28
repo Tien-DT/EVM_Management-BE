@@ -1,28 +1,22 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
-using AutoMapper;
-using AutoMapper.QueryableExtensions;
 using EVMManagement.BLL.DTOs.Request.Promotion;
 using EVMManagement.BLL.DTOs.Response;
 using EVMManagement.BLL.DTOs.Response.Promotion;
-using EVMManagement.BLL.Helpers;
 using EVMManagement.BLL.Services.Interface;
 using EVMManagement.DAL.Models.Entities;
 using EVMManagement.DAL.UnitOfWork;
-using Microsoft.EntityFrameworkCore;
 
 namespace EVMManagement.BLL.Services.Class
 {
     public class PromotionService : IPromotionService
     {
         private readonly IUnitOfWork _unitOfWork;
-        private readonly IMapper _mapper;
 
-        public PromotionService(IUnitOfWork unitOfWork, IMapper mapper)
+        public PromotionService(IUnitOfWork unitOfWork)
         {
             _unitOfWork = unitOfWork;
-            _mapper = mapper;
         }
 
         public async Task<PromotionResponseDto> CreatePromotionAsync(PromotionCreateDto dto)
@@ -33,15 +27,28 @@ namespace EVMManagement.BLL.Services.Class
                 Name = dto.Name,
                 Description = dto.Description,
                 DiscountPercent = dto.DiscountPercent,
-                StartAt = DateTimeHelper.ToUtc(dto.StartAt),
-                EndAt = DateTimeHelper.ToUtc(dto.EndAt),
+                StartAt = dto.StartAt,
+                EndAt = dto.EndAt,
                 IsActive = dto.IsActive
             };
 
             await _unitOfWork.Promotions.AddAsync(promotion);
             await _unitOfWork.SaveChangesAsync();
 
-            return _mapper.Map<PromotionResponseDto>(promotion);
+            return new PromotionResponseDto
+            {
+                Id = promotion.Id,
+                Code = promotion.Code,
+                Name = promotion.Name,
+                Description = promotion.Description,
+                DiscountPercent = promotion.DiscountPercent,
+                StartAt = promotion.StartAt,
+                EndAt = promotion.EndAt,
+                IsActive = promotion.IsActive,
+                CreatedDate = promotion.CreatedDate,
+                ModifiedDate = promotion.ModifiedDate,
+                IsDeleted = promotion.IsDeleted
+            };
         }
 
         public async Task<PagedResult<PromotionResponseDto>> GetAllAsync(int pageNumber = 1, int pageSize = 10)
@@ -49,12 +56,25 @@ namespace EVMManagement.BLL.Services.Class
             var query = _unitOfWork.Promotions.GetQueryable();
             var totalCount = await _unitOfWork.Promotions.CountAsync();
 
-            var items = await query
+            var items = query
                 .OrderByDescending(x => x.CreatedDate)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
-                .ProjectTo<PromotionResponseDto>(_mapper.ConfigurationProvider)
-                .ToListAsync();
+                .Select(x => new PromotionResponseDto
+                {
+                    Id = x.Id,
+                    Code = x.Code,
+                    Name = x.Name,
+                    Description = x.Description,
+                    DiscountPercent = x.DiscountPercent,
+                    StartAt = x.StartAt,
+                    EndAt = x.EndAt,
+                    IsActive = x.IsActive,
+                    CreatedDate = x.CreatedDate,
+                    ModifiedDate = x.ModifiedDate,
+                    IsDeleted = x.IsDeleted
+                })
+                .ToList();
 
             return PagedResult<PromotionResponseDto>.Create(items, totalCount, pageNumber, pageSize);
         }
@@ -64,7 +84,20 @@ namespace EVMManagement.BLL.Services.Class
             var entity = await _unitOfWork.Promotions.GetByIdAsync(id);
             if (entity == null) return null;
 
-            return _mapper.Map<PromotionResponseDto>(entity);
+            return new PromotionResponseDto
+            {
+                Id = entity.Id,
+                Code = entity.Code,
+                Name = entity.Name,
+                Description = entity.Description,
+                DiscountPercent = entity.DiscountPercent,
+                StartAt = entity.StartAt,
+                EndAt = entity.EndAt,
+                IsActive = entity.IsActive,
+                CreatedDate = entity.CreatedDate,
+                ModifiedDate = entity.ModifiedDate,
+                IsDeleted = entity.IsDeleted
+            };
         }
 
         public Task<PagedResult<PromotionResponseDto>> SearchAsync(string? query, int pageNumber = 1, int pageSize = 10)
@@ -87,7 +120,20 @@ namespace EVMManagement.BLL.Services.Class
                 .OrderByDescending(x => x.CreatedDate)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
-                .ProjectTo<PromotionResponseDto>(_mapper.ConfigurationProvider)
+                .Select(x => new PromotionResponseDto
+                {
+                    Id = x.Id,
+                    Code = x.Code,
+                    Name = x.Name,
+                    Description = x.Description,
+                    DiscountPercent = x.DiscountPercent,
+                    StartAt = x.StartAt,
+                    EndAt = x.EndAt,
+                    IsActive = x.IsActive,
+                    CreatedDate = x.CreatedDate,
+                    ModifiedDate = x.ModifiedDate,
+                    IsDeleted = x.IsDeleted
+                })
                 .ToList();
 
             return Task.FromResult(PagedResult<PromotionResponseDto>.Create(items, totalCount, pageNumber, pageSize));
@@ -102,8 +148,8 @@ namespace EVMManagement.BLL.Services.Class
             if (dto.Name != null) entity.Name = dto.Name;
             if (dto.Description != null) entity.Description = dto.Description;
             if (dto.DiscountPercent.HasValue) entity.DiscountPercent = dto.DiscountPercent;
-            if (dto.StartAt.HasValue) entity.StartAt = DateTimeHelper.ToUtc(dto.StartAt);
-            if (dto.EndAt.HasValue) entity.EndAt = DateTimeHelper.ToUtc(dto.EndAt);
+            if (dto.StartAt.HasValue) entity.StartAt = dto.StartAt;
+            if (dto.EndAt.HasValue) entity.EndAt = dto.EndAt;
             if (dto.IsActive.HasValue) entity.IsActive = dto.IsActive.Value;
 
             entity.ModifiedDate = DateTime.UtcNow;

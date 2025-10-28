@@ -26,7 +26,7 @@ namespace EVMManagement.DAL.UnitOfWork
         private IOrderDetailRepository? _orderDetails;
         private IQuotationRepository? _quotations;
         private IQuotationDetailRepository? _quotationDetails;
-       
+        
         private IVehicleRepository? _vehicles;
 
         private IVehicleTimeSlotRepository? _vehicleTimeSlots;
@@ -61,11 +61,10 @@ namespace EVMManagement.DAL.UnitOfWork
         public IOrderDetailRepository OrderDetails => _orderDetails ??= new OrderDetailRepository(_context);
         public IQuotationRepository Quotations => _quotations ??= new QuotationRepository(_context);
         public IQuotationDetailRepository QuotationDetails => _quotationDetails ??= new QuotationDetailRepository(_context);
-       
+        
         public IVehicleRepository Vehicles => _vehicles ??= new VehicleRepository(_context);
         public IVehicleTimeSlotRepository VehicleTimeSlots => _vehicleTimeSlots ??= new VehicleTimeSlotRepository(_context);
         public IMasterTimeSlotRepository MasterTimeSlots => _masterTimeSlots ??= new MasterTimeSlotRepository(_context);
-        // public IAvailableSlotRepository AvailableSlots => _availableSlots ??= new AvailableSlotRepository(_context); // Removed - now using VehicleTimeSlots with Status = AVAILABLE
         public IDealerContractRepository DealerContracts => _dealerContracts ??= new DealerContractRepository(_context);
         public ITestDriveBookingRepository TestDriveBookings => _testDriveBookings ??= new TestDriveBookingRepository(_context);
         public IHandoverRecordRepository HandoverRecords => _handoverRecords ??= new HandoverRecordRepository(_context);
