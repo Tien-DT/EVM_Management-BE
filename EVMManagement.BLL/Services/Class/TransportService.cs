@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using AutoMapper;
@@ -97,17 +98,13 @@ namespace EVMManagement.BLL.Services.Class
                 ?? throw new Exception("Failed to retrieve created transport");
         }
 
-        public async Task<PagedResult<TransportResponseDto>> GetAllAsync(int pageNumber = 1, int pageSize = 10)
+        public async Task<PagedResult<TransportResponseDto>> GetAllAsync(TransportFilterDto? filter = null)
         {
-            var query = _unitOfWork.Transports.GetQueryable()
-                .Include(t => t.TransportDetails)
-                    .ThenInclude(td => td.Vehicle)
-                        .ThenInclude(v => v.VehicleVariant)
-                            .ThenInclude(vv => vv.VehicleModel)
-                .Include(t => t.TransportDetails)
-                    .ThenInclude(td => td.Order)
-                        .ThenInclude(o => o.Dealer)
-                .Where(t => !t.IsDeleted)
+            filter ??= new TransportFilterDto();
+            var pageNumber = filter.PageNumber < 1 ? 1 : filter.PageNumber;
+            var pageSize = filter.PageSize < 1 ? 10 : filter.PageSize;
+
+            var query = ApplyFilter(BuildTransportQuery(), filter)
                 .OrderByDescending(t => t.CreatedDate);
 
             var totalCount = await query.CountAsync();
@@ -116,140 +113,43 @@ namespace EVMManagement.BLL.Services.Class
                 .Take(pageSize)
                 .ToListAsync();
 
-            var dtos = items.Select(t =>
-            {
-                // Get dealer info from first order (all orders should have same dealer)
-                var firstOrder = t.TransportDetails.FirstOrDefault()?.Order;
-                var dealer = firstOrder?.Dealer;
-
-                return new TransportResponseDto
-                {
-                    Id = t.Id,
-                    ProviderName = t.ProviderName,
-                    PickupLocation = t.PickupLocation,
-                    DropoffLocation = t.DropoffLocation,
-                    Status = t.Status,
-                    ScheduledPickupAt = t.ScheduledPickupAt,
-                    DeliveredAt = t.DeliveredAt,
-                    CreatedDate = t.CreatedDate,
-                    ModifiedDate = t.ModifiedDate,
-                    DealerId = dealer?.Id,
-                    DealerName = dealer?.Name,
-                    DealerAddress = dealer?.Address,
-                    TransportDetails = t.TransportDetails.Select(td => new TransportDetailDto
-                    {
-                        Id = td.Id,
-                        TransportId = td.TransportId,
-                        VehicleId = td.VehicleId,
-                        OrderId = td.OrderId,
-                        VehicleVin = td.Vehicle?.Vin,
-                        VehicleVariantName = td.Vehicle?.VehicleVariant?.VehicleModel?.Name + " - " + td.Vehicle?.VehicleVariant?.Color,
-                        OrderCode = td.Order?.Code
-                    }).ToList()
-                };
-            }).ToList();
+            var dtos = _mapper.Map<List<TransportResponseDto>>(items);
 
             return PagedResult<TransportResponseDto>.Create(dtos, totalCount, pageNumber, pageSize);
         }
 
-        public async Task<PagedResult<TransportResponseDto>> GetByDealerAsync(Guid dealerId, int pageNumber = 1, int pageSize = 10)
+        public Task<PagedResult<TransportResponseDto>> GetByDealerAsync(Guid dealerId, int pageNumber = 1, int pageSize = 10)
         {
-            var query = _unitOfWork.Transports.GetQueryable()
-                .Include(t => t.TransportDetails)
-                    .ThenInclude(td => td.Vehicle)
-                        .ThenInclude(v => v.VehicleVariant)
-                            .ThenInclude(vv => vv.VehicleModel)
-                .Include(t => t.TransportDetails)
-                    .ThenInclude(td => td.Order)
-                        .ThenInclude(o => o.Dealer)
-                .Where(t => !t.IsDeleted && t.TransportDetails.Any(td => td.Order != null && td.Order.DealerId == dealerId))
-                .OrderByDescending(t => t.CreatedDate);
-
-            var totalCount = await query.CountAsync();
-            var items = await query
-                .Skip((pageNumber - 1) * pageSize)
-                .Take(pageSize)
-                .ToListAsync();
-
-            var dtos = items.Select(t =>
+            var filter = new TransportFilterDto
             {
-                // Get dealer info from first order
-                var firstOrder = t.TransportDetails.FirstOrDefault()?.Order;
-                var dealer = firstOrder?.Dealer;
+                DealerId = dealerId,
+                PageNumber = pageNumber,
+                PageSize = pageSize
+            };
 
-                return new TransportResponseDto
-                {
-                    Id = t.Id,
-                    ProviderName = t.ProviderName,
-                    PickupLocation = t.PickupLocation,
-                    DropoffLocation = t.DropoffLocation,
-                    Status = t.Status,
-                    ScheduledPickupAt = t.ScheduledPickupAt,
-                    DeliveredAt = t.DeliveredAt,
-                    CreatedDate = t.CreatedDate,
-                    ModifiedDate = t.ModifiedDate,
-                    DealerId = dealer?.Id,
-                    DealerName = dealer?.Name,
-                    DealerAddress = dealer?.Address,
-                    TransportDetails = t.TransportDetails.Select(td => new TransportDetailDto
-                    {
-                        Id = td.Id,
-                        TransportId = td.TransportId,
-                        VehicleId = td.VehicleId,
-                        OrderId = td.OrderId,
-                        VehicleVin = td.Vehicle?.Vin,
-                        VehicleVariantName = td.Vehicle?.VehicleVariant?.VehicleModel?.Name + " - " + td.Vehicle?.VehicleVariant?.Color,
-                        OrderCode = td.Order?.Code
-                    }).ToList()
-                };
-            }).ToList();
+            return GetAllAsync(filter);
+        }
 
-            return PagedResult<TransportResponseDto>.Create(dtos, totalCount, pageNumber, pageSize);
+        public Task<PagedResult<TransportResponseDto>> GetByOrderAsync(Guid orderId, int pageNumber = 1, int pageSize = 10)
+        {
+            var filter = new TransportFilterDto
+            {
+                OrderId = orderId,
+                PageNumber = pageNumber,
+                PageSize = pageSize
+            };
+
+            return GetAllAsync(filter);
         }
 
         public async Task<TransportResponseDto?> GetByIdAsync(Guid id)
         {
-            var transport = await _unitOfWork.Transports.GetQueryable()
-                .Include(t => t.TransportDetails)
-                    .ThenInclude(td => td.Vehicle)
-                        .ThenInclude(v => v.VehicleVariant)
-                            .ThenInclude(vv => vv.VehicleModel)
-                .Include(t => t.TransportDetails)
-                    .ThenInclude(td => td.Order)
-                        .ThenInclude(o => o.Dealer)
-                .FirstOrDefaultAsync(t => t.Id == id && !t.IsDeleted);
+            var transport = await BuildTransportQuery()
+                .FirstOrDefaultAsync(t => t.Id == id);
 
             if (transport == null) return null;
 
-            // Get dealer info from first order
-            var firstOrder = transport.TransportDetails.FirstOrDefault()?.Order;
-            var dealer = firstOrder?.Dealer;
-
-            return new TransportResponseDto
-            {
-                Id = transport.Id,
-                ProviderName = transport.ProviderName,
-                PickupLocation = transport.PickupLocation,
-                DropoffLocation = transport.DropoffLocation,
-                Status = transport.Status,
-                ScheduledPickupAt = transport.ScheduledPickupAt,
-                DeliveredAt = transport.DeliveredAt,
-                CreatedDate = transport.CreatedDate,
-                ModifiedDate = transport.ModifiedDate,
-                DealerId = dealer?.Id,
-                DealerName = dealer?.Name,
-                DealerAddress = dealer?.Address,
-                TransportDetails = transport.TransportDetails.Select(td => new TransportDetailDto
-                {
-                    Id = td.Id,
-                    TransportId = td.TransportId,
-                    VehicleId = td.VehicleId,
-                    OrderId = td.OrderId,
-                    VehicleVin = td.Vehicle?.Vin,
-                    VehicleVariantName = td.Vehicle?.VehicleVariant?.VehicleModel?.Name + " - " + td.Vehicle?.VehicleVariant?.Color,
-                    OrderCode = td.Order?.Code
-                }).ToList()
-            };
+            return _mapper.Map<TransportResponseDto>(transport);
         }
 
         public async Task<TransportResponseDto?> UpdateAsync(Guid id, TransportUpdateDto dto)
@@ -288,14 +188,62 @@ namespace EVMManagement.BLL.Services.Class
 
         public IQueryable<Transport> GetQueryableForOData()
         {
+            return BuildTransportQuery();
+        }
+
+        private IQueryable<Transport> BuildTransportQuery()
+        {
             return _unitOfWork.Transports.GetQueryable()
                 .Include(t => t.TransportDetails)
                     .ThenInclude(td => td.Vehicle)
-                        .ThenInclude(v => v!.VehicleVariant)
+                        .ThenInclude(v => v.VehicleVariant)
                             .ThenInclude(vv => vv.VehicleModel)
                 .Include(t => t.TransportDetails)
                     .ThenInclude(td => td.Order)
+                        .ThenInclude(o => o!.Dealer)
+                .Include(t => t.TransportDetails)
+                    .ThenInclude(td => td.HandoverRecord)
                 .Where(t => !t.IsDeleted);
+        }
+
+        private static IQueryable<Transport> ApplyFilter(IQueryable<Transport> query, TransportFilterDto filter)
+        {
+            if (!string.IsNullOrWhiteSpace(filter.ProviderName))
+            {
+                var providerName = filter.ProviderName.Trim();
+                query = query.Where(t => t.ProviderName != null && EF.Functions.Like(t.ProviderName, $"%{providerName}%"));
+            }
+
+            if (filter.Status.HasValue)
+            {
+                query = query.Where(t => t.Status == filter.Status.Value);
+            }
+
+            if (filter.DealerId.HasValue)
+            {
+                var dealerId = filter.DealerId.Value;
+                query = query.Where(t => t.TransportDetails.Any(td => td.Order != null && td.Order!.DealerId == dealerId));
+            }
+
+            if (filter.OrderId.HasValue)
+            {
+                var orderId = filter.OrderId.Value;
+                query = query.Where(t => t.TransportDetails.Any(td => td.OrderId == orderId));
+            }
+
+            if (filter.CreatedFrom.HasValue)
+            {
+                var from = filter.CreatedFrom.Value;
+                query = query.Where(t => t.CreatedDate >= from);
+            }
+
+            if (filter.CreatedTo.HasValue)
+            {
+                var to = filter.CreatedTo.Value;
+                query = query.Where(t => t.CreatedDate <= to);
+            }
+
+            return query;
         }
     }
 }

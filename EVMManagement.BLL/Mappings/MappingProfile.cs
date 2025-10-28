@@ -1,3 +1,4 @@
+using System.Linq;
 using AutoMapper;
 using EVMManagement.BLL.DTOs.Request.Contract;
 using EVMManagement.BLL.DTOs.Request.Customer;
@@ -39,6 +40,8 @@ using EVMManagement.BLL.DTOs.Response.Vehicle;
 using EVMManagement.BLL.DTOs.Response.VehicleTimeSlot;
 using EVMManagement.BLL.DTOs.Response.Warehouse;
 using UserDealerDto = EVMManagement.BLL.DTOs.Response.User.DealerDto;
+using TransportResponse = EVMManagement.BLL.DTOs.Response.Transport.TransportResponseDto;
+using TransportDetailResponse = EVMManagement.BLL.DTOs.Response.Transport.TransportDetailDto;
 using EVMManagement.DAL.Models.Entities;
 
 namespace EVMManagement.BLL.Mappings
@@ -185,7 +188,22 @@ namespace EVMManagement.BLL.Mappings
             CreateMap<HandoverRecordUpdateDto, HandoverRecord>()
                 .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
             CreateMap<HandoverRecord, HandoverRecordResponseDto>();
-            CreateMap<TransportDetail, TransportDetailDto>();
+            CreateMap<TransportDetail, TransportDetailResponse>()
+                .ForMember(dest => dest.VehicleVin, opt => opt.MapFrom(src => src.Vehicle != null ? src.Vehicle.Vin : null))
+                .ForMember(dest => dest.VehicleVariantName, opt => opt.MapFrom(src =>
+                    src.Vehicle != null && src.Vehicle.VehicleVariant != null
+                        ? string.Join(" - ", new[]
+                        {
+                            src.Vehicle.VehicleVariant.VehicleModel != null ? src.Vehicle.VehicleVariant.VehicleModel.Name : null,
+                            src.Vehicle.VehicleVariant.Color
+                        }.Where(v => !string.IsNullOrWhiteSpace(v)))
+                        : null))
+                .ForMember(dest => dest.OrderCode, opt => opt.MapFrom(src => src.Order != null ? src.Order.Code : null));
+            CreateMap<Transport, TransportResponse>()
+                .ForMember(dest => dest.TransportDetails, opt => opt.MapFrom(src => src.TransportDetails))
+                .ForMember(dest => dest.DealerId, opt => opt.MapFrom(src => src.TransportDetails.Where(td => td.Order != null && td.Order.DealerId.HasValue).Select(td => td.Order!.DealerId).FirstOrDefault()))
+                .ForMember(dest => dest.DealerName, opt => opt.MapFrom(src => src.TransportDetails.Where(td => td.Order != null && td.Order.Dealer != null).Select(td => td.Order!.Dealer!.Name).FirstOrDefault()))
+                .ForMember(dest => dest.DealerAddress, opt => opt.MapFrom(src => src.TransportDetails.Where(td => td.Order != null && td.Order.Dealer != null).Select(td => td.Order!.Dealer!.Address).FirstOrDefault()));
 
             // DigitalSignature Mappings
             CreateMap<DigitalSignature, DigitalSignatureResponse>();

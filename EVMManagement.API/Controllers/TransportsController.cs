@@ -23,14 +23,19 @@ namespace EVMManagement.API.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetAll([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
+        public async Task<IActionResult> GetAll([FromQuery] TransportFilterDto filter)
         {
-            if (pageNumber < 1 || pageSize < 1)
+            if (filter == null)
+            {
+                filter = new TransportFilterDto();
+            }
+
+            if (filter.PageNumber < 1 || filter.PageSize < 1)
             {
                 return BadRequest(ApiResponse<string>.CreateFail("PageNumber and PageSize must be greater than 0", null, 400));
             }
 
-            var result = await _services.TransportService.GetAllAsync(pageNumber, pageSize);
+            var result = await _services.TransportService.GetAllAsync(filter);
             return Ok(ApiResponse<PagedResult<TransportResponseDto>>.CreateSuccess(result));
         }
 
@@ -43,6 +48,18 @@ namespace EVMManagement.API.Controllers
             }
 
             var result = await _services.TransportService.GetByDealerAsync(dealerId, pageNumber, pageSize);
+            return Ok(ApiResponse<PagedResult<TransportResponseDto>>.CreateSuccess(result));
+        }
+
+        [HttpGet("order/{orderId}")]
+        public async Task<IActionResult> GetByOrder(Guid orderId, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
+        {
+            if (pageNumber < 1 || pageSize < 1)
+            {
+                return BadRequest(ApiResponse<string>.CreateFail("PageNumber and PageSize must be greater than 0", null, 400));
+            }
+
+            var result = await _services.TransportService.GetByOrderAsync(orderId, pageNumber, pageSize);
             return Ok(ApiResponse<PagedResult<TransportResponseDto>>.CreateSuccess(result));
         }
 
