@@ -50,7 +50,7 @@ namespace EVMManagement.API.Controllers
         [Authorize(Roles = "EVM_ADMIN,DEALER_MANAGER")]
         public async Task<IActionResult> RegisterDealer([FromBody] RegisterDealerRequestDto request, CancellationToken cancellationToken)
         {
-            // Lấy role của user hiện tại từ 
+            // Lấy role của user hiện tại 
             var currentRole = GetCurrentRole();
             if (!currentRole.HasValue)
             {
