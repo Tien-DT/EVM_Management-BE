@@ -189,14 +189,12 @@ namespace EVMManagement.BLL.Services.Class
 
         public async Task<StockCheckResponseDto> CheckStockAvailabilityAsync(Guid variantId, Guid dealerId, int quantity)
         {
-            // Get warehouses belonging to the dealer
             var warehouses = await _unitOfWork.Warehouses.GetQueryable()
                 .Where(w => w.DealerId == dealerId && !w.IsDeleted)
                 .ToListAsync();
 
             var warehouseIds = warehouses.Select(w => w.Id).ToList();
 
-            // Query available vehicles
             var availableVehicles = await _unitOfWork.Vehicles.GetQueryable()
                 .Where(v => v.VariantId == variantId &&
                            warehouseIds.Contains(v.WarehouseId) &&
@@ -208,7 +206,6 @@ namespace EVMManagement.BLL.Services.Class
             var availableQuantity = availableVehicles.Count;
             var isInStock = availableQuantity >= quantity;
 
-            // Get primary warehouse (first one or null)
             var primaryWarehouse = warehouses.FirstOrDefault();
 
             return new StockCheckResponseDto
