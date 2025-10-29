@@ -188,6 +188,7 @@ namespace EVMManagement.BLL.Mappings
             CreateMap<HandoverRecordUpdateDto, HandoverRecord>()
                 .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
             CreateMap<HandoverRecord, HandoverRecordResponseDto>();
+            CreateMap<TransportDetail, EVMManagement.BLL.DTOs.Response.HandoverRecord.TransportDetailDto>();
             CreateMap<TransportDetail, TransportDetailResponse>()
                 .ForMember(dest => dest.VehicleVin, opt => opt.MapFrom(src => src.Vehicle != null ? src.Vehicle.Vin : null))
                 .ForMember(dest => dest.VehicleVariantName, opt => opt.MapFrom(src =>
