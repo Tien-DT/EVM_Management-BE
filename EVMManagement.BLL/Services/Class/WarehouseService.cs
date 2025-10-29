@@ -40,11 +40,6 @@ namespace EVMManagement.BLL.Services.Class
                     return ApiResponse<WarehouseResponseDto>.CreateFail("Tên kho là bắt buộc.");
                 }
 
-                if (!dto.DealerId.HasValue)
-                {
-                    return ApiResponse<WarehouseResponseDto>.CreateFail("DealerId là bắt buộc khi tạo warehouse.", errorCode: 400);
-                }
-
                 if (currentUserRole == AccountRole.DEALER_MANAGER)
                 {
                     if (!currentUserDealerId.HasValue)
