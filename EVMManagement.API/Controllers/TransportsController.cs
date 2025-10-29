@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
@@ -32,7 +32,7 @@ namespace EVMManagement.API.Controllers
 
             if (filter.PageNumber < 1 || filter.PageSize < 1)
             {
-                return BadRequest(ApiResponse<string>.CreateFail("PageNumber and PageSize must be greater than 0", null, 400));
+                return BadRequest(ApiResponse<string>.CreateFail("Giá trị PageNumber và PageSize phải lớn hơn 0.", null, 400));
             }
 
             var result = await _services.TransportService.GetAllAsync(filter);
@@ -44,7 +44,7 @@ namespace EVMManagement.API.Controllers
         {
             if (pageNumber < 1 || pageSize < 1)
             {
-                return BadRequest(ApiResponse<string>.CreateFail("PageNumber and PageSize must be greater than 0", null, 400));
+                return BadRequest(ApiResponse<string>.CreateFail("Giá trị PageNumber và PageSize phải lớn hơn 0.", null, 400));
             }
 
             var result = await _services.TransportService.GetByDealerAsync(dealerId, pageNumber, pageSize);
@@ -56,7 +56,7 @@ namespace EVMManagement.API.Controllers
         {
             if (pageNumber < 1 || pageSize < 1)
             {
-                return BadRequest(ApiResponse<string>.CreateFail("PageNumber and PageSize must be greater than 0", null, 400));
+                return BadRequest(ApiResponse<string>.CreateFail("Giá trị PageNumber và PageSize phải lớn hơn 0.", null, 400));
             }
 
             var result = await _services.TransportService.GetByOrderAsync(orderId, pageNumber, pageSize);
@@ -69,7 +69,7 @@ namespace EVMManagement.API.Controllers
             var result = await _services.TransportService.GetByIdAsync(id);
             if (result == null)
             {
-                return NotFound(ApiResponse<TransportResponseDto>.CreateFail("Transport not found", null, 404));
+                return NotFound(ApiResponse<TransportResponseDto>.CreateFail("Không tìm thấy phương tiện vận chuyển với mã đã cung cấp.", null, 404));
             }
 
             return Ok(ApiResponse<TransportResponseDto>.CreateSuccess(result));
@@ -81,7 +81,7 @@ namespace EVMManagement.API.Controllers
             if (!ModelState.IsValid)
             {
                 var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
-                return BadRequest(ApiResponse<TransportResponseDto>.CreateFail("Validation failed", errors, 400));
+                return BadRequest(ApiResponse<TransportResponseDto>.CreateFail("Dữ liệu tạo phương tiện vận chuyển không hợp lệ. Vui lòng kiểm tra lại thông tin.", errors, 400));
             }
 
             try
@@ -91,7 +91,7 @@ namespace EVMManagement.API.Controllers
             }
             catch (Exception ex)
             {
-                return BadRequest(ApiResponse<TransportResponseDto>.CreateFail(ex.Message, null, 400));
+                return BadRequest(ApiResponse<TransportResponseDto>.CreateFail($"Xảy ra lỗi khi tạo phương tiện vận chuyển. Chi tiết: {ex.Message}", null, 400));
             }
         }
 
@@ -101,29 +101,44 @@ namespace EVMManagement.API.Controllers
             if (!ModelState.IsValid)
             {
                 var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
-                return BadRequest(ApiResponse<TransportResponseDto>.CreateFail("Validation failed", errors, 400));
+                return BadRequest(ApiResponse<TransportResponseDto>.CreateFail("Dữ liệu cập nhật phương tiện vận chuyển không hợp lệ. Vui lòng kiểm tra lại.", errors, 400));
             }
 
-            var updated = await _services.TransportService.UpdateAsync(id, dto);
-            if (updated == null)
+            try
             {
-                return NotFound(ApiResponse<TransportResponseDto>.CreateFail("Transport not found", null, 404));
-            }
+                var updated = await _services.TransportService.UpdateAsync(id, dto);
+                if (updated == null)
+                {
+                    return NotFound(ApiResponse<TransportResponseDto>.CreateFail("Không tìm thấy phương tiện vận chuyển với mã đã cung cấp.", null, 404));
+                }
 
-            return Ok(ApiResponse<TransportResponseDto>.CreateSuccess(updated));
+                return Ok(ApiResponse<TransportResponseDto>.CreateSuccess(updated));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ApiResponse<TransportResponseDto>.CreateFail($"Xảy ra lỗi khi cập nhật phương tiện vận chuyển. Chi tiết: {ex.Message}", null, 500));
+            }
         }
 
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(Guid id)
         {
-            var result = await _services.TransportService.DeleteAsync(id);
-            if (!result)
+            try
             {
-                return NotFound(ApiResponse<string>.CreateFail("Transport not found", null, 404));
-            }
+                var result = await _services.TransportService.DeleteAsync(id);
+                if (!result)
+                {
+                    return NotFound(ApiResponse<string>.CreateFail("Không tìm thấy phương tiện vận chuyển với mã đã cung cấp.", null, 404));
+                }
 
-            return Ok(ApiResponse<string>.CreateSuccess("Transport deleted successfully"));
+                return Ok(ApiResponse<string>.CreateSuccess("Xóa phương tiện vận chuyển thành công"));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ApiResponse<string>.CreateFail($"Xảy ra lỗi khi xóa phương tiện vận chuyển. Chi tiết: {ex.Message}", null, 500));
+            }
         }
     }
 }
+
 
