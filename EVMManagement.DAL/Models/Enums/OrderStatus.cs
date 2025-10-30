@@ -8,6 +8,7 @@ namespace EVMManagement.DAL.Models.Enums
         QUOTATION_REJECTED,
         CREATED_CONTRACT,
         SIGNED_CONTRACT,
+        DEALER_SIGNED_CONTRACT,
         AWAITING_DEPOSIT,
         DEPOSIT_SUCCESS,
         IN_PROGRESS,
