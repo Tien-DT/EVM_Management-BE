@@ -15,6 +15,10 @@ namespace EVMManagement.DAL.Models.Enums
         IN_TRANSIT,
         READY_FOR_HANDOVER,
         COMPLETED,
-        CANCELED
+        CANCELED,
+        REPORTED,
+        REPORTED_PROCESSING,
+        REPORTED_REJECTED,
+        REPORTED_COMPLETED
     }
 }

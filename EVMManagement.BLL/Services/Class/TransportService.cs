@@ -27,39 +27,40 @@ namespace EVMManagement.BLL.Services.Class
 
         public async Task<TransportResponseDto> CreateAsync(TransportCreateDto dto)
         {
+            var orders = await _unitOfWork.Orders.GetQueryable()
+                .Include(o => o.OrderDetails)
+                    .ThenInclude(od => od.Vehicle)
+                .Where(o => dto.OrderIds.Contains(o.Id))
+                .ToListAsync();
+
+            if (orders.Count != dto.OrderIds.Count)
+            {
+                var foundIds = orders.Select(o => o.Id).ToList();
+                var missingIds = dto.OrderIds.Except(foundIds).ToList();
+                throw new InvalidOperationException($"Không tìm th?y các don hàng v?i mã: {string.Join(", ", missingIds)}");
+            }
+
+            foreach (var order in orders)
+            {
+                if (order.OrderType != OrderType.B2B)
+                {
+                    throw new InvalidOperationException($"Ðon hàng {order.Code} không ph?i lo?i B2B");
+                }
+
+                if (order.Status != OrderStatus.IN_PROGRESS)
+                {
+                    throw new InvalidOperationException($"Ðon hàng {order.Code} ph?i ? tr?ng thái IN_PROGRESS (hi?n t?i: {order.Status})");
+                }
+
+                if (!order.OrderDetails.Any(od => od.VehicleId.HasValue))
+                {
+                    throw new InvalidOperationException($"Ðon hàng {order.Code} chua du?c gán xe");
+                }
+            }
+
+            await _unitOfWork.BeginTransactionAsync();
             try
             {
-                var orders = await _unitOfWork.Orders.GetQueryable()
-                    .Include(o => o.OrderDetails)
-                        .ThenInclude(od => od.Vehicle)
-                    .Where(o => dto.OrderIds.Contains(o.Id))
-                    .ToListAsync();
-
-                if (orders.Count != dto.OrderIds.Count)
-                {
-                    var foundIds = orders.Select(o => o.Id).ToList();
-                    var missingIds = dto.OrderIds.Except(foundIds).ToList();
-                    throw new Exception($"KhÃ´ng tÃ¬m tháº¥y cÃ¡c order vá»›i IDs: {string.Join(", ", missingIds)}");
-                }
-
-                foreach (var order in orders)
-                {
-                    if (order.OrderType != OrderType.B2B)
-                    {
-                        throw new Exception($"Order {order.Code} khÃ´ng pháº£i lÃ  Ä‘Æ¡n hÃ ng B2B");
-                    }
-
-                    if (order.Status != OrderStatus.IN_PROGRESS)
-                    {
-                        throw new Exception($"Order {order.Code} khÃ´ng á»Ÿ tráº¡ng thÃ¡i IN_PROGRESS (hiá»‡n táº¡i: {order.Status})");
-                    }
-
-                    if (!order.OrderDetails.Any(od => od.VehicleId.HasValue))
-                    {
-                        throw new Exception($"Order {order.Code} khÃ´ng cÃ³ xe nÃ o Ä‘Æ°á»£c gÃ¡n");
-                    }
-                }
-
                 var transport = new Transport
                 {
                     ProviderName = dto.ProviderName,
@@ -73,24 +74,18 @@ namespace EVMManagement.BLL.Services.Class
                 await _unitOfWork.Transports.AddAsync(transport);
                 await _unitOfWork.SaveChangesAsync();
 
-                var transportDetailCount = 0;
+                var transportDetails = new List<TransportDetail>();
                 foreach (var order in orders)
                 {
-                    foreach (var orderDetail in order.OrderDetails)
+                    foreach (var orderDetail in order.OrderDetails.Where(od => od.VehicleId.HasValue))
                     {
-                        if (orderDetail.VehicleId.HasValue)
+                        transportDetails.Add(new TransportDetail
                         {
-                            var transportDetail = new TransportDetail
-                            {
-                                TransportId = transport.Id,
-                                VehicleId = orderDetail.VehicleId.Value,
-                                OrderId = order.Id,
-                                CreatedDate = DateTime.UtcNow
-                            };
-
-                            await _unitOfWork.TransportDetails.AddAsync(transportDetail);
-                            transportDetailCount++;
-                        }
+                            TransportId = transport.Id,
+                            VehicleId = orderDetail.VehicleId!.Value,
+                            OrderId = order.Id,
+                            CreatedDate = DateTime.UtcNow
+                        });
                     }
 
                     order.Status = OrderStatus.IN_TRANSIT;
@@ -98,24 +93,27 @@ namespace EVMManagement.BLL.Services.Class
                     _unitOfWork.Orders.Update(order);
                 }
 
-                await _unitOfWork.SaveChangesAsync();
-
-                if (transportDetailCount == 0)
+                if (!transportDetails.Any())
                 {
-                    throw new Exception("KhÃ´ng cÃ³ chi tiáº¿t váº­n chuyá»ƒn nÃ o Ä‘Æ°á»£c táº¡o. Vui lÃ²ng kiá»ƒm tra láº¡i dá»¯ liá»‡u.");
+                    throw new InvalidOperationException("Không th? t?o v?n chuy?n vì chua có xe nào du?c gán");
                 }
+
+                await _unitOfWork.TransportDetails.AddRangeAsync(transportDetails);
+                await _unitOfWork.SaveChangesAsync();
+                await _unitOfWork.CommitTransactionAsync();
 
                 var result = await GetByIdAsync(transport.Id);
                 if (result == null)
                 {
-                    throw new Exception("KhÃ´ng thá»ƒ truy xuáº¥t thÃ´ng tin Transport vá»«a táº¡o");
+                    throw new InvalidOperationException("Không th? truy xu?t thông tin v?n chuy?n v?a t?o");
                 }
 
                 return result;
             }
             catch (Exception ex)
             {
-                throw new Exception($"Lá»—i khi táº¡o Transport: {ex.Message}", ex);
+                await _unitOfWork.RollbackTransactionAsync();
+                throw new InvalidOperationException($"X?y ra l?i khi t?o v?n chuy?n: {ex.Message}", ex);
             }
         }
 
@@ -193,6 +191,72 @@ namespace EVMManagement.BLL.Services.Class
             return await GetByIdAsync(id);
         }
 
+        public async Task<TransportResponseDto> CancelAsync(Guid id)
+        {
+            var transport = await _unitOfWork.Transports.GetQueryable()
+                .Include(t => t.TransportDetails)
+                    .ThenInclude(td => td.Order)
+                .FirstOrDefaultAsync(t => t.Id == id);
+
+            if (transport == null)
+            {
+                throw new KeyNotFoundException($"Không tìm th?y v?n chuy?n v?i mã {id}");
+            }
+
+            if (transport.Status == TransportStatus.CANCELED)
+            {
+                var canceled = await GetByIdAsync(id);
+                if (canceled == null)
+                {
+                    throw new InvalidOperationException("Không th? truy xu?t thông tin v?n chuy?n sau khi h?y");
+                }
+
+                return canceled;
+            }
+
+            var orders = transport.TransportDetails
+                .Where(td => td.Order != null)
+                .Select(td => td.Order!)
+                .GroupBy(o => o.Id)
+                .Select(g => g.First())
+                .ToList();
+
+            await _unitOfWork.BeginTransactionAsync();
+            try
+            {
+                transport.Status = TransportStatus.CANCELED;
+                transport.ModifiedDate = DateTime.UtcNow;
+                _unitOfWork.Transports.Update(transport);
+
+                if (orders.Any())
+                {
+                    foreach (var order in orders)
+                    {
+                        order.Status = OrderStatus.IN_PROGRESS;
+                        order.ModifiedDate = DateTime.UtcNow;
+                    }
+
+                    _unitOfWork.Orders.UpdateRange(orders);
+                }
+
+                await _unitOfWork.SaveChangesAsync();
+                await _unitOfWork.CommitTransactionAsync();
+            }
+            catch (Exception ex)
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                throw new InvalidOperationException($"X?y ra l?i khi h?y v?n chuy?n: {ex.Message}", ex);
+            }
+
+            var result = await GetByIdAsync(id);
+            if (result == null)
+            {
+                throw new InvalidOperationException("Không th? truy xu?t thông tin v?n chuy?n sau khi h?y");
+            }
+
+            return result;
+        }
+
         public async Task<bool> DeleteAsync(Guid id)
         {
             var transport = await _unitOfWork.Transports.GetByIdAsync(id);
@@ -268,4 +332,3 @@ namespace EVMManagement.BLL.Services.Class
         }
     }
 }
-

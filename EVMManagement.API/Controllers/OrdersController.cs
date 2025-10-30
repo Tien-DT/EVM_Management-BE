@@ -9,6 +9,7 @@ using EVMManagement.DAL.Models.Entities;
 using EVMManagement.API.Services;
 using System.Threading.Tasks;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace EVMManagement.API.Controllers
@@ -120,6 +121,21 @@ namespace EVMManagement.API.Controllers
             return Ok(ApiResponse<string>.CreateSuccess("Đã xóa"));
         }
 
+
+        [HttpPost("{id}/cancel")]
+        public async Task<IActionResult> Cancel(Guid id)
+        {
+            try
+            {
+                var result = await _services.OrderService.CancelOrderAsync(id);
+                return Ok(ApiResponse<OrderResponse>.CreateSuccess(result));
+            }
+            catch (KeyNotFoundException ex)
+            {
+                var errors = new List<string> { ex.Message };
+                return NotFound(ApiResponse<OrderResponse>.CreateFail(ex.Message, errors, 404));
+            }
+        }
 
         [HttpPost("{orderId}/deposits/preorder")]
         public async Task<IActionResult> CreatePreOrderDeposit(Guid orderId, [FromBody] PreOrderDepositRequestDto dto)

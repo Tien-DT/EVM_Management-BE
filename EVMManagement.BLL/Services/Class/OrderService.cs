@@ -387,6 +387,64 @@ namespace EVMManagement.BLL.Services.Class
             return true;
         }
 
+        public async Task<OrderResponse> CancelOrderAsync(Guid orderId)
+        {
+            var order = await _unitOfWork.Orders.GetQueryable()
+                .Include(o => o.OrderDetails)
+                    .ThenInclude(od => od.Vehicle)
+                .FirstOrDefaultAsync(o => o.Id == orderId);
+
+            if (order == null)
+            {
+                throw new KeyNotFoundException($"Không tìm thấy đơn hàng với mã {orderId}");
+            }
+
+            if (order.Status == OrderStatus.CANCELED)
+            {
+                return _mapper.Map<OrderResponse>(order);
+            }
+
+            var vehicles = order.OrderDetails
+                .Where(od => od.Vehicle != null && od.Vehicle.Status == VehicleStatus.SOLD)
+                .Select(od => od.Vehicle!)
+                .GroupBy(v => v.Id)
+                .Select(g => g.First())
+                .ToList();
+
+            await _unitOfWork.BeginTransactionAsync();
+            try
+            {
+                if (vehicles.Count > 0)
+                {
+                    foreach (var vehicle in vehicles)
+                    {
+                        vehicle.Status = VehicleStatus.IN_STOCK;
+                        vehicle.ModifiedDate = DateTime.UtcNow;
+                    }
+
+                    _unitOfWork.Vehicles.UpdateRange(vehicles);
+                }
+
+                order.Status = OrderStatus.CANCELED;
+                order.ModifiedDate = DateTime.UtcNow;
+
+                _unitOfWork.Orders.Update(order);
+
+                await _unitOfWork.SaveChangesAsync();
+                await _unitOfWork.CommitTransactionAsync();
+            }
+            catch
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                throw;
+            }
+
+            return await _unitOfWork.Orders.GetQueryable()
+                .Where(o => o.Id == orderId)
+                .ProjectTo<OrderResponse>(_mapper.ConfigurationProvider)
+                .FirstAsync();
+        }
+
         public async Task<OrderFlowResponseDto> RequestDealerManagerApprovalAsync(Guid orderId, DealerManagerApprovalRequestDto dto)
         {
             var order = await _unitOfWork.Orders.GetByIdAsync(orderId);
