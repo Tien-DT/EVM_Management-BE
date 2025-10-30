@@ -2,6 +2,7 @@ namespace EVMManagement.DAL.Models.Enums
 {
     public enum OrderStatus
     {
+        AWAITING_CONFIRM,
         CONFIRMED,
         QUOTATION_RECEIVED,
         QUOTATION_ACCEPTED,

@@ -100,6 +100,10 @@ namespace EVMManagement.DAL.Data
                 entity.HasIndex(e => e.Phone).IsUnique();
                 entity.HasIndex(e => e.Email).IsUnique();
                 entity.HasIndex(e => e.CardId).IsUnique();
+                entity.HasOne(e => e.Dealer)
+                    .WithMany(d => d.Customers)
+                    .HasForeignKey(e => e.DealerId)
+                    .OnDelete(DeleteBehavior.SetNull);
             });
 
             // Configure VehicleModel

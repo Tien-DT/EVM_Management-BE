@@ -34,5 +34,6 @@ namespace EVMManagement.DAL.Models.Entities
         public virtual ICollection<Report> Reports { get; set; } = new HashSet<Report>();
         public virtual ICollection<MasterTimeSlot> MasterTimeSlots { get; set; } = new HashSet<MasterTimeSlot>();
         public virtual ICollection<Contract> Contracts { get; set; } = new HashSet<Contract>();
+        public virtual ICollection<Customer> Customers { get; set; } = new HashSet<Customer>();
     }
 }

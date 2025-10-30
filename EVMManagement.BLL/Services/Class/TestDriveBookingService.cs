@@ -109,7 +109,8 @@ namespace EVMManagement.BLL.Services.Class
                 {
                     FullName = dto.FullName,
                     Phone = dto.Phone,
-                    Email = dto.Email
+                    Email = dto.Email,
+                    DealerId = vehicleTimeSlot.DealerId
                 };
 
                 customer = await _customerService.CreateCustomerAsync(customerCreateDto);

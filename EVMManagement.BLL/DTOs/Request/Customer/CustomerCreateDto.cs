@@ -26,5 +26,7 @@ namespace EVMManagement.BLL.DTOs.Request.Customer
 
         [MaxLength(50)]
         public string? CardId { get; set; }
+
+        public Guid? DealerId { get; set; }
     }
 }

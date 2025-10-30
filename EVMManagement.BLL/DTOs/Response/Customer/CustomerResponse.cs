@@ -12,6 +12,7 @@ namespace EVMManagement.BLL.DTOs.Response.Customer
         public string? Address { get; set; }
         public DateTime? Dob { get; set; }
         public string? CardId { get; set; }
+        public Guid? DealerId { get; set; }
         public DateTime CreatedDate { get; set; }
         public DateTime? ModifiedDate { get; set; }
         public bool IsDeleted { get; set; }
