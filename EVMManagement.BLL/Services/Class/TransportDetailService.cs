@@ -77,26 +77,10 @@ namespace EVMManagement.BLL.Services.Class
                 throw new InvalidOperationException($"Xe với mã {string.Join(", ", vehiclesWithTransport)} đã được gán cho chuyến vận chuyển khác");
             }
 
-            var orderIds = dtos.Where(x => x.OrderId.HasValue).Select(x => x.OrderId!.Value).Distinct().ToList();
-            if (orderIds.Count > 0)
-            {
-                var validOrderIds = await _unitOfWork.Orders.GetQueryable()
-                    .Where(o => orderIds.Contains(o.Id) && !o.IsDeleted)
-                    .Select(o => o.Id)
-                    .ToListAsync();
-
-                if (validOrderIds.Count != orderIds.Count)
-                {
-                    var missingOrderIds = orderIds.Except(validOrderIds).ToList();
-                    throw new KeyNotFoundException($"Không tìm thấy đơn hàng với mã: {string.Join(", ", missingOrderIds)}");
-                }
-            }
-
             var entities = dtos.Select(dto => new TransportDetail
             {
                 TransportId = dto.TransportId,
                 VehicleId = dto.VehicleId,
-                OrderId = dto.OrderId,
                 CreatedDate = DateTime.UtcNow
             }).ToList();
 
@@ -110,7 +94,6 @@ namespace EVMManagement.BLL.Services.Class
                 .Include(td => td.Vehicle)
                     .ThenInclude(v => v.VehicleVariant)
                         .ThenInclude(vv => vv.VehicleModel)
-                .Include(td => td.Order)
                 .ToListAsync();
 
             return _mapper.Map<List<TransportDetailResponseDto>>(createdEntities);
@@ -144,11 +127,6 @@ namespace EVMManagement.BLL.Services.Class
             if (filter.VehicleId.HasValue)
             {
                 query = query.Where(td => td.VehicleId == filter.VehicleId.Value);
-            }
-
-            if (filter.OrderId.HasValue)
-            {
-                query = query.Where(td => td.OrderId == filter.OrderId.Value);
             }
 
             var totalCount = await query.CountAsync();
@@ -217,17 +195,6 @@ namespace EVMManagement.BLL.Services.Class
                 }
 
                 entity.VehicleId = dto.VehicleId.Value;
-            }
-
-            if (dto.OrderId.HasValue)
-            {
-                var orderExists = await _unitOfWork.Orders.AnyAsync(o => o.Id == dto.OrderId.Value && !o.IsDeleted);
-                if (!orderExists)
-                {
-                    throw new KeyNotFoundException("Không tìm thấy đơn hàng cần cập nhật");
-                }
-
-                entity.OrderId = dto.OrderId.Value;
             }
 
             entity.ModifiedDate = DateTime.UtcNow;

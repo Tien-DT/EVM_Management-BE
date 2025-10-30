@@ -3,6 +3,7 @@ using System;
 using EVMManagement.DAL.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace EVMManagement.DAL.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251030162803_MoveOrderIdFromTransportDetailsToTransports")]
+    partial class MoveOrderIdFromTransportDetailsToTransports
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -200,9 +203,6 @@ namespace EVMManagement.DAL.Migrations
                     b.Property<DateTime>("CreatedDate")
                         .HasColumnType("timestamp without time zone");
 
-                    b.Property<Guid?>("DealerId")
-                        .HasColumnType("uuid");
-
                     b.Property<DateTime?>("DeletedDate")
                         .HasColumnType("timestamp without time zone");
 
@@ -236,8 +236,6 @@ namespace EVMManagement.DAL.Migrations
 
                     b.HasIndex("CardId")
                         .IsUnique();
-
-                    b.HasIndex("DealerId");
 
                     b.HasIndex("Email")
                         .IsUnique();
@@ -1679,16 +1677,6 @@ namespace EVMManagement.DAL.Migrations
                     b.Navigation("SignedByUser");
                 });
 
-            modelBuilder.Entity("EVMManagement.DAL.Models.Entities.Customer", b =>
-                {
-                    b.HasOne("EVMManagement.DAL.Models.Entities.Dealer", "Dealer")
-                        .WithMany("Customers")
-                        .HasForeignKey("DealerId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.Navigation("Dealer");
-                });
-
             modelBuilder.Entity("EVMManagement.DAL.Models.Entities.DealerContract", b =>
                 {
                     b.HasOne("EVMManagement.DAL.Models.Entities.Dealer", "Dealer")
@@ -2164,8 +2152,6 @@ namespace EVMManagement.DAL.Migrations
                     b.Navigation("BankAccounts");
 
                     b.Navigation("Contracts");
-
-                    b.Navigation("Customers");
 
                     b.Navigation("DealerContract");
 

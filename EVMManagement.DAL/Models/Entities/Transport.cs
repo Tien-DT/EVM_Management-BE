@@ -22,6 +22,10 @@ namespace EVMManagement.DAL.Models.Entities
         public DateTime? ScheduledPickupAt { get; set; }
 
         public DateTime? DeliveredAt { get; set; }
+
+        public Guid? OrderId { get; set; }
+
+        public virtual Order? Order { get; set; }
         public virtual ICollection<TransportDetail> TransportDetails { get; set; } = new HashSet<TransportDetail>();
         public virtual ICollection<Report> Reports { get; set; } = new HashSet<Report>();
     }
