@@ -71,6 +71,7 @@ namespace EVMManagement.API.Setup
             services.AddScoped<IReportService, ReportService>();
             services.AddScoped<IDepositService, DepositService>();
             services.AddScoped<ITransportService, TransportService>();
+            services.AddScoped<ITransportDetailService, TransportDetailService>();
 
             services.AddScoped<IHandoverRecordService, HandoverRecordService>();
 

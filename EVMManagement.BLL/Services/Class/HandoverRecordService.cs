@@ -36,6 +36,7 @@ namespace EVMManagement.BLL.Services.Class
                 VehicleId = dto.VehicleId,
                 TransportDetailId = dto.TransportDetailId,
                 Notes = dto.Notes,
+                FileUrl = dto.FileUrl,
                 HandoverDate = DateTimeHelper.ToUtc(dto.HandoverDate)
             };
 
@@ -76,6 +77,7 @@ namespace EVMManagement.BLL.Services.Class
 
             if (dto.TransportDetailId.HasValue) entity.TransportDetailId = dto.TransportDetailId.Value;
             if (dto.Notes != null) entity.Notes = dto.Notes;
+            if (dto.FileUrl != null) entity.FileUrl = dto.FileUrl;
             if (dto.IsAccepted.HasValue) entity.IsAccepted = dto.IsAccepted.Value;
             if (dto.HandoverDate.HasValue) entity.HandoverDate = DateTimeHelper.ToUtc(dto.HandoverDate);
 

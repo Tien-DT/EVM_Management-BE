@@ -39,6 +39,7 @@ using EVMManagement.BLL.DTOs.Response.User;
 using EVMManagement.BLL.DTOs.Response.Vehicle;
 using EVMManagement.BLL.DTOs.Response.VehicleTimeSlot;
 using EVMManagement.BLL.DTOs.Response.Warehouse;
+using EVMManagement.BLL.DTOs.Response.TransportDetail;
 using UserDealerDto = EVMManagement.BLL.DTOs.Response.User.DealerDto;
 using TransportResponse = EVMManagement.BLL.DTOs.Response.Transport.TransportResponseDto;
 using TransportDetailResponse = EVMManagement.BLL.DTOs.Response.Transport.TransportDetailDto;
@@ -190,6 +191,17 @@ namespace EVMManagement.BLL.Mappings
             CreateMap<HandoverRecord, HandoverRecordResponseDto>();
             CreateMap<TransportDetail, EVMManagement.BLL.DTOs.Response.HandoverRecord.TransportDetailDto>();
             CreateMap<TransportDetail, TransportDetailResponse>()
+                .ForMember(dest => dest.VehicleVin, opt => opt.MapFrom(src => src.Vehicle != null ? src.Vehicle.Vin : null))
+                .ForMember(dest => dest.VehicleVariantName, opt => opt.MapFrom(src =>
+                    src.Vehicle != null && src.Vehicle.VehicleVariant != null
+                        ? string.Join(" - ", new[]
+                        {
+                            src.Vehicle.VehicleVariant.VehicleModel != null ? src.Vehicle.VehicleVariant.VehicleModel.Name : null,
+                            src.Vehicle.VehicleVariant.Color
+                        }.Where(v => !string.IsNullOrWhiteSpace(v)))
+                        : null))
+                .ForMember(dest => dest.OrderCode, opt => opt.MapFrom(src => src.Order != null ? src.Order.Code : null));
+            CreateMap<TransportDetail, TransportDetailResponseDto>()
                 .ForMember(dest => dest.VehicleVin, opt => opt.MapFrom(src => src.Vehicle != null ? src.Vehicle.Vin : null))
                 .ForMember(dest => dest.VehicleVariantName, opt => opt.MapFrom(src =>
                     src.Vehicle != null && src.Vehicle.VehicleVariant != null
