@@ -26,6 +26,7 @@ namespace EVMManagement.BLL.Services.Interface
         Task<bool> NotifyCustomerAsync(Guid orderId, CustomerNotificationRequestDto dto);
         Task<OrderResponse> UpdateCustomerConfirmationAsync(Guid orderId, CustomerConfirmationRequestDto dto);
         Task<OrderFlowResponseDto> ConfirmPaymentAsync(Guid orderId, ConfirmPaymentRequestDto dto);
+        Task<OrderResponse> CompleteOrderAsync(Guid orderId);
         IQueryable<Order> GetQueryableForOData();
     }
 }

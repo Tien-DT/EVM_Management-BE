@@ -137,6 +137,25 @@ namespace EVMManagement.API.Controllers
             }
         }
 
+        [HttpPost("{orderId}/complete")]
+        public async Task<IActionResult> Complete(Guid orderId)
+        {
+            try
+            {
+                var result = await _services.OrderService.CompleteOrderAsync(orderId);
+                return Ok(ApiResponse<OrderResponse>.CreateSuccess(result, "Hoàn tất đơn hàng thành công"));
+            }
+            catch (KeyNotFoundException ex)
+            {
+                var errors = new List<string> { ex.Message };
+                return NotFound(ApiResponse<OrderResponse>.CreateFail(ex.Message, errors, 404));
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ApiResponse<OrderResponse>.CreateFail(ex.Message, null, 400));
+            }
+        }
+
         [HttpPost("{orderId}/deposits/preorder")]
         public async Task<IActionResult> CreatePreOrderDeposit(Guid orderId, [FromBody] PreOrderDepositRequestDto dto)
         {
