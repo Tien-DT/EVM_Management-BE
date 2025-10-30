@@ -27,75 +27,96 @@ namespace EVMManagement.BLL.Services.Class
 
         public async Task<TransportResponseDto> CreateAsync(TransportCreateDto dto)
         {
-            // Validate that all orders exist, are B2B, and are IN_PROGRESS
-            var orders = await _unitOfWork.Orders.GetQueryable()
-                .Include(o => o.OrderDetails)
-                    .ThenInclude(od => od.Vehicle)
-                .Where(o => dto.OrderIds.Contains(o.Id))
-                .ToListAsync();
-
-            if (orders.Count != dto.OrderIds.Count)
+            try
             {
-                throw new Exception("One or more orders not found");
-            }
+                var orders = await _unitOfWork.Orders.GetQueryable()
+                    .Include(o => o.OrderDetails)
+                        .ThenInclude(od => od.Vehicle)
+                    .Where(o => dto.OrderIds.Contains(o.Id))
+                    .ToListAsync();
 
-            foreach (var order in orders)
-            {
-                if (order.OrderType != OrderType.B2B)
+                if (orders.Count != dto.OrderIds.Count)
                 {
-                    throw new Exception($"Order {order.Code} is not a B2B order");
+                    var foundIds = orders.Select(o => o.Id).ToList();
+                    var missingIds = dto.OrderIds.Except(foundIds).ToList();
+                    throw new Exception($"Không tìm thấy các order với IDs: {string.Join(", ", missingIds)}");
                 }
 
-                if (order.Status != OrderStatus.IN_PROGRESS)
+                foreach (var order in orders)
                 {
-                    throw new Exception($"Order {order.Code} is not in IN_PROGRESS status");
-                }
-            }
-
-            // Create Transport
-            var transport = new Transport
-            {
-                ProviderName = dto.ProviderName,
-                PickupLocation = dto.PickupLocation,
-                DropoffLocation = dto.DropoffLocation,
-                ScheduledPickupAt = dto.ScheduledPickupAt,
-                Status = TransportStatus.PENDING,
-                CreatedDate = DateTime.UtcNow
-            };
-
-            await _unitOfWork.Transports.AddAsync(transport);
-            await _unitOfWork.SaveChangesAsync();
-
-            // Create TransportDetails for each vehicle in the orders
-            foreach (var order in orders)
-            {
-                foreach (var orderDetail in order.OrderDetails)
-                {
-                    if (orderDetail.VehicleId.HasValue)
+                    if (order.OrderType != OrderType.B2B)
                     {
-                        var transportDetail = new TransportDetail
-                        {
-                            TransportId = transport.Id,
-                            VehicleId = orderDetail.VehicleId.Value,
-                            OrderId = order.Id,
-                            CreatedDate = DateTime.UtcNow
-                        };
+                        throw new Exception($"Order {order.Code} không phải là đơn hàng B2B");
+                    }
 
-                        await _unitOfWork.TransportDetails.AddAsync(transportDetail);
+                    if (order.Status != OrderStatus.IN_PROGRESS)
+                    {
+                        throw new Exception($"Order {order.Code} không ở trạng thái IN_PROGRESS (hiện tại: {order.Status})");
+                    }
+
+                    if (!order.OrderDetails.Any(od => od.VehicleId.HasValue))
+                    {
+                        throw new Exception($"Order {order.Code} không có xe nào được gán");
                     }
                 }
 
-                // Update Order status to IN_TRANSIT
-                order.Status = OrderStatus.IN_TRANSIT;
-                order.ModifiedDate = DateTime.UtcNow;
-                _unitOfWork.Orders.Update(order);
+                var transport = new Transport
+                {
+                    ProviderName = dto.ProviderName,
+                    PickupLocation = dto.PickupLocation,
+                    DropoffLocation = dto.DropoffLocation,
+                    ScheduledPickupAt = dto.ScheduledPickupAt,
+                    Status = TransportStatus.PENDING,
+                    CreatedDate = DateTime.UtcNow
+                };
+
+                await _unitOfWork.Transports.AddAsync(transport);
+                await _unitOfWork.SaveChangesAsync();
+
+                var transportDetailCount = 0;
+                foreach (var order in orders)
+                {
+                    foreach (var orderDetail in order.OrderDetails)
+                    {
+                        if (orderDetail.VehicleId.HasValue)
+                        {
+                            var transportDetail = new TransportDetail
+                            {
+                                TransportId = transport.Id,
+                                VehicleId = orderDetail.VehicleId.Value,
+                                OrderId = order.Id,
+                                CreatedDate = DateTime.UtcNow
+                            };
+
+                            await _unitOfWork.TransportDetails.AddAsync(transportDetail);
+                            transportDetailCount++;
+                        }
+                    }
+
+                    order.Status = OrderStatus.IN_TRANSIT;
+                    order.ModifiedDate = DateTime.UtcNow;
+                    _unitOfWork.Orders.Update(order);
+                }
+
+                await _unitOfWork.SaveChangesAsync();
+
+                if (transportDetailCount == 0)
+                {
+                    throw new Exception("Không có chi tiết vận chuyển nào được tạo. Vui lòng kiểm tra lại dữ liệu.");
+                }
+
+                var result = await GetByIdAsync(transport.Id);
+                if (result == null)
+                {
+                    throw new Exception("Không thể truy xuất thông tin Transport vừa tạo");
+                }
+
+                return result;
             }
-
-            await _unitOfWork.SaveChangesAsync();
-
-            // Return the created transport with details
-            return await GetByIdAsync(transport.Id) 
-                ?? throw new Exception("Failed to retrieve created transport");
+            catch (Exception ex)
+            {
+                throw new Exception($"Lỗi khi tạo Transport: {ex.Message}", ex);
+            }
         }
 
         public async Task<PagedResult<TransportResponseDto>> GetAllAsync(TransportFilterDto? filter = null)
