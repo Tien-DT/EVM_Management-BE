@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 
 namespace EVMManagement.BLL.DTOs.Request.Transport
@@ -17,12 +16,7 @@ namespace EVMManagement.BLL.DTOs.Request.Transport
 
         public DateTime? ScheduledPickupAt { get; set; }
 
-        /// <summary>
-        /// List of OrderIds to include in this transport
-        /// </summary>
-        [Required]
-        [MinLength(1, ErrorMessage = "At least one order is required")]
-        public List<Guid> OrderIds { get; set; } = new List<Guid>();
+        public Guid? OrderId { get; set; }
     }
 }
 

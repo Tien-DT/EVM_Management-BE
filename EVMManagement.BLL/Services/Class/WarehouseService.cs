@@ -2,14 +2,15 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using AutoMapper;
 using EVMManagement.BLL.DTOs.Request.Warehouse;
 using EVMManagement.BLL.DTOs.Response;
 using EVMManagement.BLL.DTOs.Response.Vehicle;
 using EVMManagement.BLL.DTOs.Response.Warehouse;
 using EVMManagement.BLL.Services.Interface;
-using EVMManagement.DAL.UnitOfWork;
 using EVMManagement.DAL.Models.Entities;
 using EVMManagement.DAL.Models.Enums;
+using EVMManagement.DAL.UnitOfWork;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
@@ -19,11 +20,13 @@ namespace EVMManagement.BLL.Services.Class
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly ILogger<WarehouseService> _logger;
+        private readonly IMapper _mapper;
 
-        public WarehouseService(IUnitOfWork unitOfWork, ILogger<WarehouseService> logger)
+        public WarehouseService(IUnitOfWork unitOfWork, ILogger<WarehouseService> logger, IMapper mapper)
         {
             _unitOfWork = unitOfWork;
             _logger = logger;
+            _mapper = mapper;
         }
 
         public async Task<ApiResponse<WarehouseResponseDto>> CreateWarehouseAsync(WarehouseCreateDto dto, AccountRole currentUserRole, Guid? currentUserDealerId = null)
@@ -148,6 +151,24 @@ namespace EVMManagement.BLL.Services.Class
 
             var result = PagedResult<WarehouseResponseDto>.Create(items, totalCount, pageNumber, pageSize);
             return Task.FromResult(result);
+        }
+
+        public async Task<PagedResult<WarehouseResponseDto>> GetWarehousesByTypeAsync(WarehouseType type, int pageNumber = 1, int pageSize = 10)
+        {
+            var query = _unitOfWork.Warehouses.GetWarehousesByType(type)
+                .Where(x => !x.IsDeleted);
+
+            var totalCount = await query.CountAsync();
+
+            var entities = await query
+                .OrderByDescending(x => x.CreatedDate)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            var items = _mapper.Map<List<WarehouseResponseDto>>(entities);
+
+            return PagedResult<WarehouseResponseDto>.Create(items, totalCount, pageNumber, pageSize);
         }
 
         public async Task<WarehouseResponseDto?> GetWarehouseByIdAsync(Guid id)
@@ -606,42 +627,9 @@ namespace EVMManagement.BLL.Services.Class
             }
         }
 
-        private static WarehouseResponseDto MapToDto(Warehouse w)
+        private WarehouseResponseDto MapToDto(Warehouse warehouse)
         {
-            return new WarehouseResponseDto
-            {
-                Id = w.Id,
-                DealerId = w.DealerId,
-                Name = w.Name,
-                Address = w.Address,
-                Capacity = w.Capacity,
-                Type = w.Type,
-                Dealer = w.Dealer == null ? null : new DealerDto
-                {
-                    Id = w.Dealer.Id,
-                    Name = w.Dealer.Name
-                },
-                Vehicles = w.Vehicles?.Select(v => new VehicleDto
-                {
-                    Id = v.Id,
-                    VariantId = v.VariantId,
-                    Vin = v.Vin,
-                    Status = v.Status,
-                    Variant = v.VehicleVariant == null ? null : new VehicleVariantDto
-                    {
-                        Color = v.VehicleVariant.Color,
-                        VehicleModel = v.VehicleVariant.VehicleModel == null ? null : new VehicleModelDto
-                        {
-                            Name = v.VehicleVariant.VehicleModel.Name,
-                            Ranking = (VehicleModelRanking)v.VehicleVariant.VehicleModel.Ranking
-                        }
-                    }
-                }).ToList(),
-                CreatedDate = w.CreatedDate,
-                ModifiedDate = w.ModifiedDate,
-                DeletedDate = w.DeletedDate,
-                IsDeleted = w.IsDeleted
-            };
+            return _mapper.Map<WarehouseResponseDto>(warehouse);
         }
 
         public IQueryable<Warehouse> GetQueryableForOData()

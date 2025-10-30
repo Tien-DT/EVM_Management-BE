@@ -29,7 +29,7 @@ namespace EVMManagement.API.Controllers
 
             if (filter.PageNumber < 1 || filter.PageSize < 1)
             {
-                return BadRequest(ApiResponse<string>.CreateFail("Gi� tr? PageNumber v� PageSize ph?i l?n hon 0", null, 400));
+                return BadRequest(ApiResponse<string>.CreateFail("Giá trị PageNumber và PageSize phải lớn hơn 0", null, 400));
             }
 
             var result = await _services.TransportService.GetAllAsync(filter);
@@ -41,7 +41,7 @@ namespace EVMManagement.API.Controllers
         {
             if (pageNumber < 1 || pageSize < 1)
             {
-                return BadRequest(ApiResponse<string>.CreateFail("Gi� tr? PageNumber v� PageSize ph?i l?n hon 0", null, 400));
+                return BadRequest(ApiResponse<string>.CreateFail("Giá trị PageNumber và PageSize phải lớn hơn 0", null, 400));
             }
 
             var result = await _services.TransportService.GetByDealerAsync(dealerId, pageNumber, pageSize);
@@ -53,7 +53,7 @@ namespace EVMManagement.API.Controllers
         {
             if (pageNumber < 1 || pageSize < 1)
             {
-                return BadRequest(ApiResponse<string>.CreateFail("Gi� tr? PageNumber v� PageSize ph?i l?n hon 0", null, 400));
+                return BadRequest(ApiResponse<string>.CreateFail("Giá trị PageNumber và PageSize phải lớn hơn 0", null, 400));
             }
 
             var result = await _services.TransportService.GetByOrderAsync(orderId, pageNumber, pageSize);
@@ -66,7 +66,7 @@ namespace EVMManagement.API.Controllers
             var result = await _services.TransportService.GetByIdAsync(id);
             if (result == null)
             {
-                return NotFound(ApiResponse<TransportResponseDto>.CreateFail("Kh�ng t�m th?y v?n chuy?n v?i m� y�u c?u", null, 404));
+                return NotFound(ApiResponse<TransportResponseDto>.CreateFail("Không tìm thấy vận chuyển với mã yêu cầu", null, 404));
             }
 
             return Ok(ApiResponse<TransportResponseDto>.CreateSuccess(result));
@@ -78,7 +78,7 @@ namespace EVMManagement.API.Controllers
             if (!ModelState.IsValid)
             {
                 var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
-                return BadRequest(ApiResponse<TransportResponseDto>.CreateFail("D? li?u t?o v?n chuy?n kh�ng h?p l?", errors, 400));
+                return BadRequest(ApiResponse<TransportResponseDto>.CreateFail("Dữ liệu tạo vận chuyển không hợp lệ", errors, 400));
             }
 
             try
@@ -96,7 +96,7 @@ namespace EVMManagement.API.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, ApiResponse<TransportResponseDto>.CreateFail($"X?y ra l?i khi t?o v?n chuy?n: {ex.Message}", null, 500));
+                return StatusCode(500, ApiResponse<TransportResponseDto>.CreateFail($"Xảy ra lỗi khi tạo vận chuyển: {ex.Message}", null, 500));
             }
         }
 
@@ -118,7 +118,7 @@ namespace EVMManagement.API.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, ApiResponse<TransportResponseDto>.CreateFail($"X?y ra l?i khi h?y v?n chuy?n: {ex.Message}", null, 500));
+                return StatusCode(500, ApiResponse<TransportResponseDto>.CreateFail($"Xảy ra lỗi khi hủy vận chuyển: {ex.Message}", null, 500));
             }
         }
 
@@ -128,7 +128,7 @@ namespace EVMManagement.API.Controllers
             if (!ModelState.IsValid)
             {
                 var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
-                return BadRequest(ApiResponse<TransportResponseDto>.CreateFail("D? li?u c?p nh?t v?n chuy?n kh�ng h?p l?", errors, 400));
+                return BadRequest(ApiResponse<TransportResponseDto>.CreateFail("Dữ liệu cập nhật vận chuyển không hợp lệ", errors, 400));
             }
 
             try
@@ -136,7 +136,7 @@ namespace EVMManagement.API.Controllers
                 var updated = await _services.TransportService.UpdateAsync(id, dto);
                 if (updated == null)
                 {
-                    return NotFound(ApiResponse<TransportResponseDto>.CreateFail("Kh�ng t�m th?y v?n chuy?n v?i m� y�u c?u", null, 404));
+                    return NotFound(ApiResponse<TransportResponseDto>.CreateFail("Không tìm thấy vận chuyển với mã yêu cầu", null, 404));
                 }
 
                 return Ok(ApiResponse<TransportResponseDto>.CreateSuccess(updated));
@@ -145,9 +145,13 @@ namespace EVMManagement.API.Controllers
             {
                 return BadRequest(ApiResponse<TransportResponseDto>.CreateFail(ex.Message, null, 400));
             }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(ApiResponse<TransportResponseDto>.CreateFail(ex.Message, null, 404));
+            }
             catch (Exception ex)
             {
-                return StatusCode(500, ApiResponse<TransportResponseDto>.CreateFail($"X?y ra l?i khi c?p nh?t v?n chuy?n: {ex.Message}", null, 500));
+                return StatusCode(500, ApiResponse<TransportResponseDto>.CreateFail($"Xảy ra lỗi khi cập nhật vận chuyển: {ex.Message}", null, 500));
             }
         }
 
@@ -159,14 +163,14 @@ namespace EVMManagement.API.Controllers
                 var result = await _services.TransportService.DeleteAsync(id);
                 if (!result)
                 {
-                    return NotFound(ApiResponse<string>.CreateFail("Kh�ng t�m th?y v?n chuy?n v?i m� y�u c?u", null, 404));
+                    return NotFound(ApiResponse<string>.CreateFail("Không tìm thấy vận chuyển với mã yêu cầu", null, 404));
                 }
 
-                return Ok(ApiResponse<string>.CreateSuccess("X�a v?n chuy?n th�nh c�ng"));
+                return Ok(ApiResponse<string>.CreateSuccess("Xóa vận chuyển thành công"));
             }
             catch (Exception ex)
             {
-                return StatusCode(500, ApiResponse<string>.CreateFail($"X?y ra l?i khi x�a v?n chuy?n: {ex.Message}", null, 500));
+                return StatusCode(500, ApiResponse<string>.CreateFail($"Xảy ra lỗi khi xóa vận chuyển: {ex.Message}", null, 500));
             }
         }
     }

@@ -6,7 +6,6 @@ namespace EVMManagement.BLL.DTOs.Request.Transport
     public class TransportFilterDto
     {
         public string? ProviderName { get; set; }
-        public Guid? DealerId { get; set; }
         public Guid? OrderId { get; set; }
         public TransportStatus? Status { get; set; }
         public DateTime? CreatedFrom { get; set; }

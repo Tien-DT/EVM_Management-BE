@@ -10,8 +10,6 @@ namespace EVMManagement.BLL.DTOs.Request.TransportDetail
 
         [Required]
         public Guid VehicleId { get; set; }
-
-        public Guid? OrderId { get; set; }
     }
 }
 
