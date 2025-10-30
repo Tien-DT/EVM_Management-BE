@@ -131,12 +131,16 @@ namespace EVMManagement.BLL.Services.Class
 
             var totalCount = await query.CountAsync();
 
-            var items = await query
+            var entities = await query
+                .Include(td => td.Vehicle)
+                    .ThenInclude(v => v.VehicleVariant)
+                        .ThenInclude(vv => vv.VehicleModel)
                 .OrderByDescending(td => td.CreatedDate)
                 .Skip((filter.PageNumber - 1) * filter.PageSize)
                 .Take(filter.PageSize)
-                .ProjectTo<TransportDetailResponseDto>(_mapper.ConfigurationProvider)
                 .ToListAsync();
+
+            var items = _mapper.Map<List<TransportDetailResponseDto>>(entities);
 
             return PagedResult<TransportDetailResponseDto>.Create(items, totalCount, filter.PageNumber, filter.PageSize);
         }
@@ -144,11 +148,17 @@ namespace EVMManagement.BLL.Services.Class
         public async Task<TransportDetailResponseDto?> GetByIdAsync(Guid id)
         {
             var entity = await _unitOfWork.TransportDetails.GetQueryable()
-                .Where(td => td.Id == id)
-                .ProjectTo<TransportDetailResponseDto>(_mapper.ConfigurationProvider)
-                .FirstOrDefaultAsync();
+                .Include(td => td.Vehicle)
+                    .ThenInclude(v => v.VehicleVariant)
+                        .ThenInclude(vv => vv.VehicleModel)
+                .FirstOrDefaultAsync(td => td.Id == id);
 
-            return entity;
+            if (entity == null)
+            {
+                return null;
+            }
+
+            return _mapper.Map<TransportDetailResponseDto>(entity);
         }
 
         public async Task<TransportDetailResponseDto?> UpdateAsync(Guid id, TransportDetailUpdateDto dto)
