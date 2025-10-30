@@ -11,6 +11,7 @@ namespace EVMManagement.BLL.Services.Interface
     {
         Task<OrderDetail> CreateOrderDetailAsync(OrderDetailCreateDto dto);
         Task<List<OrderDetail>> CreateOrderDetailsAsync(List<OrderDetailCreateDto> dtos);
+        Task<OrderDetailBulkCreateResponse> CreateOrderDetailsV2Async(List<OrderDetailCreateDto> dtos);
         Task<PagedResult<OrderDetailResponse>> GetAllAsync(int pageNumber = 1, int pageSize = 10);
         Task<OrderDetailResponse?> GetByIdAsync(Guid id);
         Task<OrderDetailResponse?> UpdateAsync(Guid id, OrderDetailUpdateDto dto);

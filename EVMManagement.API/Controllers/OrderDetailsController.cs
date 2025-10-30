@@ -73,6 +73,42 @@ namespace EVMManagement.API.Controllers
             return Ok(ApiResponse<List<OrderDetail>>.CreateSuccess(created));
         }
 
+        [HttpPost("/api/v2/orderdetails")]
+        public async Task<IActionResult> CreateV2([FromBody] List<OrderDetailCreateDto> dtos)
+        {
+            if (!ModelState.IsValid)
+            {
+                var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
+                return BadRequest(ApiResponse<OrderDetailBulkCreateResponse>.CreateFail("Dữ liệu không hợp lệ", errors, 400));
+            }
+
+            if (dtos == null || dtos.Count == 0)
+            {
+                return BadRequest(ApiResponse<OrderDetailBulkCreateResponse>.CreateFail("Danh sách chi tiết đơn hàng không được để trống", null, 400));
+            }
+
+            try
+            {
+                var result = await _services.OrderDetailService.CreateOrderDetailsV2Async(dtos);
+                return Ok(ApiResponse<OrderDetailBulkCreateResponse>.CreateSuccess(result));
+            }
+            catch (ArgumentException ex)
+            {
+                var errors = new List<string> { ex.Message };
+                return BadRequest(ApiResponse<OrderDetailBulkCreateResponse>.CreateFail(ex.Message, errors, 400));
+            }
+            catch (KeyNotFoundException ex)
+            {
+                var errors = new List<string> { ex.Message };
+                return NotFound(ApiResponse<OrderDetailBulkCreateResponse>.CreateFail(ex.Message, errors, 404));
+            }
+            catch (InvalidOperationException ex)
+            {
+                var errors = new List<string> { ex.Message };
+                return Conflict(ApiResponse<OrderDetailBulkCreateResponse>.CreateFail(ex.Message, errors, 409));
+            }
+        }
+
         [HttpPut("{id}")]
         public async Task<IActionResult> Update(Guid id, [FromBody] OrderDetailUpdateDto dto)
         {
