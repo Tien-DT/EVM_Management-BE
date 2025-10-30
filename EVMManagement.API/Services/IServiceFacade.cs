@@ -23,7 +23,7 @@ namespace EVMManagement.API.Services
         IVehicleTimeSlotService VehicleTimeSlotService { get; }
         IMasterTimeSlotService MasterTimeSlotService { get; }
         // IAvailableSlotService AvailableSlotService { get; } // Removed - now using VehicleTimeSlotService with Status = AVAILABLE
-    ITestDriveBookingService TestDriveBookingService { get; }
+        ITestDriveBookingService TestDriveBookingService { get; }
         IEmailService EmailService { get; }
         IStorageService StorageService { get; }
         IDigitalSignatureService DigitalSignatureService { get; }
@@ -32,5 +32,6 @@ namespace EVMManagement.API.Services
         IDepositService DepositService { get; }
         IHandoverRecordService HandoverRecordService { get; }
         ITransportService TransportService { get; }
+        ITransportDetailService TransportDetailService { get; }
     }
 }

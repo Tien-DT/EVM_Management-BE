@@ -14,6 +14,8 @@ namespace EVMManagement.DAL.Models.Entities
         public Guid? TransportDetailId { get; set; }
 
         public string? Notes { get; set; }
+        [MaxLength(500)]
+        public string? FileUrl { get; set; }
 
         public bool IsAccepted { get; set; } = false;
 
