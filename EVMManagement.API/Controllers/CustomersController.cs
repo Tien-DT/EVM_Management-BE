@@ -53,6 +53,19 @@ namespace EVMManagement.API.Controllers
             return Ok(ApiResponse<CustomerResponse>.CreateSuccess(item));
         }
 
+        [HttpGet("search/by-phone")]
+        public async Task<IActionResult> SearchByPhone([FromQuery] string phone)
+        {
+            if (string.IsNullOrWhiteSpace(phone))
+            {
+                return BadRequest(ApiResponse<CustomerResponse>.CreateFail("Phone number is required", null, 400));
+            }
+
+            var item = await _services.CustomerService.SearchCustomerByPhoneAsync(phone);
+            if (item == null) return NotFound(ApiResponse<CustomerResponse>.CreateFail("Customer not found", null, 404));
+            return Ok(ApiResponse<CustomerResponse>.CreateSuccess(item));
+        }
+
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] CustomerCreateDto dto)
         {

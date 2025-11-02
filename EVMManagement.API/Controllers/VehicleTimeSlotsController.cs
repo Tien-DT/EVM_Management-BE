@@ -49,6 +49,27 @@ namespace EVMManagement.API.Controllers
             return Ok(ApiResponse<PagedResult<VehicleTimeSlotResponseDto>>.CreateSuccess(result));
         }
 
+        [HttpGet("available-vehicles-for-slot")]
+        [Authorize(Roles = "DEALER_MANAGER")]
+        public async Task<IActionResult> GetAvailableVehiclesForSlot(
+            [FromQuery] Guid dealerId,
+            [FromQuery] DateTime slotDate,
+            [FromQuery] Guid masterSlotId)
+        {
+            if (dealerId == Guid.Empty || slotDate == DateTime.MinValue || masterSlotId == Guid.Empty)
+            {
+                return BadRequest(ApiResponse<AvailableVehiclesForSlotDto>.CreateFail(
+                    "DealerId, SlotDate and MasterSlotId are required",
+                    new List<string> { "All parameters are required" },
+                    400));
+            }
+
+            var result = await _services.VehicleTimeSlotService.GetAvailableVehiclesForSlotAsync(
+                dealerId, slotDate, masterSlotId);
+
+            return Ok(ApiResponse<AvailableVehiclesForSlotDto>.CreateSuccess(result));
+        }
+
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(Guid id)
         {

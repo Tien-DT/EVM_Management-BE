@@ -17,12 +17,7 @@ namespace EVMManagement.BLL.Services.Interface
         Task<TestDriveBookingResponseDto?> UpdateIsDeletedAsync(Guid id, bool isDeleted);
         Task<bool> DeleteAsync(Guid id);
         Task SendReminderEmailAsync(Guid bookingId);
-
-        /// <summary>
-        /// Tạo lịch hẹn với thông tin khách hàng - tạo khách hàng mới nếu không tìm thấy, sau đó tạo test drive booking
-        /// </summary>
-        /// <param name="dto">DTO chứa thông tin VehicleTimeSlot, khách hàng, và ghi chú</param>
-        /// <returns>TestDriveBookingResponseDto của lịch hẹn vừa được tạo</returns>
-        Task<TestDriveBookingResponseDto> CreateWithCustomerInfoAsync(TestDriveCreateDto dto);
+        Task<BulkReminderResultDto> BulkSendReminderEmailAsync(List<Guid> bookingIds);
+        
     }
 }

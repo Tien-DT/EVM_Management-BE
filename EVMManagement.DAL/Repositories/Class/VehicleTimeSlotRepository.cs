@@ -130,6 +130,19 @@ namespace EVMManagement.DAL.Repositories.Class
                 .ThenBy(vts => vts.MasterSlot.StartOffsetMinutes)
                 .ToListAsync();
         }
+
+        public async Task<List<Guid>> GetAssignedVehicleIdsForSlotAsync(Guid dealerId, DateTime slotDate, Guid masterSlotId)
+        {
+            var targetDate = slotDate.Date;
+            return await _dbSet
+                .Where(s => s.DealerId == dealerId
+                            && s.SlotDate.Date == targetDate
+                            && s.MasterSlotId == masterSlotId
+                            && !s.IsDeleted)
+                .Select(s => s.VehicleId)
+                .Distinct()
+                .ToListAsync();
+        }
     }
 }
 

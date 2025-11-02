@@ -23,6 +23,7 @@ namespace EVMManagement.BLL.Services.Interface
         Task<SlotVehiclesDto?> GetAvailableVehiclesBySlotAsync(Guid modelId, Guid dealerId, DateTime slotDate, Guid masterSlotId);
         Task<BulkAssignResultDto> BulkAssignVehiclesToSlotAsync(BulkAssignVehiclesDto dto, Guid dealerId);
         Task<List<DateSlotGroupDto>> GetSlotsByDateAsync(Guid dealerId, DateTime fromDate, DateTime toDate, TimeSlotStatus? status = null);
+        Task<AvailableVehiclesForSlotDto> GetAvailableVehiclesForSlotAsync(Guid dealerId, DateTime slotDate, Guid masterSlotId);
     }
 }
 

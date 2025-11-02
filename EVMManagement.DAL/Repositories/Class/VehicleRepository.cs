@@ -36,5 +36,18 @@ namespace EVMManagement.DAL.Repositories.Class
                     .ThenInclude(vv => vv.VehicleModel)
                 .OrderByDescending(v => v.CreatedDate);
         }
+
+        public async Task<List<Vehicle>> GetTestDriveVehiclesByDealerAsync(Guid dealerId)
+        {
+            return await _context.Vehicles
+                .Include(v => v.VehicleVariant)
+                    .ThenInclude(vv => vv.VehicleModel)
+                .Include(v => v.Warehouse)
+                .Where(v => v.Warehouse.DealerId == dealerId
+                            && v.Status == VehicleStatus.IN_STOCK
+                            && v.Purpose == VehiclePurpose.TEST_DRIVE
+                            && !v.IsDeleted)
+                .ToListAsync();
+        }
     }
 }

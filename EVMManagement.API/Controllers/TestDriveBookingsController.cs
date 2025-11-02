@@ -5,6 +5,7 @@ using EVMManagement.BLL.DTOs.Response.TestDriveBooking;
 using EVMManagement.API.Services;
 using System.Threading.Tasks;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using Microsoft.AspNetCore.Authorization;
 
@@ -32,8 +33,18 @@ namespace EVMManagement.API.Controllers
                 return BadRequest(ApiResponse<TestDriveBookingResponseDto>.CreateFail("Validation failed", errors, 400));
             }
 
-            var created = await _services.TestDriveBookingService.CreateAsync(dto);
-            return CreatedAtAction(nameof(GetById), new { id = created.Id }, ApiResponse<TestDriveBookingResponseDto>.CreateSuccess(created));
+            try
+            {
+               
+                var created = await _services.TestDriveBookingService.CreateAsync(dto);
+                return CreatedAtAction(nameof(GetById), new { id = created.Id }, ApiResponse<TestDriveBookingResponseDto>.CreateSuccess(created));
+            }
+            catch (Exception ex)
+            {
+                var errors = new List<string> { ex.Message };
+                return BadRequest(ApiResponse<TestDriveBookingResponseDto>.CreateFail(
+                    "Failed to create test drive booking", errors, 400));
+            }
         }
 
         [HttpGet]
@@ -129,49 +140,57 @@ namespace EVMManagement.API.Controllers
             return Ok(ApiResponse<TestDriveBookingResponseDto>.CreateSuccess(item));
         }
 
-        [HttpPost("{id}/send-reminder")]
+        [HttpPost("send-reminder")]
         [Authorize(Roles = "DEALER_STAFF")]
-        public async Task<IActionResult> SendReminder(Guid id)
+        public async Task<IActionResult> SendReminder([FromQuery] List<Guid> ids)
         {
-            try
+            // Validate input
+            if (ids == null || ids.Count == 0)
             {
-                await _services.TestDriveBookingService.SendReminderEmailAsync(id);
-                return Ok(ApiResponse<string>.CreateSuccess("Reminder email sent successfully", "Email sent at " + DateTime.UtcNow));
-            }
-            catch (Exception ex)
-            {
-                var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
-                return BadRequest(ApiResponse<string>.CreateFail("Failed to send reminder email", errors, 400));
-            }
-        }
-
-        [HttpPost("with-customer-info")]
-        [Authorize(Roles = "DEALER_STAFF")]
-        public async Task<IActionResult> CreateWithCustomerInfo([FromBody] TestDriveCreateDto dto)
-        {
-            if (!ModelState.IsValid)
-            {
-                var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
-                return BadRequest(ApiResponse<TestDriveBookingResponseDto>.CreateFail("Validation failed", errors, 400));
+                return BadRequest(ApiResponse<string>.CreateFail(
+                    "At least one booking ID is required", null, 400));
             }
 
             try
             {
-                var created = await _services.TestDriveBookingService.CreateWithCustomerInfoAsync(dto);
-                return CreatedAtAction(nameof(GetById), new { id = created.Id }, 
-                    ApiResponse<TestDriveBookingResponseDto>.CreateSuccess(created));
-            }
-            catch (ArgumentException ex)
-            {
-                return BadRequest(ApiResponse<TestDriveBookingResponseDto>.CreateFail(
-                    $"Validation error: {ex.Message}", null, 400));
+                // Process based on count
+                if (ids.Count == 1)
+                {
+                    // Single processing - throw exception if fails
+                    await _services.TestDriveBookingService.SendReminderEmailAsync(ids[0]);
+                    return Ok(ApiResponse<string>.CreateSuccess(
+                        "Reminder email sent successfully", 
+                        "Email sent at " + DateTime.UtcNow));
+                }
+                else
+                {
+                    // Bulk processing - return detailed results
+                    var result = await _services.TestDriveBookingService.BulkSendReminderEmailAsync(ids);
+                    
+                    if (result.SuccessCount == 0)
+                    {
+                        return BadRequest(ApiResponse<BulkReminderResultDto>.CreateSuccess(
+                            result, "All reminder emails failed to send"));
+                    }
+                    
+                    if (result.FailureCount > 0)
+                    {
+                        return Ok(ApiResponse<BulkReminderResultDto>.CreateSuccess(
+                            result, $"Partially successful: {result.SuccessCount}/{result.TotalRequested} emails sent"));
+                    }
+
+                    return Ok(ApiResponse<BulkReminderResultDto>.CreateSuccess(
+                        result, $"All {result.SuccessCount} reminder emails sent successfully"));
+                }
             }
             catch (Exception ex)
             {
                 var errors = new List<string> { ex.Message };
-                return BadRequest(ApiResponse<TestDriveBookingResponseDto>.CreateFail(
-                    "Failed to create appointment with customer info", errors, 400));
+                return BadRequest(ApiResponse<string>.CreateFail(
+                    "Failed to send reminder email(s)", errors, 400));
             }
         }
+
+       
     }
 }

@@ -26,6 +26,8 @@ namespace EVMManagement.DAL.Repositories.Interface
             DateTime toDate, 
             TimeSlotStatus? status = null
             );
+
+        Task<List<Guid>> GetAssignedVehicleIdsForSlotAsync(Guid dealerId, DateTime slotDate, Guid masterSlotId);
     }
 }
 
