@@ -470,6 +470,45 @@ namespace EVMManagement.BLL.Services.Class
             var mins = minutes.Value % 60;
             return $"{hours:D2}:{mins:D2}";
         }
+
+        public async Task<AvailableVehiclesForSlotDto> GetAvailableVehiclesForSlotAsync(
+            Guid dealerId, 
+            DateTime slotDate, 
+            Guid masterSlotId)
+        {
+            var result = new AvailableVehiclesForSlotDto
+            {
+                DealerId = dealerId,
+                SlotDate = slotDate,
+                MasterSlotId = masterSlotId
+            };
+
+            // Delegate queries to repositories
+            var allTestDriveVehicles = await _unitOfWork.Vehicles.GetTestDriveVehiclesByDealerAsync(dealerId);
+
+            var assignedVehicleIds = await _unitOfWork.VehicleTimeSlots.GetAssignedVehicleIdsForSlotAsync(
+                dealerId, slotDate.Date, masterSlotId);
+
+            // Map vehicles and mark which ones are already assigned
+            result.AvailableVehicles = allTestDriveVehicles.Select(v => new VehicleForAssignmentDto
+            {
+                Id = v.Id,
+                Vin = v.Vin,
+                ModelName = v.VehicleVariant?.VehicleModel?.Name ?? "Unknown Model",
+                
+                Color = v.VehicleVariant?.Color ?? "N/A",
+                ImageUrl = v.ImageUrl,
+                IsAlreadyAssigned = assignedVehicleIds.Contains(v.Id)
+            })
+            .OrderBy(v => v.IsAlreadyAssigned)
+            .ThenBy(v => v.ModelName)
+            .ToList();
+
+            result.TotalAvailable = result.AvailableVehicles.Count(v => !v.IsAlreadyAssigned);
+            result.AlreadyAssigned = result.AvailableVehicles.Count(v => v.IsAlreadyAssigned);
+
+            return result;
+        }
     }
 }
 

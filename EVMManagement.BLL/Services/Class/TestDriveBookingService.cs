@@ -71,84 +71,7 @@ namespace EVMManagement.BLL.Services.Class
             return result;
         }
 
-        public async Task<TestDriveBookingResponseDto> CreateWithCustomerInfoAsync(TestDriveCreateDto dto)
-        {
-            if (dto == null)
-            {
-                throw new ArgumentNullException(nameof(dto), "TestDriveCreateDto cannot be null");
-            }
 
-           
-            var vehicleTimeSlot = await _unitOfWork.VehicleTimeSlots.GetByIdAsync(dto.VehicleTimeslotId);
-            if (vehicleTimeSlot == null)
-            {
-                throw new Exception($"VehicleTimeSlot with ID {dto.VehicleTimeslotId} not found");
-            }
-
-            if (vehicleTimeSlot.Status != TimeSlotStatus.AVAILABLE)
-            {
-                throw new Exception($"VehicleTimeSlot is not available. Current status: {vehicleTimeSlot.Status}");
-            }
-
-            // Find or create customer
-            Customer customer = null;
-            var existingCustomer = await _customerService.SearchCustomerByPhoneAsync(dto.Phone);
-
-            if (existingCustomer != null)
-            {
-                customer = await _unitOfWork.Customers.GetByIdAsync(existingCustomer.Id);
-            }
-            else
-            {
-                if (string.IsNullOrWhiteSpace(dto.FullName))
-                {
-                    throw new ArgumentException("FullName is required when creating a new customer", nameof(dto.FullName));
-                }
-
-                var customerCreateDto = new CustomerCreateDto
-                {
-                    FullName = dto.FullName,
-                    Phone = dto.Phone,
-                    Email = dto.Email,
-                    DealerId = vehicleTimeSlot.DealerId
-                };
-
-                customer = await _customerService.CreateCustomerAsync(customerCreateDto);
-            }
-
-            if (customer == null)
-            {
-                throw new Exception("Failed to get or create customer");
-            }
-
-            // Create booking (this will also update VehicleTimeSlot status via CreateAsync)
-            var bookingCreateDto = new TestDriveBookingCreateDto
-            {
-                VehicleTimeslotId = dto.VehicleTimeslotId,
-                CustomerId = customer.Id,
-                Status = TestDriveBookingStatus.BOOKED,
-                Note = dto.Note
-            };
-
-            // CreateAsync already handles VehicleTimeSlot status update and email sending
-            var booking = await CreateAsync(bookingCreateDto);
-
-            vehicleTimeSlot.Status = TimeSlotStatus.BOOKED;
-            vehicleTimeSlot.ModifiedDate = DateTime.UtcNow;
-            _unitOfWork.VehicleTimeSlots.Update(vehicleTimeSlot);
-            await _unitOfWork.SaveChangesAsync();
-
-            try
-            {
-                await SendTestDriveConfirmationEmailAsync(booking);
-            }
-            catch (Exception ex)
-            {
-                throw new Exception($"Failed to send test drive booking confirmation email: {ex.Message}", ex);
-            }
-
-            return booking;
-        }
 
         private async Task SendTestDriveConfirmationEmailAsync(TestDriveBookingResponseDto booking)
         {
@@ -347,14 +270,17 @@ namespace EVMManagement.BLL.Services.Class
         {
             var entity = await _unitOfWork.TestDriveBookings.GetByIdAsync(id);
             if (entity == null) return null;
+            if (dto.CheckinAt.HasValue)
+            {
+                entity.CheckinAt = DateTimeHelper.ToUtc(dto.CheckinAt);
+                entity.Status = TestDriveBookingStatus.CHECKED_IN;
+            }
 
-            if (dto.VehicleTimeslotId.HasValue) entity.VehicleTimeslotId = dto.VehicleTimeslotId.Value;
-            if (dto.CustomerId.HasValue) entity.CustomerId = dto.CustomerId.Value;
-            if (dto.DealerStaffId.HasValue) entity.DealerStaffId = dto.DealerStaffId.Value;
-            if (dto.Status.HasValue) entity.Status = dto.Status.Value;
-            if (dto.CheckinAt.HasValue) entity.CheckinAt = DateTimeHelper.ToUtc(dto.CheckinAt);
-            if (dto.CheckoutAt.HasValue) entity.CheckoutAt = DateTimeHelper.ToUtc(dto.CheckoutAt);
-            if (dto.Note != null) entity.Note = dto.Note;
+            if (dto.CheckoutAt.HasValue)
+            {
+                entity.CheckoutAt = DateTimeHelper.ToUtc(dto.CheckoutAt);
+                entity.Status = TestDriveBookingStatus.COMPLETED;
+            }
 
             entity.ModifiedDate = DateTime.UtcNow;
 
@@ -390,9 +316,7 @@ namespace EVMManagement.BLL.Services.Class
             return true;
         }
 
-        /// <summary>
-        /// Send reminder email for a specific booking (manual trigger by dealer staff)
-        /// </summary>
+
         public async Task SendReminderEmailAsync(Guid bookingId)
         {
             try
@@ -401,6 +325,10 @@ namespace EVMManagement.BLL.Services.Class
                 if (booking == null)
                 {
                     throw new Exception($"Booking {bookingId} not found");
+                }
+                if (booking.Status != TestDriveBookingStatus.BOOKED)
+                {
+                    throw new Exception($"Booking {bookingId} has status {booking.Status}. Only BOOKED bookings can receive reminder emails.");
                 }
 
                 if (booking?.Customer == null || booking?.VehicleTimeSlot?.Dealer == null)
@@ -414,14 +342,12 @@ namespace EVMManagement.BLL.Services.Class
                     throw new Exception("Customer email is missing");
                 }
 
-                // Build customer-friendly vehicle information
                 var vehicleInfo = BuildVehicleInfo(booking);
 
                 var dealerName = booking.VehicleTimeSlot?.Dealer?.Name ?? "Dealer";
                 var dealerPhone = booking.VehicleTimeSlot?.Dealer?.Phone ?? "N/A";
                 var dealerAddress = booking.VehicleTimeSlot?.Dealer?.Address ?? "N/A";
 
-                // Calculate actual appointment time
                 var actualAppointmentTime = GetActualAppointmentTime(booking);
 
                 var subject = "📍 Nhắc Nhở: Lịch Lái Thử Sắp Diễn Ra - EVM Management";
@@ -445,9 +371,45 @@ namespace EVMManagement.BLL.Services.Class
             }
         }
 
-        /// <summary>
-        /// Build customer-friendly vehicle information string from booking details
-        /// </summary>
+       
+        public async Task<BulkReminderResultDto> BulkSendReminderEmailAsync(List<Guid> bookingIds)
+        {
+            var result = new BulkReminderResultDto
+            {
+                TotalRequested = bookingIds.Count,
+                Results = new List<ReminderResultDto>()
+            };
+
+            var tasks = bookingIds.Select(async bookingId =>
+            {
+                var reminderResult = new ReminderResultDto
+                {
+                    BookingId = bookingId,
+                    Success = false
+                };
+
+                try
+                {
+                    await SendReminderEmailAsync(bookingId);
+                    reminderResult.Success = true;
+                }
+                catch (Exception ex)
+                {
+                    reminderResult.Success = false;
+                    reminderResult.ErrorMessage = ex.Message;
+                }
+
+                return reminderResult;
+            });
+
+            var results = await Task.WhenAll(tasks);
+            result.Results = results.ToList();
+            result.SuccessCount = results.Count(r => r.Success);
+            result.FailureCount = results.Count(r => !r.Success);
+
+            return result;
+        }
+
         private string BuildVehicleInfo(TestDriveBookingResponseDto booking)
         {
             if (booking == null)
@@ -471,15 +433,11 @@ namespace EVMManagement.BLL.Services.Class
                 return string.Join(" - ", parts);
             }
 
-            // Fallback to VIN if no variant info available
             return booking.VehicleTimeSlot?.Vehicle != null
                 ? $"VIN: {booking.VehicleTimeSlot.Vehicle.Vin}"
                 : "Thông Tin Xe";
         }
 
-        /// <summary>
-        /// Calculate the actual appointment time by combining SlotDate (date only) with StartOffsetMinutes from MasterSlot
-        /// </summary>
         private DateTime GetActualAppointmentTime(TestDriveBookingResponseDto booking)
         {
             var slotDate = (booking.VehicleTimeSlot?.SlotDate ?? DateTime.UtcNow).Date;

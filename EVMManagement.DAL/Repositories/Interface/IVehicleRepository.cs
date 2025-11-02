@@ -11,5 +11,6 @@ namespace EVMManagement.DAL.Repositories.Interface
     {
         IQueryable<Vehicle> SearchByQueryAsync(string q);
         IQueryable<Vehicle> GetVehiclesByDealerAndVariantAsync(Guid dealerId, Guid variantId);
+        Task<List<Vehicle>> GetTestDriveVehiclesByDealerAsync(Guid dealerId);
     }
 }
