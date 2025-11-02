@@ -387,6 +387,149 @@ namespace EVMManagement.BLL.Services.Class
             return true;
         }
 
+        public async Task<OrderResponse> CancelOrderAsync(Guid orderId)
+        {
+            var order = await _unitOfWork.Orders.GetQueryable()
+                .Include(o => o.OrderDetails)
+                    .ThenInclude(od => od.Vehicle)
+                .FirstOrDefaultAsync(o => o.Id == orderId);
+
+            if (order == null)
+            {
+                throw new KeyNotFoundException($"Không tìm thấy đơn hàng với mã {orderId}");
+            }
+
+            if (order.Status == OrderStatus.CANCELED)
+            {
+                return _mapper.Map<OrderResponse>(order);
+            }
+
+            var vehicles = order.OrderDetails
+                .Where(od => od.Vehicle != null && od.Vehicle.Status == VehicleStatus.SOLD)
+                .Select(od => od.Vehicle!)
+                .GroupBy(v => v.Id)
+                .Select(g => g.First())
+                .ToList();
+
+            await _unitOfWork.BeginTransactionAsync();
+            try
+            {
+                if (vehicles.Count > 0)
+                {
+                    foreach (var vehicle in vehicles)
+                    {
+                        vehicle.Status = VehicleStatus.IN_STOCK;
+                        vehicle.ModifiedDate = DateTime.UtcNow;
+                    }
+
+                    _unitOfWork.Vehicles.UpdateRange(vehicles);
+                }
+
+                order.Status = OrderStatus.CANCELED;
+                order.ModifiedDate = DateTime.UtcNow;
+
+                _unitOfWork.Orders.Update(order);
+
+                await _unitOfWork.SaveChangesAsync();
+                await _unitOfWork.CommitTransactionAsync();
+            }
+            catch
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                throw;
+            }
+
+            return await _unitOfWork.Orders.GetQueryable()
+                .Where(o => o.Id == orderId)
+                .ProjectTo<OrderResponse>(_mapper.ConfigurationProvider)
+                .FirstAsync();
+        }
+
+        public async Task<OrderResponse> CompleteOrderAsync(Guid orderId)
+        {
+            var order = await _unitOfWork.Orders.GetQueryable()
+                .Include(o => o.OrderDetails)
+                .FirstOrDefaultAsync(o => o.Id == orderId);
+
+            if (order == null)
+            {
+                throw new KeyNotFoundException("Không tìm thấy đơn hàng.");
+            }
+
+            if (order.Status == OrderStatus.COMPLETED)
+            {
+                return await _unitOfWork.Orders.GetQueryable()
+                    .Where(o => o.Id == orderId)
+                    .ProjectTo<OrderResponse>(_mapper.ConfigurationProvider)
+                    .FirstAsync();
+            }
+
+            if (!order.DealerId.HasValue)
+            {
+                throw new InvalidOperationException("Đơn hàng chưa được gán cho đại lý nên không thể hoàn tất.");
+            }
+
+            var vehicleIds = order.OrderDetails
+                .Where(od => od.VehicleId.HasValue)
+                .Select(od => od.VehicleId!.Value)
+                .Distinct()
+                .ToList();
+
+            if (!vehicleIds.Any())
+            {
+                throw new InvalidOperationException("Đơn hàng chưa có xe để hoàn tất.");
+            }
+
+            var vehicles = await _unitOfWork.Vehicles.GetQueryable()
+                .Where(v => vehicleIds.Contains(v.Id) && !v.IsDeleted)
+                .ToListAsync();
+
+            if (vehicles.Count != vehicleIds.Count)
+            {
+                throw new InvalidOperationException("Không thể xác nhận thông tin xe cho đơn hàng.");
+            }
+
+            var warehouse = await _unitOfWork.Warehouses.GetQueryable()
+                .Where(w => w.DealerId == order.DealerId && !w.IsDeleted)
+                .OrderBy(w => w.CreatedDate)
+                .FirstOrDefaultAsync();
+
+            if (warehouse == null)
+            {
+                throw new InvalidOperationException("Dealer chưa có kho để nhận xe. Vui lòng tạo kho trước.");
+            }
+
+            await _unitOfWork.BeginTransactionAsync();
+            try
+            {
+                foreach (var vehicle in vehicles)
+                {
+                    vehicle.WarehouseId = warehouse.Id;
+                    vehicle.Status = VehicleStatus.IN_STOCK;
+                    vehicle.ModifiedDate = DateTime.UtcNow;
+                }
+
+                _unitOfWork.Vehicles.UpdateRange(vehicles);
+
+                order.Status = OrderStatus.COMPLETED;
+                order.ModifiedDate = DateTime.UtcNow;
+
+                _unitOfWork.Orders.Update(order);
+
+                await _unitOfWork.CommitTransactionAsync();
+            }
+            catch (Exception ex)
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                throw new Exception("Hoàn tất đơn hàng thất bại, vui lòng thử lại sau.", ex);
+            }
+
+            return await _unitOfWork.Orders.GetQueryable()
+                .Where(o => o.Id == orderId)
+                .ProjectTo<OrderResponse>(_mapper.ConfigurationProvider)
+                .FirstAsync();
+        }
+
         public async Task<OrderFlowResponseDto> RequestDealerManagerApprovalAsync(Guid orderId, DealerManagerApprovalRequestDto dto)
         {
             var order = await _unitOfWork.Orders.GetByIdAsync(orderId);
@@ -704,6 +847,22 @@ namespace EVMManagement.BLL.Services.Class
 
             await _unitOfWork.Reports.AddAsync(report);
             await _unitOfWork.SaveChangesAsync();
+        }
+
+        public IQueryable<Order> GetQueryableForOData()
+        {
+            return _unitOfWork.Orders.GetQueryable()
+                .Include(o => o.Quotation)
+                .Include(o => o.Customer)
+                .Include(o => o.Dealer)
+                .Include(o => o.CreatedByUser)
+                .Include(o => o.OrderDetails)
+                    .ThenInclude(od => od.VehicleVariant)
+                        .ThenInclude(vv => vv!.VehicleModel)
+                .Include(o => o.Contract)
+                .Include(o => o.Deposits)
+                .Include(o => o.HandoverRecord)
+                .Where(o => !o.IsDeleted);
         }
     }
 }

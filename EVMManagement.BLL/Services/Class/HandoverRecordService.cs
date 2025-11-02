@@ -36,6 +36,7 @@ namespace EVMManagement.BLL.Services.Class
                 VehicleId = dto.VehicleId,
                 TransportDetailId = dto.TransportDetailId,
                 Notes = dto.Notes,
+                FileUrl = dto.FileUrl,
                 HandoverDate = DateTimeHelper.ToUtc(dto.HandoverDate)
             };
 
@@ -76,6 +77,7 @@ namespace EVMManagement.BLL.Services.Class
 
             if (dto.TransportDetailId.HasValue) entity.TransportDetailId = dto.TransportDetailId.Value;
             if (dto.Notes != null) entity.Notes = dto.Notes;
+            if (dto.FileUrl != null) entity.FileUrl = dto.FileUrl;
             if (dto.IsAccepted.HasValue) entity.IsAccepted = dto.IsAccepted.Value;
             if (dto.HandoverDate.HasValue) entity.HandoverDate = DateTimeHelper.ToUtc(dto.HandoverDate);
 
@@ -212,6 +214,18 @@ namespace EVMManagement.BLL.Services.Class
 
             var items = entities.Select(e => _mapper.Map<HandoverRecordResponseDto>(e)).ToList();
             return PagedResult<HandoverRecordResponseDto>.Create(items, totalCount, filter.PageNumber, filter.PageSize);
+        }
+
+        public IQueryable<HandoverRecord> GetQueryableForOData()
+        {
+            return _unitOfWork.HandoverRecords.GetQueryable()
+                .Include(h => h.Order)
+                .Include(h => h.Vehicle)
+                    .ThenInclude(v => v.VehicleVariant)
+                        .ThenInclude(vv => vv.VehicleModel)
+                .Include(h => h.TransportDetail!)
+                    .ThenInclude(td => td.Transport)
+                .Where(h => !h.IsDeleted);
         }
     }
 }

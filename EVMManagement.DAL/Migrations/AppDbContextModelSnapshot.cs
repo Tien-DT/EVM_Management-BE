@@ -125,13 +125,19 @@ namespace EVMManagement.DAL.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
 
+                    b.Property<int>("ContractType")
+                        .HasColumnType("integer");
+
                     b.Property<Guid>("CreatedByUserId")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreatedDate")
                         .HasColumnType("timestamp without time zone");
 
-                    b.Property<Guid>("CustomerId")
+                    b.Property<Guid?>("CustomerId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("DealerId")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime?>("DeletedDate")
@@ -149,6 +155,9 @@ namespace EVMManagement.DAL.Migrations
                     b.Property<DateTime?>("SignedAt")
                         .HasColumnType("timestamp without time zone");
 
+                    b.Property<Guid?>("SignedByUserId")
+                        .HasColumnType("uuid");
+
                     b.Property<int>("Status")
                         .HasColumnType("integer");
 
@@ -164,8 +173,12 @@ namespace EVMManagement.DAL.Migrations
 
                     b.HasIndex("CustomerId");
 
+                    b.HasIndex("DealerId");
+
                     b.HasIndex("OrderId")
                         .IsUnique();
+
+                    b.HasIndex("SignedByUserId");
 
                     b.ToTable("Contracts");
                 });
@@ -186,6 +199,9 @@ namespace EVMManagement.DAL.Migrations
 
                     b.Property<DateTime>("CreatedDate")
                         .HasColumnType("timestamp without time zone");
+
+                    b.Property<Guid?>("DealerId")
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime?>("DeletedDate")
                         .HasColumnType("timestamp without time zone");
@@ -220,6 +236,8 @@ namespace EVMManagement.DAL.Migrations
 
                     b.HasIndex("CardId")
                         .IsUnique();
+
+                    b.HasIndex("DealerId");
 
                     b.HasIndex("Email")
                         .IsUnique();
@@ -497,6 +515,10 @@ namespace EVMManagement.DAL.Migrations
 
                     b.Property<DateTime?>("DeletedDate")
                         .HasColumnType("timestamp without time zone");
+
+                    b.Property<string>("FileUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
 
                     b.Property<DateTime?>("HandoverDate")
                         .HasColumnType("timestamp without time zone");
@@ -1191,6 +1213,9 @@ namespace EVMManagement.DAL.Migrations
                     b.Property<DateTime?>("ModifiedDate")
                         .HasColumnType("timestamp without time zone");
 
+                    b.Property<Guid?>("OrderId")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("PickupLocation")
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)");
@@ -1206,6 +1231,8 @@ namespace EVMManagement.DAL.Migrations
                         .HasColumnType("integer");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("OrderId");
 
                     b.ToTable("Transports");
                 });
@@ -1228,9 +1255,6 @@ namespace EVMManagement.DAL.Migrations
                     b.Property<DateTime?>("ModifiedDate")
                         .HasColumnType("timestamp without time zone");
 
-                    b.Property<Guid?>("OrderId")
-                        .HasColumnType("uuid");
-
                     b.Property<Guid>("TransportId")
                         .HasColumnType("uuid");
 
@@ -1238,8 +1262,6 @@ namespace EVMManagement.DAL.Migrations
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("OrderId");
 
                     b.HasIndex("TransportId");
 
@@ -1628,8 +1650,12 @@ namespace EVMManagement.DAL.Migrations
                     b.HasOne("EVMManagement.DAL.Models.Entities.Customer", "Customer")
                         .WithMany("Contracts")
                         .HasForeignKey("CustomerId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("EVMManagement.DAL.Models.Entities.Dealer", "Dealer")
+                        .WithMany("Contracts")
+                        .HasForeignKey("DealerId")
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.HasOne("EVMManagement.DAL.Models.Entities.Order", "Order")
                         .WithOne("Contract")
@@ -1637,11 +1663,30 @@ namespace EVMManagement.DAL.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("EVMManagement.DAL.Models.Entities.UserProfile", "SignedByUser")
+                        .WithMany("SignedContracts")
+                        .HasForeignKey("SignedByUserId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.Navigation("CreatedByUser");
 
                     b.Navigation("Customer");
 
+                    b.Navigation("Dealer");
+
                     b.Navigation("Order");
+
+                    b.Navigation("SignedByUser");
+                });
+
+            modelBuilder.Entity("EVMManagement.DAL.Models.Entities.Customer", b =>
+                {
+                    b.HasOne("EVMManagement.DAL.Models.Entities.Dealer", "Dealer")
+                        .WithMany("Customers")
+                        .HasForeignKey("DealerId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Dealer");
                 });
 
             modelBuilder.Entity("EVMManagement.DAL.Models.Entities.DealerContract", b =>
@@ -1957,12 +2002,17 @@ namespace EVMManagement.DAL.Migrations
                     b.Navigation("Invoice");
                 });
 
-            modelBuilder.Entity("EVMManagement.DAL.Models.Entities.TransportDetail", b =>
+            modelBuilder.Entity("EVMManagement.DAL.Models.Entities.Transport", b =>
                 {
                     b.HasOne("EVMManagement.DAL.Models.Entities.Order", "Order")
                         .WithMany()
                         .HasForeignKey("OrderId");
 
+                    b.Navigation("Order");
+                });
+
+            modelBuilder.Entity("EVMManagement.DAL.Models.Entities.TransportDetail", b =>
+                {
                     b.HasOne("EVMManagement.DAL.Models.Entities.Transport", "Transport")
                         .WithMany("TransportDetails")
                         .HasForeignKey("TransportId")
@@ -1974,8 +2024,6 @@ namespace EVMManagement.DAL.Migrations
                         .HasForeignKey("EVMManagement.DAL.Models.Entities.TransportDetail", "VehicleId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
-
-                    b.Navigation("Order");
 
                     b.Navigation("Transport");
 
@@ -2115,6 +2163,10 @@ namespace EVMManagement.DAL.Migrations
                 {
                     b.Navigation("BankAccounts");
 
+                    b.Navigation("Contracts");
+
+                    b.Navigation("Customers");
+
                     b.Navigation("DealerContract");
 
                     b.Navigation("MasterTimeSlots");
@@ -2215,6 +2267,8 @@ namespace EVMManagement.DAL.Migrations
                     b.Navigation("CreatedOrders");
 
                     b.Navigation("CreatedQuotations");
+
+                    b.Navigation("SignedContracts");
 
                     b.Navigation("SignedDealerContractsAsDealer");
 

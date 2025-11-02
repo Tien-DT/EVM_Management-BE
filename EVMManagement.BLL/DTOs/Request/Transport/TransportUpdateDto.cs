@@ -20,6 +20,8 @@ namespace EVMManagement.BLL.DTOs.Request.Transport
         public DateTime? ScheduledPickupAt { get; set; }
 
         public DateTime? DeliveredAt { get; set; }
+
+        public Guid? OrderId { get; set; }
     }
 }
 

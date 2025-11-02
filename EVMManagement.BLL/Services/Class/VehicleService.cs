@@ -238,5 +238,19 @@ namespace EVMManagement.BLL.Services.Class
         {
             return _mapper.Map<VehicleResponseDto>(e);
         }
+
+        public IQueryable<Vehicle> GetQueryableForOData()
+        {
+            return _unitOfWork.Vehicles.GetQueryable()
+                .Include(v => v.VehicleVariant)
+                    .ThenInclude(vv => vv.VehicleModel)
+                .Include(v => v.Warehouse)
+                    .ThenInclude(w => w!.Dealer)
+                .Include(v => v.OrderDetails)
+                .Include(v => v.TransportDetail)
+                .Include(v => v.HandoverRecord)
+                .Include(v => v.VehicleTimeSlots)
+                .Where(v => !v.IsDeleted);
+        }
     }
 }

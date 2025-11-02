@@ -100,6 +100,10 @@ namespace EVMManagement.DAL.Data
                 entity.HasIndex(e => e.Phone).IsUnique();
                 entity.HasIndex(e => e.Email).IsUnique();
                 entity.HasIndex(e => e.CardId).IsUnique();
+                entity.HasOne(e => e.Dealer)
+                    .WithMany(d => d.Customers)
+                    .HasForeignKey(e => e.DealerId)
+                    .OnDelete(DeleteBehavior.SetNull);
             });
 
             // Configure VehicleModel
@@ -233,11 +237,19 @@ namespace EVMManagement.DAL.Data
                 entity.HasOne(e => e.Customer)
                     .WithMany(c => c.Contracts)
                     .HasForeignKey(e => e.CustomerId)
-                    .OnDelete(DeleteBehavior.Restrict);
+                    .OnDelete(DeleteBehavior.SetNull);
+                entity.HasOne(e => e.Dealer)
+                    .WithMany(d => d.Contracts)
+                    .HasForeignKey(e => e.DealerId)
+                    .OnDelete(DeleteBehavior.SetNull);
                 entity.HasOne(e => e.CreatedByUser)
                     .WithMany(u => u.CreatedContracts)
                     .HasForeignKey(e => e.CreatedByUserId)
                     .OnDelete(DeleteBehavior.Restrict);
+                entity.HasOne(e => e.SignedByUser)
+                    .WithMany(u => u.SignedContracts)
+                    .HasForeignKey(e => e.SignedByUserId)
+                    .OnDelete(DeleteBehavior.SetNull);
             });
 
             // Configure DealerContract

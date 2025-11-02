@@ -9,6 +9,7 @@ using EVMManagement.DAL.Models.Entities;
 using EVMManagement.API.Services;
 using System.Threading.Tasks;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace EVMManagement.API.Controllers
@@ -29,7 +30,7 @@ namespace EVMManagement.API.Controllers
         {
             if (pageNumber < 1 || pageSize < 1)
             {
-                return BadRequest(ApiResponse<string>.CreateFail("PageNumber and PageSize must be greater than 0", null, 400));
+                return BadRequest(ApiResponse<string>.CreateFail("Số trang và kích thước trang phải lớn hơn 0", null, 400));
             }
 
             var result = await _services.OrderService.GetAllAsync(pageNumber, pageSize);
@@ -41,7 +42,7 @@ namespace EVMManagement.API.Controllers
         {
             if (filter.PageNumber < 1 || filter.PageSize < 1)
             {
-                return BadRequest(ApiResponse<string>.CreateFail("PageNumber and PageSize must be greater than 0", null, 400));
+                return BadRequest(ApiResponse<string>.CreateFail("Số trang và kích thước trang phải lớn hơn 0", null, 400));
             }
 
             var result = await _services.OrderService.GetByFilterAsync(filter);
@@ -52,7 +53,7 @@ namespace EVMManagement.API.Controllers
         public async Task<IActionResult> GetById(Guid id)
         {
             var item = await _services.OrderService.GetByIdAsync(id);
-            if (item == null) return NotFound(ApiResponse<OrderResponse>.CreateFail("Order not found", null, 404));
+            if (item == null) return NotFound(ApiResponse<OrderResponse>.CreateFail("Không tìm thấy đơn hàng", null, 404));
             return Ok(ApiResponse<OrderResponse>.CreateSuccess(item));
         }
 
@@ -60,7 +61,7 @@ namespace EVMManagement.API.Controllers
         public async Task<IActionResult> GetByIdWithDetails(Guid id)
         {
             var item = await _services.OrderService.GetByIdWithDetailsAsync(id);
-            if (item == null) return NotFound(ApiResponse<OrderWithDetailsResponse>.CreateFail("Order not found", null, 404));
+            if (item == null) return NotFound(ApiResponse<OrderWithDetailsResponse>.CreateFail("Không tìm thấy đơn hàng", null, 404));
             return Ok(ApiResponse<OrderWithDetailsResponse>.CreateSuccess(item));
         }
 
@@ -70,7 +71,7 @@ namespace EVMManagement.API.Controllers
             if (!ModelState.IsValid)
             {
                 var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
-                return BadRequest(ApiResponse<Order>.CreateFail("Validation failed", errors, 400));
+                return BadRequest(ApiResponse<Order>.CreateFail("Dữ liệu không hợp lệ", errors, 400));
             }
 
             var created = await _services.OrderService.CreateOrderAsync(dto);
@@ -83,7 +84,7 @@ namespace EVMManagement.API.Controllers
             if (!ModelState.IsValid)
             {
                 var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
-                return BadRequest(ApiResponse<OrderWithDetailsResponse>.CreateFail("Validation failed", errors, 400));
+                return BadRequest(ApiResponse<OrderWithDetailsResponse>.CreateFail("Dữ liệu không hợp lệ", errors, 400));
             }
 
             var created = await _services.OrderService.CreateOrderWithDetailsAsync(dto);
@@ -96,11 +97,11 @@ namespace EVMManagement.API.Controllers
             if (!ModelState.IsValid)
             {
                 var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
-                return BadRequest(ApiResponse<OrderResponse>.CreateFail("Validation failed", errors, 400));
+                return BadRequest(ApiResponse<OrderResponse>.CreateFail("Dữ liệu không hợp lệ", errors, 400));
             }
 
             var updated = await _services.OrderService.UpdateAsync(id, dto);
-            if (updated == null) return NotFound(ApiResponse<OrderResponse>.CreateFail("Order not found", null, 404));
+            if (updated == null) return NotFound(ApiResponse<OrderResponse>.CreateFail("Không tìm thấy đơn hàng", null, 404));
             return Ok(ApiResponse<OrderResponse>.CreateSuccess(updated));
         }
 
@@ -108,7 +109,7 @@ namespace EVMManagement.API.Controllers
         public async Task<IActionResult> UpdateIsDeleted(Guid id, [FromQuery] bool isDeleted)
         {
             var updated = await _services.OrderService.UpdateIsDeletedAsync(id, isDeleted);
-            if (updated == null) return NotFound(ApiResponse<OrderResponse>.CreateFail("Order not found", null, 404));
+            if (updated == null) return NotFound(ApiResponse<OrderResponse>.CreateFail("Không tìm thấy đơn hàng", null, 404));
             return Ok(ApiResponse<OrderResponse>.CreateSuccess(updated));
         }
 
@@ -116,10 +117,44 @@ namespace EVMManagement.API.Controllers
         public async Task<IActionResult> Delete(Guid id)
         {
             var deleted = await _services.OrderService.DeleteAsync(id);
-            if (!deleted) return NotFound(ApiResponse<string>.CreateFail("Order not found", null, 404));
-            return Ok(ApiResponse<string>.CreateSuccess("Deleted"));
+            if (!deleted) return NotFound(ApiResponse<string>.CreateFail("Không tìm thấy đơn hàng", null, 404));
+            return Ok(ApiResponse<string>.CreateSuccess("Đã xóa"));
         }
 
+
+        [HttpPost("{id}/cancel")]
+        public async Task<IActionResult> Cancel(Guid id)
+        {
+            try
+            {
+                var result = await _services.OrderService.CancelOrderAsync(id);
+                return Ok(ApiResponse<OrderResponse>.CreateSuccess(result));
+            }
+            catch (KeyNotFoundException ex)
+            {
+                var errors = new List<string> { ex.Message };
+                return NotFound(ApiResponse<OrderResponse>.CreateFail(ex.Message, errors, 404));
+            }
+        }
+
+        [HttpPost("{orderId}/complete")]
+        public async Task<IActionResult> Complete(Guid orderId)
+        {
+            try
+            {
+                var result = await _services.OrderService.CompleteOrderAsync(orderId);
+                return Ok(ApiResponse<OrderResponse>.CreateSuccess(result, "Hoàn tất đơn hàng thành công"));
+            }
+            catch (KeyNotFoundException ex)
+            {
+                var errors = new List<string> { ex.Message };
+                return NotFound(ApiResponse<OrderResponse>.CreateFail(ex.Message, errors, 404));
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ApiResponse<OrderResponse>.CreateFail(ex.Message, null, 400));
+            }
+        }
 
         [HttpPost("{orderId}/deposits/preorder")]
         public async Task<IActionResult> CreatePreOrderDeposit(Guid orderId, [FromBody] PreOrderDepositRequestDto dto)
@@ -127,7 +162,7 @@ namespace EVMManagement.API.Controllers
             if (!ModelState.IsValid)
             {
                 var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
-                return BadRequest(ApiResponse<string>.CreateFail("Validation failed", errors, 400));
+                return BadRequest(ApiResponse<string>.CreateFail("Dữ liệu không hợp lệ", errors, 400));
             }
 
             dto.OrderId = orderId;
@@ -135,7 +170,7 @@ namespace EVMManagement.API.Controllers
             try
             {
                 var result = await _services.DepositService.CreatePreOrderDepositAsync(dto);
-                return Ok(ApiResponse<DepositResponse>.CreateSuccess(result, "Pre-order deposit created successfully"));
+                return Ok(ApiResponse<DepositResponse>.CreateSuccess(result, "Tạo đặt cọc đơn hàng trước thành công"));
             }
             catch (Exception ex)
             {
@@ -149,7 +184,7 @@ namespace EVMManagement.API.Controllers
             if (!ModelState.IsValid)
             {
                 var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
-                return BadRequest(ApiResponse<string>.CreateFail("Validation failed", errors, 400));
+                return BadRequest(ApiResponse<string>.CreateFail("Dữ liệu không hợp lệ", errors, 400));
             }
 
             var result = await _services.OrderService.RequestDealerManagerApprovalAsync(orderId, dto);
@@ -167,7 +202,7 @@ namespace EVMManagement.API.Controllers
         {
             if (approvedByUserId == Guid.Empty)
             {
-                return BadRequest(ApiResponse<string>.CreateFail("ApprovedByUserId is required", null, 400));
+                return BadRequest(ApiResponse<string>.CreateFail("ApprovedByUserId là bắt buộc", null, 400));
             }
 
             var result = await _services.OrderService.ApproveDealerOrderRequestAsync(orderId, approvedByUserId);
@@ -186,17 +221,17 @@ namespace EVMManagement.API.Controllers
             if (!ModelState.IsValid)
             {
                 var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
-                return BadRequest(ApiResponse<string>.CreateFail("Validation failed", errors, 400));
+                return BadRequest(ApiResponse<string>.CreateFail("Dữ liệu không hợp lệ", errors, 400));
             }
 
             var success = await _services.OrderService.NotifyCustomerAsync(orderId, dto);
             
             if (!success)
             {
-                return BadRequest(ApiResponse<string>.CreateFail("Failed to notify customer. Order or customer not found.", null, 400));
+                return BadRequest(ApiResponse<string>.CreateFail("Không thể thông báo cho khách hàng. Không tìm thấy đơn hàng hoặc khách hàng.", null, 400));
             }
 
-            return Ok(ApiResponse<string>.CreateSuccess("Customer notified successfully"));
+            return Ok(ApiResponse<string>.CreateSuccess("Đã thông báo khách hàng thành công"));
         }
 
         [HttpPatch("{orderId}/customer-confirmation")]
@@ -205,13 +240,13 @@ namespace EVMManagement.API.Controllers
             if (!ModelState.IsValid)
             {
                 var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
-                return BadRequest(ApiResponse<string>.CreateFail("Validation failed", errors, 400));
+                return BadRequest(ApiResponse<string>.CreateFail("Dữ liệu không hợp lệ", errors, 400));
             }
 
             try
             {
                 var result = await _services.OrderService.UpdateCustomerConfirmationAsync(orderId, dto);
-                var message = dto.IsConfirmed ? "Order confirmed by customer" : "Order rejected by customer";
+                var message = dto.IsConfirmed ? "Đơn hàng đã được xác nhận bởi khách hàng" : "Đơn hàng đã bị từ chối bởi khách hàng";
                 return Ok(ApiResponse<OrderResponse>.CreateSuccess(result, message));
             }
             catch (Exception ex)
@@ -226,7 +261,7 @@ namespace EVMManagement.API.Controllers
             if (!ModelState.IsValid)
             {
                 var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
-                return BadRequest(ApiResponse<string>.CreateFail("Validation failed", errors, 400));
+                return BadRequest(ApiResponse<string>.CreateFail("Dữ liệu không hợp lệ", errors, 400));
             }
 
             var result = await _services.OrderService.ConfirmPaymentAsync(orderId, dto);
@@ -245,13 +280,13 @@ namespace EVMManagement.API.Controllers
             if (!ModelState.IsValid)
             {
                 var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
-                return BadRequest(ApiResponse<string>.CreateFail("Validation failed", errors, 400));
+                return BadRequest(ApiResponse<string>.CreateFail("Dữ liệu không hợp lệ", errors, 400));
             }
 
             try
             {
                 var result = await _services.HandoverRecordService.CreateHandoverWithVehicleAssignmentAsync(orderId, dto);
-                return Ok(ApiResponse<HandoverRecordResponseDto>.CreateSuccess(result, "Handover completed successfully. Order marked as COMPLETED."));
+                return Ok(ApiResponse<HandoverRecordResponseDto>.CreateSuccess(result, "Hoàn thành bàn giao thành công. Đơn hàng đã được đánh dấu là HOÀN TẤT."));
             }
             catch (Exception ex)
             {

@@ -2,6 +2,10 @@ using EVMManagement.BLL.DTOs.Request.Vehicle;
 using EVMManagement.BLL.DTOs.Response;
 using EVMManagement.BLL.DTOs.Response.Vehicle;
 using EVMManagement.DAL.Models.Enums;
+using EVMManagement.DAL.Models.Entities;
+using System;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace EVMManagement.BLL.Services.Interface
 {
@@ -16,5 +20,6 @@ namespace EVMManagement.BLL.Services.Interface
         Task<PagedResult<VehicleModelResponseDto>> SearchByQueryAsync(string? q, int pageNumber = 1, int pageSize = 10);
         Task<PagedResult<VehicleModelResponseDto>> GetByDealerAsync(Guid dealerId, int pageNumber = 1, int pageSize = 10);
         Task<PagedResult<VehicleModelWithStockResponseDto>> GetAllWithDealerStockAsync(Guid dealerId, int pageNumber = 1, int pageSize = 10);
+        IQueryable<VehicleModel> GetQueryableForOData();
     }
 }

@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 using EVMManagement.BLL.DTOs.Request.Dealer;
 using EVMManagement.BLL.DTOs.Response;
@@ -15,6 +16,7 @@ namespace EVMManagement.BLL.Services.Interface
         Task<DealerResponseDto?> UpdateAsync(Guid id, UpdateDealerDto dto);
         Task<DealerResponseDto?> UpdateIsDeletedAsync(Guid id, bool isDeleted);
         Task<bool> DeleteAsync(Guid id);
+        IQueryable<Dealer> GetQueryableForOData();
     }
 }
 

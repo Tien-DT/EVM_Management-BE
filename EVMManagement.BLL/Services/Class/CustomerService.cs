@@ -35,7 +35,8 @@ namespace EVMManagement.BLL.Services.Class
                 Gender = dto.Gender,
                 Address = dto.Address,
                 Dob = DateTimeHelper.ToUtc(dto.Dob),
-                CardId = dto.CardId
+                CardId = dto.CardId,
+                DealerId = dto.DealerId
             };
 
             await _unitOfWork.Customers.AddAsync(customer);
@@ -62,7 +63,7 @@ namespace EVMManagement.BLL.Services.Class
         public async Task<PagedResult<CustomerResponse>> GetByDealerIdAsync(Guid dealerId, int pageNumber = 1, int pageSize = 10)
         {
             var query = _unitOfWork.Customers.GetQueryable()
-                .Where(x => x.Orders.Any(o => o.DealerId == dealerId));
+                .Where(x => x.DealerId == dealerId);
 
             var totalCount = await query.CountAsync();
 
@@ -96,6 +97,7 @@ namespace EVMManagement.BLL.Services.Class
             if (dto.Address != null) entity.Address = dto.Address;
             if (dto.Dob.HasValue) entity.Dob = DateTimeHelper.ToUtc(dto.Dob);
             if (dto.CardId != null) entity.CardId = dto.CardId;
+            if (dto.DealerId.HasValue) entity.DealerId = dto.DealerId;
 
             entity.ModifiedDate = DateTime.UtcNow;
 
@@ -152,6 +154,15 @@ namespace EVMManagement.BLL.Services.Class
             if (entity == null) return null;
 
             return _mapper.Map<CustomerResponse>(entity);
+        }
+
+        public IQueryable<Customer> GetQueryableForOData()
+        {
+            return _unitOfWork.Customers.GetQueryable()
+                .Include(c => c.Quotations)
+                .Include(c => c.Orders)
+                .Include(c => c.TestDriveBookings)
+                .Where(c => !c.IsDeleted);
         }
     }
 }

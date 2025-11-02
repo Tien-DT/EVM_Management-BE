@@ -1,5 +1,6 @@
 using EVMManagement.API.Setup;
 using Microsoft.OpenApi.Models;
+using Microsoft.AspNetCore.OData;
 
 namespace EVMManagement.API
 {
@@ -9,11 +10,22 @@ namespace EVMManagement.API
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            // Add services to the container
-            builder.Services.AddControllers().AddJsonOptions(opts =>
-            {
-                opts.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
-            });
+            var odataModel = ODataConfiguration.GetODataModel();
+
+            builder.Services.AddControllers()
+                .AddJsonOptions(opts =>
+                {
+                    opts.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
+                })
+                .AddOData(options =>
+                    options.Select()
+                        .Filter()
+                        .OrderBy()
+                        .Expand()
+                        .Count()
+                        .SetMaxTop(100)
+                        .AddRouteComponents("odata/v2", odataModel.GetEdmModel())
+                );
 
             // Add Swagger/OpenAPI
             builder.Services.AddEndpointsApiExplorer();

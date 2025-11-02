@@ -33,9 +33,12 @@ namespace EVMManagement.BLL.Services.Class
                 Code = dto.Code,
                 OrderId = dto.OrderId,
                 CustomerId = dto.CustomerId,
+                DealerId = dto.DealerId,
                 CreatedByUserId = dto.CreatedByUserId,
+                SignedByUserId = dto.SignedByUserId,
                 Terms = dto.Terms,
                 Status = dto.Status,
+                ContractType = dto.ContractType,
                 SignedAt = DateTimeHelper.ToUtc(dto.SignedAt),
                 ContractLink = dto.ContractLink
             };
@@ -46,9 +49,9 @@ namespace EVMManagement.BLL.Services.Class
             return contract;
         }
 
-        public async Task<PagedResult<ContractDetailResponse>> GetAllAsync(Guid? orderId, Guid? customerId, Guid? createdByUserId, ContractStatus? status, int pageNumber = 1, int pageSize = 10)
+        public async Task<PagedResult<ContractDetailResponse>> GetAllAsync(Guid? orderId, Guid? customerId, Guid? dealerId, Guid? createdByUserId, Guid? signedByUserId, ContractStatus? status, ContractType? contractType, int pageNumber = 1, int pageSize = 10)
         {
-            var query = _unitOfWork.Contracts.GetContractsWithDetails(orderId, customerId, createdByUserId, status);
+            var query = _unitOfWork.Contracts.GetContractsWithDetails(orderId, customerId, dealerId, createdByUserId, signedByUserId, status, contractType);
             var totalCount = await query.CountAsync();
 
             var items = await query
@@ -77,7 +80,9 @@ namespace EVMManagement.BLL.Services.Class
             if (dto.Code != null) entity.Code = dto.Code;
             if (dto.OrderId.HasValue) entity.OrderId = dto.OrderId.Value;
             if (dto.CustomerId.HasValue) entity.CustomerId = dto.CustomerId.Value;
+            if (dto.DealerId.HasValue) entity.DealerId = dto.DealerId.Value;
             if (dto.CreatedByUserId.HasValue) entity.CreatedByUserId = dto.CreatedByUserId.Value;
+            if (dto.SignedByUserId.HasValue) entity.SignedByUserId = dto.SignedByUserId.Value;
             if (dto.Terms != null) entity.Terms = dto.Terms;
 
             bool hasSignedContract = false;
@@ -102,6 +107,11 @@ namespace EVMManagement.BLL.Services.Class
             else if (hasSignedContract)
             {
                 entity.Status = ContractStatus.ACTIVE;
+            }
+
+            if (dto.ContractType.HasValue)
+            {
+                entity.ContractType = dto.ContractType.Value;
             }
 
             if (dto.SignedAt.HasValue)
@@ -178,6 +188,18 @@ namespace EVMManagement.BLL.Services.Class
                 .ToListAsync();
 
             return PagedResult<ContractDetailResponse>.Create(items, totalCount, pageNumber, pageSize);
+        }
+
+        public IQueryable<Contract> GetQueryableForOData()
+        {
+            return _unitOfWork.Contracts.GetQueryable()
+                .Include(c => c.Order)
+                .Include(c => c.Customer)
+                .Include(c => c.Dealer)
+                .Include(c => c.CreatedByUser)
+                .Include(c => c.SignedByUser)
+                .Include(c => c.DigitalSignatures)
+                .Where(c => !c.IsDeleted);
         }
     }
 }

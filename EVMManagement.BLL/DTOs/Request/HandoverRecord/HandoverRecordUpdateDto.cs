@@ -1,4 +1,5 @@
 using System;
+using System.ComponentModel.DataAnnotations;
 
 namespace EVMManagement.BLL.DTOs.Request.HandoverRecord
 {
@@ -6,6 +7,8 @@ namespace EVMManagement.BLL.DTOs.Request.HandoverRecord
     {
         public Guid? TransportDetailId { get; set; }
         public string? Notes { get; set; }
+        [MaxLength(500)]
+        public string? FileUrl { get; set; }
         public bool? IsAccepted { get; set; }
         public DateTime? HandoverDate { get; set; }
     }

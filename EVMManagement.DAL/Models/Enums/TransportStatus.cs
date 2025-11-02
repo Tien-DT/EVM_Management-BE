@@ -4,6 +4,8 @@ namespace EVMManagement.DAL.Models.Enums
     {
         PENDING,
         IN_TRANSIT,
+        DELIVERED,
+        FAILED,
         COMPLETED,
         CANCELED
     }

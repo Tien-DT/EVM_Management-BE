@@ -72,6 +72,7 @@ namespace EVMManagement.BLL.Services.Class
         }
 
 
+
         private async Task SendTestDriveConfirmationEmailAsync(TestDriveBookingResponseDto booking)
         {
             if (booking?.Customer == null || booking?.VehicleTimeSlot?.Dealer == null)

@@ -25,6 +25,7 @@ namespace EVMManagement.DAL.Models.Entities
         public virtual ICollection<Quotation> CreatedQuotations { get; set; } = new HashSet<Quotation>();
         public virtual ICollection<Order> CreatedOrders { get; set; } = new HashSet<Order>();
         public virtual ICollection<Contract> CreatedContracts { get; set; } = new HashSet<Contract>();
+        public virtual ICollection<Contract> SignedContracts { get; set; } = new HashSet<Contract>();
         public virtual ICollection<DealerContract> SignedDealerContractsAsDealer { get; set; } = new HashSet<DealerContract>();
         public virtual ICollection<DealerContract> SignedDealerContractsAsEVM { get; set; } = new HashSet<DealerContract>();
         public virtual ICollection<TestDriveBooking> AssistedTestDriveBookings { get; set; } = new HashSet<TestDriveBooking>();

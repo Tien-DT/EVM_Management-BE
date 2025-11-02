@@ -10,7 +10,7 @@ namespace EVMManagement.API.Services
         public IOrderDetailService OrderDetailService { get; }
         public IInvoiceService InvoiceService { get; }
         public IContractService ContractService { get; }
-    public IDealerContractService DealerContractService { get; }
+        public IDealerContractService DealerContractService { get; }
         public IQuotationService QuotationService { get; }
         public IQuotationDetailService QuotationDetailService { get; }
         public IDealerService DealerService { get; }
@@ -23,7 +23,7 @@ namespace EVMManagement.API.Services
         public IVehicleTimeSlotService VehicleTimeSlotService { get; }
         public IMasterTimeSlotService MasterTimeSlotService { get; }
         // public IAvailableSlotService AvailableSlotService { get; } // Removed - now using VehicleTimeSlotService with Status = AVAILABLE
-    public ITestDriveBookingService TestDriveBookingService { get; }
+        public ITestDriveBookingService TestDriveBookingService { get; }
         public IEmailService EmailService { get; }
         public IStorageService StorageService { get; }
         public IDigitalSignatureService DigitalSignatureService { get; }
@@ -32,6 +32,7 @@ namespace EVMManagement.API.Services
         public IDepositService DepositService { get; }
         public IHandoverRecordService HandoverRecordService { get; }
         public ITransportService TransportService { get; }
+        public ITransportDetailService TransportDetailService { get; }
 
         public ServiceFacade(
             IAuthService authService,
@@ -61,7 +62,8 @@ namespace EVMManagement.API.Services
             IReportService reportService,
             IDepositService depositService,
             IHandoverRecordService handoverRecordService,
-            ITransportService transportService)
+            ITransportService transportService,
+            ITransportDetailService transportDetailService)
         {
             AuthService = authService;
             CustomerService = customerService;
@@ -91,6 +93,7 @@ namespace EVMManagement.API.Services
             DepositService = depositService;
             HandoverRecordService = handoverRecordService;
             TransportService = transportService;
+            TransportDetailService = transportDetailService;
         }
     }
 }

@@ -28,6 +28,9 @@ namespace EVMManagement.DAL.Models.Entities
         [MaxLength(50)]
         public string? CardId { get; set; }
 
+        public Guid? DealerId { get; set; }
+
+        public virtual Dealer? Dealer { get; set; }
         public virtual ICollection<Quotation> Quotations { get; set; } = new HashSet<Quotation>();
         public virtual ICollection<Order> Orders { get; set; } = new HashSet<Order>();
         public virtual ICollection<Contract> Contracts { get; set; } = new HashSet<Contract>();

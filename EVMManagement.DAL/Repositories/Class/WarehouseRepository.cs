@@ -1,10 +1,10 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using EVMManagement.DAL.Data;
 using EVMManagement.DAL.Models.Entities;
+using EVMManagement.DAL.Models.Enums;
 using EVMManagement.DAL.Repositories.Interface;
 
 namespace EVMManagement.DAL.Repositories.Class
@@ -41,6 +41,16 @@ namespace EVMManagement.DAL.Repositories.Class
         {
             return _dbSet
                 .Where(w => w.DealerId == dealerId)
+                .Include(w => w.Dealer)
+                .Include(w => w.Vehicles)
+                    .ThenInclude(v => v.VehicleVariant)
+                        .ThenInclude(vv => vv.VehicleModel);
+        }
+
+        public IQueryable<Warehouse> GetWarehousesByType(WarehouseType type)
+        {
+            return _dbSet
+                .Where(w => w.Type == type)
                 .Include(w => w.Dealer)
                 .Include(w => w.Vehicles)
                     .ThenInclude(v => v.VehicleVariant)

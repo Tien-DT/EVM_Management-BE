@@ -26,7 +26,7 @@ namespace EVMManagement.API.Controllers
             if (!ModelState.IsValid)
             {
                 var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
-                return BadRequest(ApiResponse<HandoverRecordResponseDto>.CreateFail("Validation failed", errors, 400));
+                return BadRequest(ApiResponse<HandoverRecordResponseDto>.CreateFail("Dữ liệu không hợp lệ", errors, 400));
             }
 
             var created = await _service.CreateAsync(dto);
@@ -38,7 +38,7 @@ namespace EVMManagement.API.Controllers
         {
             if (pageNumber < 1 || pageSize < 1)
             {
-                return BadRequest(ApiResponse<string>.CreateFail("PageNumber and PageSize must be greater than 0", null, 400));
+                return BadRequest(ApiResponse<string>.CreateFail("Số trang và kích thước trang phải lớn hơn 0", null, 400));
             }
 
             var result = await _service.GetAllAsync(pageNumber, pageSize);
@@ -49,7 +49,7 @@ namespace EVMManagement.API.Controllers
         public async Task<IActionResult> GetById(Guid id)
         {
             var item = await _service.GetByIdAsync(id);
-            if (item == null) return NotFound(ApiResponse<HandoverRecordResponseDto>.CreateFail("HandoverRecord not found", null, 404));
+            if (item == null) return NotFound(ApiResponse<HandoverRecordResponseDto>.CreateFail("Không tìm thấy biên bản bàn giao", null, 404));
             return Ok(ApiResponse<HandoverRecordResponseDto>.CreateSuccess(item));
         }
 
@@ -59,11 +59,11 @@ namespace EVMManagement.API.Controllers
             if (!ModelState.IsValid)
             {
                 var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
-                return BadRequest(ApiResponse<HandoverRecordResponseDto>.CreateFail("Validation failed", errors, 400));
+                return BadRequest(ApiResponse<HandoverRecordResponseDto>.CreateFail("Dữ liệu không hợp lệ", errors, 400));
             }
 
             var updated = await _service.UpdateAsync(id, dto);
-            if (updated == null) return NotFound(ApiResponse<HandoverRecordResponseDto>.CreateFail("HandoverRecord not found", null, 404));
+            if (updated == null) return NotFound(ApiResponse<HandoverRecordResponseDto>.CreateFail("Không tìm thấy biên bản bàn giao", null, 404));
             return Ok(ApiResponse<HandoverRecordResponseDto>.CreateSuccess(updated));
         }
 
@@ -71,7 +71,7 @@ namespace EVMManagement.API.Controllers
         public async Task<IActionResult> UpdateIsDeleted(Guid id, [FromQuery] bool isDeleted)
         {
             var updated = await _service.UpdateIsDeletedAsync(id, isDeleted);
-            if (updated == null) return NotFound(ApiResponse<HandoverRecordResponseDto>.CreateFail("HandoverRecord not found", null, 404));
+            if (updated == null) return NotFound(ApiResponse<HandoverRecordResponseDto>.CreateFail("Không tìm thấy biên bản bàn giao", null, 404));
             return Ok(ApiResponse<HandoverRecordResponseDto>.CreateSuccess(updated));
         }
 
@@ -80,7 +80,7 @@ namespace EVMManagement.API.Controllers
         {
             if (filter.PageNumber < 1 || filter.PageSize < 1)
             {
-                return BadRequest(ApiResponse<string>.CreateFail("PageNumber and PageSize must be greater than 0", null, 400));
+                return BadRequest(ApiResponse<string>.CreateFail("Số trang và kích thước trang phải lớn hơn 0", null, 400));
             }
 
             var result = await _service.GetByFilterAsync(filter);

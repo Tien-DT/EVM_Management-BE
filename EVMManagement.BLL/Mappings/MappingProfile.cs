@@ -1,3 +1,4 @@
+using System.Linq;
 using AutoMapper;
 using EVMManagement.BLL.DTOs.Request.Contract;
 using EVMManagement.BLL.DTOs.Request.Customer;
@@ -38,8 +39,12 @@ using EVMManagement.BLL.DTOs.Response.User;
 using EVMManagement.BLL.DTOs.Response.Vehicle;
 using EVMManagement.BLL.DTOs.Response.VehicleTimeSlot;
 using EVMManagement.BLL.DTOs.Response.Warehouse;
+using EVMManagement.BLL.DTOs.Response.TransportDetail;
 using UserDealerDto = EVMManagement.BLL.DTOs.Response.User.DealerDto;
+using TransportResponse = EVMManagement.BLL.DTOs.Response.Transport.TransportResponseDto;
+using TransportDetailResponse = EVMManagement.BLL.DTOs.Response.Transport.TransportDetailDto;
 using EVMManagement.DAL.Models.Entities;
+using WarehouseDealerDto = EVMManagement.BLL.DTOs.Response.Warehouse.DealerDto;
 
 namespace EVMManagement.BLL.Mappings
 {
@@ -68,6 +73,8 @@ namespace EVMManagement.BLL.Mappings
                 .ForMember(dest => dest.Dealer, opt => opt.MapFrom(src => src.Warehouse != null ? src.Warehouse.Dealer : null));
             CreateMap<Warehouse, WarehouseDetailDto>();
             CreateMap<Dealer, DealerDetailDto>();
+            CreateMap<Vehicle, VehicleDto>()
+                .ForMember(dest => dest.Variant, opt => opt.MapFrom(src => src.VehicleVariant));
 
             // VehicleVariant Mappings
             CreateMap<VehicleVariantCreateDto, VehicleVariant>();
@@ -75,16 +82,17 @@ namespace EVMManagement.BLL.Mappings
                 .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
             CreateMap<VehicleVariant, VehicleVariantResponse>();
             CreateMap<VehicleVariant, VehicleVariantDetailDto>();
+            CreateMap<VehicleVariant, VehicleVariantDto>()
+                .ForMember(dest => dest.VehicleModel, opt => opt.MapFrom(src => src.VehicleModel));
             CreateMap<VehicleModel, VehicleModelDetailDto>();
+            CreateMap<VehicleModel, VehicleModelDto>();
 
             // Warehouse Mappings
             CreateMap<WarehouseCreateDto, Warehouse>();
             CreateMap<WarehouseUpdateDto, Warehouse>()
                 .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
             CreateMap<Warehouse, WarehouseResponseDto>();
-            CreateMap<Vehicle, VehicleDto>();
-            CreateMap<VehicleVariant, VehicleVariantDto>();
-            CreateMap<VehicleModel, VehicleModelDto>();
+            CreateMap<Dealer, WarehouseDealerDto>();
 
             // Customer Mappings
             CreateMap<CustomerCreateDto, Customer>();
@@ -185,7 +193,33 @@ namespace EVMManagement.BLL.Mappings
             CreateMap<HandoverRecordUpdateDto, HandoverRecord>()
                 .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
             CreateMap<HandoverRecord, HandoverRecordResponseDto>();
-            CreateMap<TransportDetail, TransportDetailDto>();
+            CreateMap<TransportDetail, EVMManagement.BLL.DTOs.Response.HandoverRecord.TransportDetailDto>();
+            CreateMap<TransportDetail, TransportDetailResponse>()
+                .ForMember(dest => dest.VehicleVin, opt => opt.MapFrom(src => src.Vehicle != null ? src.Vehicle.Vin : null))
+                .ForMember(dest => dest.VehicleVariantName, opt => opt.MapFrom(src =>
+                    src.Vehicle != null && src.Vehicle.VehicleVariant != null
+                        ? string.Join(" - ", new[]
+                        {
+                            src.Vehicle.VehicleVariant.VehicleModel != null ? src.Vehicle.VehicleVariant.VehicleModel.Name : null,
+                            src.Vehicle.VehicleVariant.Color
+                        }.Where(v => !string.IsNullOrWhiteSpace(v)))
+                        : null));
+            CreateMap<TransportDetail, TransportDetailResponseDto>()
+                .ForMember(dest => dest.VehicleVin, opt => opt.MapFrom(src => src.Vehicle != null ? src.Vehicle.Vin : null))
+                .ForMember(dest => dest.VehicleVariantName, opt => opt.MapFrom(src =>
+                    src.Vehicle != null && src.Vehicle.VehicleVariant != null
+                        ? string.Join(" - ", new[]
+                        {
+                            src.Vehicle.VehicleVariant.VehicleModel != null ? src.Vehicle.VehicleVariant.VehicleModel.Name : null,
+                            src.Vehicle.VehicleVariant.Color
+                        }.Where(v => !string.IsNullOrWhiteSpace(v)))
+                        : null));
+            CreateMap<Transport, TransportResponse>()
+                .ForMember(dest => dest.TransportDetails, opt => opt.MapFrom(src => src.TransportDetails))
+                .ForMember(dest => dest.OrderCode, opt => opt.MapFrom(src => src.Order != null ? src.Order.Code : null))
+                .ForMember(dest => dest.DealerId, opt => opt.MapFrom(src => src.Order != null ? src.Order.DealerId : null))
+                .ForMember(dest => dest.DealerName, opt => opt.MapFrom(src => src.Order != null && src.Order.Dealer != null ? src.Order.Dealer.Name : null))
+                .ForMember(dest => dest.DealerAddress, opt => opt.MapFrom(src => src.Order != null && src.Order.Dealer != null ? src.Order.Dealer.Address : null));
 
             // DigitalSignature Mappings
             CreateMap<DigitalSignature, DigitalSignatureResponse>();

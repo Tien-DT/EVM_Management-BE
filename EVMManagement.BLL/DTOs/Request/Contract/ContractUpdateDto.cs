@@ -13,11 +13,17 @@ namespace EVMManagement.BLL.DTOs.Request.Contract
 
         public Guid? CustomerId { get; set; }
 
+        public Guid? DealerId { get; set; }
+
         public Guid? CreatedByUserId { get; set; }
+
+        public Guid? SignedByUserId { get; set; }
 
         public string? Terms { get; set; }
 
         public ContractStatus? Status { get; set; }
+
+        public ContractType? ContractType { get; set; }
 
         public DateTime? SignedAt { get; set; }
 

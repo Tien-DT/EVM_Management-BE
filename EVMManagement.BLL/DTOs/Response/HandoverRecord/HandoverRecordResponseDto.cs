@@ -11,6 +11,7 @@ namespace EVMManagement.BLL.DTOs.Response.HandoverRecord
         public Guid VehicleId { get; set; }
         public Guid? TransportDetailId { get; set; }
         public string? Notes { get; set; }
+        public string? FileUrl { get; set; }
         public bool IsAccepted { get; set; }
         public DateTime? HandoverDate { get; set; }
         public DateTime CreatedDate { get; set; }
