@@ -9,6 +9,7 @@ using EVMManagement.BLL.DTOs.Response;
 using EVMManagement.BLL.DTOs.Response.TransportDetail;
 using EVMManagement.BLL.Services.Interface;
 using EVMManagement.DAL.Models.Entities;
+using EVMManagement.DAL.Models.Enums;
 using EVMManagement.DAL.UnitOfWork;
 using Microsoft.EntityFrameworkCore;
 
@@ -77,26 +78,43 @@ namespace EVMManagement.BLL.Services.Class
                 throw new InvalidOperationException($"Xe với mã {string.Join(", ", vehiclesWithTransport)} đã được gán cho chuyến vận chuyển khác");
             }
 
-            var entities = dtos.Select(dto => new TransportDetail
+            await _unitOfWork.BeginTransactionAsync();
+
+            try
             {
-                TransportId = dto.TransportId,
-                VehicleId = dto.VehicleId,
-                CreatedDate = DateTime.UtcNow
-            }).ToList();
+                foreach (var vehicle in vehicles)
+                {
+                    vehicle.Status = VehicleStatus.IN_TRANSIT;
+                }
 
-            await _unitOfWork.TransportDetails.AddRangeAsync(entities);
-            await _unitOfWork.SaveChangesAsync();
+                _unitOfWork.Vehicles.UpdateRange(vehicles);
 
-            var createdIds = entities.Select(e => e.Id).ToList();
+                var entities = dtos.Select(dto => new TransportDetail
+                {
+                    TransportId = dto.TransportId,
+                    VehicleId = dto.VehicleId,
+                    CreatedDate = DateTime.UtcNow
+                }).ToList();
 
-            var createdEntities = await _unitOfWork.TransportDetails.GetQueryable()
-                .Where(td => createdIds.Contains(td.Id))
-                .Include(td => td.Vehicle)
-                    .ThenInclude(v => v.VehicleVariant)
-                        .ThenInclude(vv => vv.VehicleModel)
-                .ToListAsync();
+                await _unitOfWork.TransportDetails.AddRangeAsync(entities);
+                await _unitOfWork.CommitTransactionAsync();
 
-            return _mapper.Map<List<TransportDetailResponseDto>>(createdEntities);
+                var createdIds = entities.Select(e => e.Id).ToList();
+
+                var createdEntities = await _unitOfWork.TransportDetails.GetQueryable()
+                    .Where(td => createdIds.Contains(td.Id))
+                    .Include(td => td.Vehicle)
+                        .ThenInclude(v => v.VehicleVariant)
+                            .ThenInclude(vv => vv.VehicleModel)
+                    .ToListAsync();
+
+                return _mapper.Map<List<TransportDetailResponseDto>>(createdEntities);
+            }
+            catch
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                throw;
+            }
         }
 
         public async Task<PagedResult<TransportDetailResponseDto>> GetAllAsync(TransportDetailFilterDto filter)
