@@ -171,6 +171,65 @@ namespace EVMManagement.BLL.Services.Class
             return PagedResult<WarehouseResponseDto>.Create(items, totalCount, pageNumber, pageSize);
         }
 
+        public async Task<ApiResponse<PagedResult<VehicleResponseDto>>> GetVehiclesInEvmWarehouseAsync(
+            Guid warehouseId,
+            VehiclePurpose? purpose = null,
+            VehicleStatus? status = null,
+            int pageNumber = 1,
+            int pageSize = 10)
+        {
+            try
+            {
+                var warehouse = await _unitOfWork.Warehouses.GetQueryable()
+                    .FirstOrDefaultAsync(w => w.Id == warehouseId && !w.IsDeleted);
+
+                if (warehouse == null)
+                {
+                    _logger.LogWarning("Không tìm thấy kho khi lấy xe EVM. WarehouseId: {WarehouseId}", warehouseId);
+                    return ApiResponse<PagedResult<VehicleResponseDto>>.CreateFail("Không tìm thấy kho hoặc kho đã bị xóa.", errorCode: 404);
+                }
+
+                if (warehouse.Type != WarehouseType.EVM)
+                {
+                    _logger.LogWarning("Kho không thuộc loại EVM. WarehouseId: {WarehouseId}, Type: {Type}", warehouseId, warehouse.Type);
+                    return ApiResponse<PagedResult<VehicleResponseDto>>.CreateFail("Kho này không phải kho của EVM.", errorCode: 400);
+                }
+
+                var query = _unitOfWork.Vehicles.GetQueryable()
+                    .Where(v => v.WarehouseId == warehouseId && !v.IsDeleted);
+
+                if (purpose.HasValue)
+                {
+                    query = query.Where(v => v.Purpose == purpose.Value);
+                }
+
+                if (status.HasValue)
+                {
+                    query = query.Where(v => v.Status == status.Value);
+                }
+
+                var totalCount = await query.CountAsync();
+
+                var vehicles = await query
+                    .OrderByDescending(v => v.CreatedDate)
+                    .Skip((pageNumber - 1) * pageSize)
+                    .Take(pageSize)
+                    .ToListAsync();
+
+                var items = _mapper.Map<List<VehicleResponseDto>>(vehicles);
+                var pagedResult = PagedResult<VehicleResponseDto>.Create(items, totalCount, pageNumber, pageSize);
+
+                return ApiResponse<PagedResult<VehicleResponseDto>>.CreateSuccess(
+                    pagedResult,
+                    $"Lấy danh sách xe thuộc kho EVM '{warehouse.Name}' thành công.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Đã xảy ra lỗi khi lấy danh sách xe trong kho EVM. WarehouseId: {WarehouseId}", warehouseId);
+                return ApiResponse<PagedResult<VehicleResponseDto>>.CreateFail("Đã xảy ra lỗi khi lấy danh sách xe trong kho EVM.", errorCode: 500);
+            }
+        }
+
         public async Task<WarehouseResponseDto?> GetWarehouseByIdAsync(Guid id)
         {
             var entity = await _unitOfWork.Warehouses.GetByIdAsync(id);

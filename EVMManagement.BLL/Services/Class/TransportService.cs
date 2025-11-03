@@ -189,6 +189,8 @@ namespace EVMManagement.BLL.Services.Class
         {
             var transport = await _unitOfWork.Transports.GetQueryable()
                 .Include(t => t.Order)
+                .Include(t => t.TransportDetails)
+                    .ThenInclude(td => td.Vehicle)
                 .FirstOrDefaultAsync(t => t.Id == id);
 
             if (transport == null)
@@ -213,6 +215,24 @@ namespace EVMManagement.BLL.Services.Class
                 transport.Status = TransportStatus.CANCELED;
                 transport.ModifiedDate = DateTime.UtcNow;
                 _unitOfWork.Transports.Update(transport);
+
+                var vehiclesToUpdate = transport.TransportDetails
+                    .Where(td => td.Vehicle != null)
+                    .Select(td => td.Vehicle!)
+                    .GroupBy(v => v.Id)
+                    .Select(g => g.First())
+                    .ToList();
+
+                foreach (var vehicle in vehiclesToUpdate)
+                {
+                    vehicle.Status = VehicleStatus.IN_STOCK;
+                    vehicle.ModifiedDate = DateTime.UtcNow;
+                }
+
+                if (vehiclesToUpdate.Count > 0)
+                {
+                    _unitOfWork.Vehicles.UpdateRange(vehiclesToUpdate);
+                }
 
                 if (transport.Order != null)
                 {
