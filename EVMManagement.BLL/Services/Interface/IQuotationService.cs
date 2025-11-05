@@ -14,6 +14,7 @@ namespace EVMManagement.BLL.Services.Interface
         Task<PagedResult<QuotationResponseDto>> GetAllAsync(int pageNumber = 1, int pageSize = 10, string? search = null, QuotationStatus? status = null);
         Task<IList<QuotationResponseDto>> GetByCustomerIdAsync(Guid customerId);
         Task<QuotationResponseDto?> GetByIdAsync(Guid id);
+        Task<QuotationResponseDto?> ConfirmQuotationAsync(Guid id);
         Task<QuotationResponseDto?> UpdateAsync(Guid id, UpdateQuotationDto dto);
         Task<QuotationResponseDto?> UpdateIsDeletedAsync(Guid id, bool isDeleted);
     }

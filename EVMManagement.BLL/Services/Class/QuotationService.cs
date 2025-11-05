@@ -135,6 +135,94 @@ namespace EVMManagement.BLL.Services.Class
                 .FirstOrDefaultAsync();
         }
 
+        public async Task<QuotationResponseDto?> ConfirmQuotationAsync(Guid id)
+        {
+            await _unitOfWork.BeginTransactionAsync();
+            try
+            {
+                var quotation = await _unitOfWork.Quotations.GetQueryable()
+                    .Include(q => q.QuotationDetails)
+                    .Include(q => q.Order)
+                    .FirstOrDefaultAsync(q => q.Id == id && !q.IsDeleted);
+
+                if (quotation == null)
+                {
+                    await _unitOfWork.RollbackTransactionAsync();
+                    return null;
+                }
+
+                var subtotal = quotation.QuotationDetails.Sum(detail =>
+                {
+                    var discountRate = detail.DiscountPercent / 100m;
+                    var effectiveRate = 1 - discountRate;
+                    if (effectiveRate < 0)
+                    {
+                        effectiveRate = 0;
+                    }
+
+                    return detail.UnitPrice * detail.Quantity * effectiveRate;
+                });
+
+                var tax = subtotal * 0.1m;
+                var total = subtotal + tax;
+
+                quotation.Subtotal = subtotal;
+                quotation.Tax = tax;
+                quotation.Total = total;
+                quotation.Status = QuotationStatus.ACCEPTED;
+                quotation.ModifiedDate = DateTime.UtcNow;
+
+                var order = quotation.Order;
+                if (order == null)
+                {
+                    order = await _unitOfWork.Orders.GetQueryable()
+                        .FirstOrDefaultAsync(o => o.QuotationId == quotation.Id && !o.IsDeleted);
+                }
+
+                if (order == null)
+                {
+                    await _unitOfWork.RollbackTransactionAsync();
+                    throw new Exception("Order not found for the quotation.");
+                }
+
+                var discount = order.DiscountAmount;
+                if (discount.HasValue && discount.Value > total)
+                {
+                    discount = total;
+                    order.DiscountAmount = discount;
+                }
+
+                order.TotalAmount = total;
+                if (discount.HasValue)
+                {
+                    var final = total - discount.Value;
+                    if (final < 0)
+                    {
+                        final = 0;
+                    }
+
+                    order.FinalAmount = final;
+                }
+                else
+                {
+                    order.FinalAmount = total;
+                }
+                order.ModifiedDate = DateTime.UtcNow;
+
+                _unitOfWork.Quotations.Update(quotation);
+                _unitOfWork.Orders.Update(order);
+
+                await _unitOfWork.CommitTransactionAsync();
+            }
+            catch
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                throw;
+            }
+
+            return await GetByIdAsync(id);
+        }
+
         public async Task<QuotationResponseDto?> UpdateAsync(Guid id, UpdateQuotationDto dto)
         {
             var entity = await _unitOfWork.Quotations.GetQueryable()

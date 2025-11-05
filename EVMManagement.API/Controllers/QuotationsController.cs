@@ -54,6 +54,13 @@ namespace EVMManagement.API.Controllers
             if (item == null) return NotFound(ApiResponse<QuotationResponseDto>.CreateFail("Không tìm thấy báo giá", null, 404));
             return Ok(ApiResponse<QuotationResponseDto>.CreateSuccess(item));
         }
+        [HttpPost("{id}/confirm")]
+        public async Task<IActionResult> Confirm(Guid id)
+        {
+            var result = await _services.QuotationService.ConfirmQuotationAsync(id);
+            if (result == null) return NotFound(ApiResponse<QuotationResponseDto>.CreateFail("Không tìm thấy báo giá", null, 404));
+            return Ok(ApiResponse<QuotationResponseDto>.CreateSuccess(result));
+        }
 
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] CreateQuotationDto dto)
