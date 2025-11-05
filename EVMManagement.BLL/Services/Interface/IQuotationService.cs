@@ -13,6 +13,7 @@ namespace EVMManagement.BLL.Services.Interface
         Task<QuotationResponseDto> CreateQuotationAsync(CreateQuotationDto dto);
         Task<PagedResult<QuotationResponseDto>> GetAllAsync(int pageNumber = 1, int pageSize = 10, string? search = null, QuotationStatus? status = null);
         Task<IList<QuotationResponseDto>> GetByCustomerIdAsync(Guid customerId);
+        Task<IList<QuotationResponseDto>> GetByDealerIdAsync(Guid dealerId);
         Task<QuotationResponseDto?> GetByIdAsync(Guid id);
         Task<QuotationResponseDto?> ConfirmQuotationAsync(Guid id);
         Task<QuotationResponseDto?> UpdateAsync(Guid id, UpdateQuotationDto dto);

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using AutoMapper;
@@ -63,6 +64,16 @@ namespace EVMManagement.BLL.Services.Class
             if (entity == null) return null;
 
             return _mapper.Map<QuotationDetailResponse>(entity);
+        }
+
+        public async Task<IList<QuotationDetailWithOrderResponse>> GetByQuotationIdAsync(Guid quotationId)
+        {
+            var query = _unitOfWork.QuotationDetails.GetByQuotationId(quotationId);
+
+            return await query
+                .OrderByDescending(x => x.CreatedDate)
+                .ProjectTo<QuotationDetailWithOrderResponse>(_mapper.ConfigurationProvider)
+                .ToListAsync();
         }
 
         public async Task<QuotationDetailResponse?> UpdateAsync(Guid id, QuotationDetailUpdateDto dto)

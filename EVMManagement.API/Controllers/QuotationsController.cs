@@ -31,6 +31,13 @@ namespace EVMManagement.API.Controllers
             return Ok(ApiResponse<IList<QuotationResponseDto>>.CreateSuccess(items));
         }
 
+        [HttpGet("dealer/{dealerId}")]
+        public async Task<IActionResult> GetByDealer(Guid dealerId)
+        {
+            var items = await _services.QuotationService.GetByDealerIdAsync(dealerId);
+            return Ok(ApiResponse<IList<QuotationResponseDto>>.CreateSuccess(items));
+        }
+
         [HttpGet]
         public async Task<IActionResult> GetAll(
             [FromQuery] int pageNumber = 1, 

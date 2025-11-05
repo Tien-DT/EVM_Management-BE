@@ -127,6 +127,16 @@ namespace EVMManagement.BLL.Services.Class
                 .ToListAsync();
         }
 
+        public async Task<IList<QuotationResponseDto>> GetByDealerIdAsync(Guid dealerId)
+        {
+            var query = _unitOfWork.Quotations.GetByDealerId(dealerId);
+
+            return await query
+                .OrderByDescending(x => x.CreatedDate)
+                .ProjectTo<QuotationResponseDto>(_mapper.ConfigurationProvider)
+                .ToListAsync();
+        }
+
         public async Task<QuotationResponseDto?> GetByIdAsync(Guid id)
         {
             return await _unitOfWork.Quotations.GetQueryable()

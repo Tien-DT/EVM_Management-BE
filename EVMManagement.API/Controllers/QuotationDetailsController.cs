@@ -3,6 +3,7 @@ using EVMManagement.BLL.DTOs.Request.QuotationDetail;
 using EVMManagement.BLL.DTOs.Response;
 using EVMManagement.BLL.DTOs.Response.QuotationDetail;
 using EVMManagement.DAL.Models.Entities;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using System;
 using System.Linq;
@@ -19,6 +20,13 @@ namespace EVMManagement.API.Controllers
         public QuotationDetailsController(IServiceFacade services)
         {
             _services = services;
+        }
+
+        [HttpGet("quotation/{quotationId}")]
+        public async Task<IActionResult> GetByQuotationId(Guid quotationId)
+        {
+            var items = await _services.QuotationDetailService.GetByQuotationIdAsync(quotationId);
+            return Ok(ApiResponse<IList<QuotationDetailWithOrderResponse>>.CreateSuccess(items));
         }
 
         [HttpGet]
