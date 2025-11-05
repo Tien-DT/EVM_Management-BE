@@ -214,7 +214,7 @@ namespace EVMManagement.BLL.Services.Class
                         var order = await _unitOfWork.Orders.GetByIdAsync(invoice.OrderId);
                         if (order != null)
                         {
-                            order.Status = OrderStatus.CONFIRMED;
+                            order.Status = OrderStatus.PAY_SUCCESS;
                             order.ModifiedDate = DateTime.UtcNow;
                             _unitOfWork.Orders.Update(order);
                         }
@@ -338,7 +338,7 @@ namespace EVMManagement.BLL.Services.Class
                         var order = await _unitOfWork.Orders.GetByIdAsync(invoice.OrderId);
                         if (order != null)
                         {
-                            order.Status = OrderStatus.CONFIRMED;
+                            order.Status = OrderStatus.PAY_SUCCESS;
                             order.ModifiedDate = DateTime.UtcNow;
                             _unitOfWork.Orders.Update(order);
                         }
