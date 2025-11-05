@@ -5,6 +5,8 @@ using EVMManagement.BLL.DTOs.Request.Customer;
 using EVMManagement.BLL.DTOs.Request.Dealer;
 using EVMManagement.BLL.DTOs.Request.Deposit;
 using EVMManagement.BLL.DTOs.Request.DealerContract;
+using EVMManagement.BLL.DTOs.Request.InstallmentPayment;
+using EVMManagement.BLL.DTOs.Request.InstallmentPlan;
 using EVMManagement.BLL.DTOs.Request.HandoverRecord;
 using EVMManagement.BLL.DTOs.Request.Invoice;
 using EVMManagement.BLL.DTOs.Request.MasterTimeSlot;
@@ -25,6 +27,8 @@ using EVMManagement.BLL.DTOs.Response.Dealer;
 using EVMManagement.BLL.DTOs.Response.DealerContract;
 using EVMManagement.BLL.DTOs.Response.Deposit;
 using EVMManagement.BLL.DTOs.Response.DigitalSignature;
+using EVMManagement.BLL.DTOs.Response.InstallmentPayment;
+using EVMManagement.BLL.DTOs.Response.InstallmentPlan;
 using EVMManagement.BLL.DTOs.Response.HandoverRecord;
 using EVMManagement.BLL.DTOs.Response.Invoice;
 using EVMManagement.BLL.DTOs.Response.MasterTimeSlot;
@@ -183,6 +187,16 @@ namespace EVMManagement.BLL.Mappings
             CreateMap<InvoiceUpdateDto, Invoice>()
                 .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
             CreateMap<Invoice, InvoiceResponse>();
+
+            // Installment Mappings
+            CreateMap<InstallmentPlanCreateDto, InstallmentPlan>();
+            CreateMap<InstallmentPlan, InstallmentPlanResponseDto>()
+                .ForMember(dest => dest.CustomerId, opt => opt.MapFrom(src => src.Order != null ? src.Order.CustomerId : null))
+                .ForMember(dest => dest.Payments, opt => opt.MapFrom(src => src.InstallmentPayments.Where(p => !p.IsDeleted)));
+            CreateMap<InstallmentPaymentCreateDto, InstallmentPayment>();
+            CreateMap<InstallmentPayment, InstallmentPaymentResponseDto>()
+                .ForMember(dest => dest.OrderId, opt => opt.MapFrom(src => src.InstallmentPlan != null ? src.InstallmentPlan.OrderId : (Guid?)null))
+                .ForMember(dest => dest.CustomerId, opt => opt.MapFrom(src => src.InstallmentPlan != null && src.InstallmentPlan.Order != null ? src.InstallmentPlan.Order.CustomerId : null));
 
             // DealerContract Mappings
             CreateMap<DealerContractCreateDto, DealerContract>();

@@ -33,6 +33,8 @@ namespace EVMManagement.API.Services
         public IHandoverRecordService HandoverRecordService { get; }
         public ITransportService TransportService { get; }
         public ITransportDetailService TransportDetailService { get; }
+        public IInstallmentPlanService InstallmentPlanService { get; }
+        public IInstallmentPaymentService InstallmentPaymentService { get; }
 
         public ServiceFacade(
             IAuthService authService,
@@ -63,7 +65,9 @@ namespace EVMManagement.API.Services
             IDepositService depositService,
             IHandoverRecordService handoverRecordService,
             ITransportService transportService,
-            ITransportDetailService transportDetailService)
+            ITransportDetailService transportDetailService,
+            IInstallmentPlanService installmentPlanService,
+            IInstallmentPaymentService installmentPaymentService)
         {
             AuthService = authService;
             CustomerService = customerService;
@@ -94,6 +98,8 @@ namespace EVMManagement.API.Services
             HandoverRecordService = handoverRecordService;
             TransportService = transportService;
             TransportDetailService = transportDetailService;
+            InstallmentPlanService = installmentPlanService;
+            InstallmentPaymentService = installmentPaymentService;
         }
     }
 }

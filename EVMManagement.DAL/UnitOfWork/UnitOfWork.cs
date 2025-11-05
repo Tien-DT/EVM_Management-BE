@@ -40,6 +40,7 @@ namespace EVMManagement.DAL.UnitOfWork
         private IDepositRepository? _deposits;
         private IReportRepository? _reports;
         private IInstallmentPlanRepository? _installmentPlans;
+        private IInstallmentPaymentRepository? _installmentPayments;
         private ITransportRepository? _transports;
         private ITransportDetailRepository? _transportDetails;
 
@@ -74,6 +75,7 @@ namespace EVMManagement.DAL.UnitOfWork
         public IDepositRepository Deposits => _deposits ??= new DepositRepository(_context);
         public IReportRepository Reports => _reports ??= new ReportRepository(_context);
         public IInstallmentPlanRepository InstallmentPlans => _installmentPlans ??= new InstallmentPlanRepository(_context);
+        public IInstallmentPaymentRepository InstallmentPayments => _installmentPayments ??= new InstallmentPaymentRepository(_context);
         public ITransportRepository Transports => _transports ??= new TransportRepository(_context);
         public ITransportDetailRepository TransportDetails => _transportDetails ??= new TransportDetailRepository(_context);
 

@@ -32,6 +32,7 @@ namespace EVMManagement.DAL.UnitOfWork
         IDepositRepository Deposits { get; }
         IReportRepository Reports { get; }
         IInstallmentPlanRepository InstallmentPlans { get; }
+        IInstallmentPaymentRepository InstallmentPayments { get; }
         ITransportRepository Transports { get; }
         ITransportDetailRepository TransportDetails { get; }
 
