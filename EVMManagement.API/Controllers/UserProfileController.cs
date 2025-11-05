@@ -73,27 +73,28 @@ namespace EVMManagement.API.Controllers
             return Ok(ApiResponse<UserProfileResponse>.CreateSuccess(item));
         }
        
-        [HttpPatch("{id}")]
-        public async Task<IActionResult> Update(Guid id, [FromBody] UserProfileUpdateDto dto)
+        [HttpPatch("{accId}")]
+        public async Task<IActionResult> Update(Guid accId, [FromBody] UserProfileUpdateDto dto)
         {
             if (!ModelState.IsValid)
             {
                 var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
                 return BadRequest(ApiResponse<UserProfileResponse>.CreateFail("Validation failed", errors, 400));
             }
-            
-            var existing = await _services.UserProfileService.GetByIdAsync(id);
+            var existing = await _services.UserProfileService.GetByAccountIdAsync(accId);
             if (existing == null) return NotFound(ApiResponse<UserProfileResponse>.CreateFail("UserProfile not found", null, 404));
+
 
             var toUpdate = new UserProfile
             {
+                
                 DealerId = dto.DealerId,
                 FullName = dto.FullName,
                 Phone = dto.Phone,
                 CardId = dto.CardId
             };
 
-            var updated = await _services.UserProfileService.UpdateByUserProfileIdAsync(id, toUpdate, dto.Email);
+            var updated = await _services.UserProfileService.UpdateAsync(accId, toUpdate, dto.Email);
             if (updated == null) return NotFound(ApiResponse<UserProfileResponse>.CreateFail("UserProfile not found", null, 404));
             return Ok(ApiResponse<UserProfileResponse>.CreateSuccess(updated));
         }

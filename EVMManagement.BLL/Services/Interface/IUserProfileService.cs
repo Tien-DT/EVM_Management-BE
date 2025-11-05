@@ -16,7 +16,7 @@ namespace EVMManagement.BLL.Services.Interface
         Task<UserProfileResponse?> GetByAccountIdAsync(Guid accId);
         Task<UserProfileResponse?> GetByIdAsync(Guid id);
         Task<UserProfileResponse?> GetManagerByDealerIdAsync(Guid dealerId);
-        Task<UserProfileResponse?> UpdateByUserProfileIdAsync(Guid userProfileId, UserProfile entity, string? email = null);
+        Task<UserProfileResponse?> UpdateAsync(Guid accId, UserProfile entity, string? email = null);
         Task<UserProfileResponse?> UpdateIsDeletedAsync(Guid accId, bool isDeleted);
        
     }
