@@ -73,7 +73,7 @@ namespace EVMManagement.API.Controllers
             return Ok(ApiResponse<UserProfileResponse>.CreateSuccess(item));
         }
        
-        [HttpPut("{accId}")]
+        [HttpPatch("{accId}")]
         public async Task<IActionResult> Update(Guid accId, [FromBody] UserProfileUpdateDto dto)
         {
             if (!ModelState.IsValid)
@@ -94,7 +94,7 @@ namespace EVMManagement.API.Controllers
                 CardId = dto.CardId
             };
 
-            var updated = await _services.UserProfileService.UpdateAsync(accId, toUpdate);
+            var updated = await _services.UserProfileService.UpdateAsync(accId, toUpdate, dto.Email);
             if (updated == null) return NotFound(ApiResponse<UserProfileResponse>.CreateFail("UserProfile not found", null, 404));
             return Ok(ApiResponse<UserProfileResponse>.CreateSuccess(updated));
         }

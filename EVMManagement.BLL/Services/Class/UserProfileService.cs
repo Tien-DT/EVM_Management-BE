@@ -105,7 +105,7 @@ namespace EVMManagement.BLL.Services.Class
 
        
 
-        public async Task<UserProfileResponse?> UpdateAsync(Guid accId, UserProfile entity)
+        public async Task<UserProfileResponse?> UpdateAsync(Guid accId, UserProfile entity, string? email = null)
         {
             var existing = await _unitOfWork.UserProfiles.GetByAccountIdAsync(accId);
             if (existing == null) return null;
@@ -159,6 +159,22 @@ namespace EVMManagement.BLL.Services.Class
                 }
             }
 
+            // Update email in Account entity if provided
+            if (!string.IsNullOrWhiteSpace(email))
+            {
+                var account = await _unitOfWork.Accounts.GetByIdAsync(accId);
+                if (account == null)
+                    throw new ArgumentException("Account not found.", nameof(accId));
+
+                // Check if email is already in use by another account
+                var emailExists = await _unitOfWork.Accounts.AnyAsync(a => a.Email == email && a.Id != accId && !a.IsDeleted);
+                
+                if (emailExists)
+                    throw new ArgumentException("Email is already in use by another account.", nameof(email));
+
+                account.Email = email;
+                _unitOfWork.Accounts.Update(account);
+            }
 
             _unitOfWork.UserProfiles.Update(existing);
             await _unitOfWork.SaveChangesAsync();
