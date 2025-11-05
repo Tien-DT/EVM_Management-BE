@@ -11,15 +11,14 @@ namespace EVMManagement.BLL.DTOs.Request.User
         [MaxLength(255)]
         public string FullName { get; set; } = string.Empty;
 
-        [MaxLength(10)]
-        [RegularExpression(@"^0\d{9}$", ErrorMessage = "Phone must start with 0 and be exactly 10 digits.")]
+        [RegularExpression(@"^\d{10}$", ErrorMessage = "Số điện thoại phải gồm 10 chữ số.")]
         public string? Phone { get; set; }
 
-        [MaxLength(12)]
+        [RegularExpression(@"^\d{12}$", ErrorMessage = "Căn cước phải gồm 12 chữ số.")]
         public string? CardId { get; set; }
 
         [MaxLength(255)]
-        [EmailAddress(ErrorMessage = "Invalid email format.")]
+        [EmailAddress(ErrorMessage = "Email không đúng định dạng.")]
         public string? Email { get; set; }
     }
 }

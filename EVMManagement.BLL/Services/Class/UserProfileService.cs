@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Text.RegularExpressions;
 using EVMManagement.BLL.Services.Interface;
 using EVMManagement.DAL.Repositories.Interface;
 using EVMManagement.DAL.UnitOfWork;
@@ -118,61 +119,63 @@ namespace EVMManagement.BLL.Services.Class
                 existing.DealerId = entity.DealerId;
             }
 
-            existing.FullName = entity.FullName;
+            existing.FullName = entity.FullName?.Trim() ?? existing.FullName;
 
             if (entity.Phone != null)
             {
-                if (entity.Phone == string.Empty)
+                var phoneValue = entity.Phone.Trim();
+                if (phoneValue == string.Empty)
                 {
                     existing.Phone = null;
                 }
                 else
                 {
-                    if (entity.Phone.Length > 20)
-                        throw new ArgumentException("Phone must be at most 20 characters.", nameof(entity.Phone));
+                    if (!Regex.IsMatch(phoneValue, @"^\d{10}$"))
+                        throw new ArgumentException("Số điện thoại phải gồm đúng 10 chữ số.", nameof(entity.Phone));
                     bool phoneExists = await _unitOfWork.UserProfiles
                         .GetAllAsync()
-                        .AnyAsync(u => u.Phone == entity.Phone && u.Id != existing.Id);
+                        .AnyAsync(u => !u.IsDeleted && u.Phone == phoneValue && u.Id != existing.Id && u.Account != null && !u.Account.IsDeleted);
                     if (phoneExists)
-                        throw new ArgumentException("Phone is already in use by another user.", nameof(entity.Phone));
-                    existing.Phone = entity.Phone;
+                        throw new ArgumentException("Số điện thoại đã được sử dụng.", nameof(entity.Phone));
+                    existing.Phone = phoneValue;
                 }
             }
 
-            
             if (entity.CardId != null)
             {
-                if (entity.CardId == string.Empty)
+                var cardValue = entity.CardId.Trim();
+                if (cardValue == string.Empty)
                 {
                     existing.CardId = null;
                 }
                 else
                 {
-                    if (entity.CardId.Length > 50)
-                        throw new ArgumentException("CardId must be at most 12 characters.", nameof(entity.CardId));
+                    if (!Regex.IsMatch(cardValue, @"^\d{12}$"))
+                        throw new ArgumentException("Căn cước phải gồm đúng 12 chữ số.", nameof(entity.CardId));
                     bool cardExists = await _unitOfWork.UserProfiles
                         .GetAllAsync()
-                        .AnyAsync(u => u.CardId == entity.CardId && u.Id != existing.Id);
+                        .AnyAsync(u => !u.IsDeleted && u.CardId == cardValue && u.Id != existing.Id && u.Account != null && !u.Account.IsDeleted);
                     if (cardExists)
-                        throw new ArgumentException("CardId is already in use by another user.", nameof(entity.CardId));
-                    existing.CardId = entity.CardId;
+                        throw new ArgumentException("Căn cước đã được sử dụng.", nameof(entity.CardId));
+                    existing.CardId = cardValue;
                 }
             }
 
             // Update email in Account entity if provided
             if (!string.IsNullOrWhiteSpace(email))
             {
+                var trimmedEmail = email.Trim();
                 var account = await _unitOfWork.Accounts.GetByIdAsync(accId);
                 if (account == null)
-                    throw new ArgumentException("Account not found.", nameof(accId));
+                    throw new ArgumentException("Không tìm thấy tài khoản.", nameof(accId));
 
                 // Check if email is already in use by another account
-                var emailExists = await _unitOfWork.Accounts.AnyAsync(a => a.Email == email && a.Id != accId && !a.IsDeleted);
+                var emailExists = await _unitOfWork.Accounts.AnyAsync(a => a.Email == trimmedEmail && a.Id != accId && !a.IsDeleted);
                 
                 if (emailExists)
-                    throw new ArgumentException("Email is already in use by another account.", nameof(email));
+                    throw new ArgumentException("Email đã được sử dụng bởi tài khoản khác.", nameof(email));
 
-                account.Email = email;
+                account.Email = trimmedEmail;
                 _unitOfWork.Accounts.Update(account);
             }
 

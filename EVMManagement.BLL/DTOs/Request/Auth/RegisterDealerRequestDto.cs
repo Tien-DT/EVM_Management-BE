@@ -18,10 +18,10 @@ namespace EVMManagement.BLL.DTOs.Request.Auth
         [Required]
         public Guid DealerId { get; set; }
 
-        [MaxLength(20)]
+        [RegularExpression(@"^\d{10}$", ErrorMessage = "Số điện thoại phải gồm 10 chữ số.")]
         public string? Phone { get; set; }
 
-        [MaxLength(50)]
+        [RegularExpression(@"^\d{12}$", ErrorMessage = "Căn cước phải gồm 12 chữ số.")]
         public string? CardId { get; set; }
 
         public AccountRole Role { get; set; } = AccountRole.DEALER_MANAGER;

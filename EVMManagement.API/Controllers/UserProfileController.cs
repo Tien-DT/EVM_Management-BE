@@ -62,14 +62,14 @@ namespace EVMManagement.API.Controllers
         public async Task<IActionResult> GetByAccountId(Guid accId)
         {
             var item = await _services.UserProfileService.GetByAccountIdAsync(accId);
-            if (item == null) return NotFound(ApiResponse<UserProfileResponse>.CreateFail("UserProfile not found", null, 404));
+            if (item == null) return NotFound(ApiResponse<UserProfileResponse>.CreateFail("Không tìm thấy hồ sơ người dùng.", null, 404));
             return Ok(ApiResponse<UserProfileResponse>.CreateSuccess(item));
         }
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(Guid id)
         {
             var item = await _services.UserProfileService.GetByIdAsync(id);
-            if (item == null) return NotFound(ApiResponse<UserProfileResponse>.CreateFail("UserProfile not found", null, 404));
+            if (item == null) return NotFound(ApiResponse<UserProfileResponse>.CreateFail("Không tìm thấy hồ sơ người dùng.", null, 404));
             return Ok(ApiResponse<UserProfileResponse>.CreateSuccess(item));
         }
        
@@ -79,10 +79,10 @@ namespace EVMManagement.API.Controllers
             if (!ModelState.IsValid)
             {
                 var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
-                return BadRequest(ApiResponse<UserProfileResponse>.CreateFail("Validation failed", errors, 400));
+                return BadRequest(ApiResponse<UserProfileResponse>.CreateFail("Dữ liệu không hợp lệ.", errors, 400));
             }
             var existing = await _services.UserProfileService.GetByAccountIdAsync(accId);
-            if (existing == null) return NotFound(ApiResponse<UserProfileResponse>.CreateFail("UserProfile not found", null, 404));
+            if (existing == null) return NotFound(ApiResponse<UserProfileResponse>.CreateFail("Không tìm thấy hồ sơ người dùng.", null, 404));
 
 
             var toUpdate = new UserProfile
@@ -95,7 +95,7 @@ namespace EVMManagement.API.Controllers
             };
 
             var updated = await _services.UserProfileService.UpdateAsync(accId, toUpdate, dto.Email);
-            if (updated == null) return NotFound(ApiResponse<UserProfileResponse>.CreateFail("UserProfile not found", null, 404));
+            if (updated == null) return NotFound(ApiResponse<UserProfileResponse>.CreateFail("Không tìm thấy hồ sơ người dùng.", null, 404));
             return Ok(ApiResponse<UserProfileResponse>.CreateSuccess(updated));
         }
 

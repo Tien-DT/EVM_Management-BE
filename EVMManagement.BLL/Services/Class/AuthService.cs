@@ -3,9 +3,11 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -183,6 +185,11 @@ namespace EVMManagement.BLL.Services.Class
                     return ApiResponse<string>.CreateFail("Họ tên là bắt buộc.");
                 }
 
+                var normalizedEmail = request.Email.Trim();
+                var normalizedFullName = request.FullName.Trim();
+                var phone = string.IsNullOrWhiteSpace(request.Phone) ? null : request.Phone.Trim();
+                var cardId = string.IsNullOrWhiteSpace(request.CardId) ? null : request.CardId.Trim();
+
                 // Chỉ cho phép role đại lý
                 if (request.Role != AccountRole.DEALER_MANAGER && request.Role != AccountRole.DEALER_STAFF)
                 {
@@ -227,18 +234,58 @@ namespace EVMManagement.BLL.Services.Class
                     return ApiResponse<string>.CreateFail($"Dealer '{dealer.Name}' chưa được kích hoạt. Vui lòng liên hệ quản trị viên.", errorCode: 400);
                 }
 
-                var existed = await _unitOfWork.Accounts.GetByEmailAsync(request.Email);
+                if (phone != null)
+                {
+                    if (!Regex.IsMatch(phone, @"^\d{10}$"))
+                    {
+                        return ApiResponse<string>.CreateFail("Số điện thoại phải gồm đúng 10 chữ số.");
+                    }
+
+                    var phoneExists = await _unitOfWork.UserProfiles
+                        .GetAllAsync()
+                        .AnyAsync(u => !u.IsDeleted && u.Phone == phone && u.Account != null && !u.Account.IsDeleted);
+                    if (phoneExists)
+                    {
+                        return ApiResponse<string>.CreateFail($"Số điện thoại '{phone}' đã được sử dụng.", errorCode: 409);
+                    }
+                }
+
+                if (cardId != null)
+                {
+                    if (!Regex.IsMatch(cardId, @"^\d{12}$"))
+                    {
+                        return ApiResponse<string>.CreateFail("Căn cước phải gồm đúng 12 chữ số.");
+                    }
+
+                    var cardExists = await _unitOfWork.UserProfiles
+                        .GetAllAsync()
+                        .AnyAsync(u => !u.IsDeleted && u.CardId == cardId && u.Account != null && !u.Account.IsDeleted);
+                    if (cardExists)
+                    {
+                        return ApiResponse<string>.CreateFail($"Căn cước '{cardId}' đã được sử dụng.", errorCode: 409);
+                    }
+                }
+
+                var dealerProfileExists = await _unitOfWork.UserProfiles
+                    .GetAllAsync()
+                    .AnyAsync(u => !u.IsDeleted && u.DealerId == request.DealerId && u.Account != null && !u.Account.IsDeleted);
+                if (dealerProfileExists)
+                {
+                    return ApiResponse<string>.CreateFail("Dealer này đã có tài khoản trong hệ thống.", errorCode: 409);
+                }
+
+                var existed = await _unitOfWork.Accounts.GetByEmailAsync(normalizedEmail);
                 if (existed != null)
                 {
-                    _logger.LogWarning("Cố tạo account với email đã tồn tại. Email: {Email}", request.Email);
-                    return ApiResponse<string>.CreateFail($"Email '{request.Email}' đã được sử dụng. Vui lòng sử dụng email khác.", errorCode: 409);
+                    _logger.LogWarning("Cố tạo account với email đã tồn tại. Email: {Email}", normalizedEmail);
+                    return ApiResponse<string>.CreateFail($"Email '{normalizedEmail}' đã được sử dụng. Vui lòng sử dụng email khác.", errorCode: 409);
                 }
 
                 var plainPassword = GenerateRandomPassword();
 
                 var account = new Account
                 {
-                    Email = request.Email.Trim(),
+                    Email = normalizedEmail,
                     IsActive = true,
                     Role = request.Role
                 };
@@ -250,9 +297,9 @@ namespace EVMManagement.BLL.Services.Class
                 {
                     AccountId = account.Id,
                     DealerId = request.DealerId,
-                    FullName = request.FullName.Trim(),
-                    Phone = request.Phone,
-                    CardId = request.CardId
+                    FullName = normalizedFullName,
+                    Phone = phone,
+                    CardId = cardId
                 };
                 await _unitOfWork.UserProfiles.AddAsync(profile);
 
@@ -260,19 +307,19 @@ namespace EVMManagement.BLL.Services.Class
 
                 try
                 {
-                    var emailBody = EmailTemplates.WelcomeDealerEmail(request.FullName, request.Email, plainPassword);
-                    await _emailService.SendEmailAsync(request.Email, EmailTemplates.Subjects.WelcomeDealer, emailBody, isHtml: true);
-                    _logger.LogInformation("Email chào mừng đã được gửi đến {Email} cho account mới tạo", request.Email);
+                    var emailBody = EmailTemplates.WelcomeDealerEmail(normalizedFullName, normalizedEmail, plainPassword);
+                    await _emailService.SendEmailAsync(normalizedEmail, EmailTemplates.Subjects.WelcomeDealer, emailBody, isHtml: true);
+                    _logger.LogInformation("Email chào mừng đã được gửi đến {Email} cho account mới tạo", normalizedEmail);
                 }
                 catch (Exception emailEx)
                 {
-                    _logger.LogError(emailEx, "Lỗi khi gửi email chào mừng đến {Email}. Account đã được tạo nhưng email không gửi được.", request.Email);
+                    _logger.LogError(emailEx, "Lỗi khi gửi email chào mừng đến {Email}. Account đã được tạo nhưng email không gửi được.", normalizedEmail);
                 }
 
                 _logger.LogInformation("Tài khoản dealer {Role} được tạo thành công. CreatedBy: {CurrentUserRole}, AccountId: {AccountId}, DealerId: {DealerId}, Email: {Email}, DealerName: {DealerName}", 
-                    request.Role, currentUserRole, account.Id, request.DealerId, request.Email, dealer.Name);
+                    request.Role, currentUserRole, account.Id, request.DealerId, normalizedEmail, dealer.Name);
 
-                return ApiResponse<string>.CreateSuccess(account.Id.ToString(), $"Tạo tài khoản cho '{request.FullName}' thành công. Thông tin đăng nhập đã được gửi qua email.");
+                return ApiResponse<string>.CreateSuccess(account.Id.ToString(), $"Tạo tài khoản cho '{normalizedFullName}' thành công. Thông tin đăng nhập đã được gửi qua email.");
             }
             catch (Exception ex)
             {
@@ -319,7 +366,44 @@ namespace EVMManagement.BLL.Services.Class
                     return ApiResponse<string>.CreateFail("Họ tên là bắt buộc.");
                 }
 
-                var existed = await _unitOfWork.Accounts.GetByEmailAsync(request.Email);
+                var normalizedEmail = request.Email.Trim();
+                var normalizedFullName = request.FullName.Trim();
+                var phone = string.IsNullOrWhiteSpace(request.Phone) ? null : request.Phone.Trim();
+                var cardId = string.IsNullOrWhiteSpace(request.CardId) ? null : request.CardId.Trim();
+
+                if (phone != null)
+                {
+                    if (!Regex.IsMatch(phone, @"^\d{10}$"))
+                    {
+                        return ApiResponse<string>.CreateFail("Số điện thoại phải gồm đúng 10 chữ số.");
+                    }
+
+                    var phoneExists = await _unitOfWork.UserProfiles
+                        .GetAllAsync()
+                        .AnyAsync(u => !u.IsDeleted && u.Phone == phone && u.Account != null && !u.Account.IsDeleted);
+                    if (phoneExists)
+                    {
+                        return ApiResponse<string>.CreateFail($"Số điện thoại '{phone}' đã được sử dụng.", errorCode: 409);
+                    }
+                }
+
+                if (cardId != null)
+                {
+                    if (!Regex.IsMatch(cardId, @"^\d{12}$"))
+                    {
+                        return ApiResponse<string>.CreateFail("Căn cước phải gồm đúng 12 chữ số.");
+                    }
+
+                    var cardExists = await _unitOfWork.UserProfiles
+                        .GetAllAsync()
+                        .AnyAsync(u => !u.IsDeleted && u.CardId == cardId && u.Account != null && !u.Account.IsDeleted);
+                    if (cardExists)
+                    {
+                        return ApiResponse<string>.CreateFail($"Căn cước '{cardId}' đã được sử dụng.", errorCode: 409);
+                    }
+                }
+
+                var existed = await _unitOfWork.Accounts.GetByEmailAsync(normalizedEmail);
                 if (existed != null)
                 {
                     return ApiResponse<string>.CreateFail("Email đã được sử dụng.", errorCode: 409);
@@ -327,7 +411,7 @@ namespace EVMManagement.BLL.Services.Class
 
                 var account = new Account
                 {
-                    Email = request.Email.Trim(),
+                    Email = normalizedEmail,
                     IsActive = true,
                     Role = request.Role
                 };
@@ -339,9 +423,9 @@ namespace EVMManagement.BLL.Services.Class
                 {
                     AccountId = account.Id,
                     DealerId = null,
-                    FullName = request.FullName.Trim(),
-                    Phone = request.Phone,
-                    CardId = request.CardId
+                    FullName = normalizedFullName,
+                    Phone = phone,
+                    CardId = cardId
                 };
                 await _unitOfWork.UserProfiles.AddAsync(profile);
 
