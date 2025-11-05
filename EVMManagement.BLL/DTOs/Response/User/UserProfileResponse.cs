@@ -12,6 +12,7 @@ namespace EVMManagement.BLL.DTOs.Response.User
         public AccountRole Role { get; set; }
         public bool IsActive { get; set; }
         public string? Email { get; set; }
+        public bool IsPasswordChange { get; set; }
     }
     public class DealerDto
     {

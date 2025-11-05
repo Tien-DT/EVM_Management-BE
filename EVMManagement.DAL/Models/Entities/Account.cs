@@ -16,6 +16,8 @@ namespace EVMManagement.DAL.Models.Entities
         [MaxLength(255)]
         public string PasswordHash { get; set; } = string.Empty;
 
+        public bool IsPasswordChange { get; set; }
+
         public bool IsActive { get; set; } = true;
 
         [Required]

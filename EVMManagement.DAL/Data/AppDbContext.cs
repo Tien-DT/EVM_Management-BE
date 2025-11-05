@@ -74,6 +74,7 @@ namespace EVMManagement.DAL.Data
             {
                 entity.HasKey(e => e.Id);
                 entity.HasIndex(e => e.Email).IsUnique();
+                entity.Property(e => e.IsPasswordChange).HasDefaultValue(false);
                 // Role enum will be stored as int by default
             });
 

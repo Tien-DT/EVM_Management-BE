@@ -100,7 +100,8 @@ namespace EVMManagement.BLL.Services.Class
                 AccessToken = accessToken,
                 AccessTokenExpiresAt = accessTokenExpiresAt,
                 RefreshToken = refreshToken,
-                RefreshTokenExpiresAt = refreshTokenExpiresAt
+                RefreshTokenExpiresAt = refreshTokenExpiresAt,
+                IsPasswordChange = account.IsPasswordChange
             };
         }
 
@@ -287,7 +288,8 @@ namespace EVMManagement.BLL.Services.Class
                 {
                     Email = normalizedEmail,
                     IsActive = true,
-                    Role = request.Role
+                    Role = request.Role,
+                    IsPasswordChange = false
                 };
                 account.PasswordHash = _passwordHasher.HashPassword(account, plainPassword);
 
@@ -413,7 +415,8 @@ namespace EVMManagement.BLL.Services.Class
                 {
                     Email = normalizedEmail,
                     IsActive = true,
-                    Role = request.Role
+                    Role = request.Role,
+                    IsPasswordChange = true
                 };
                 account.PasswordHash = _passwordHasher.HashPassword(account, request.Password);
 
@@ -578,6 +581,7 @@ namespace EVMManagement.BLL.Services.Class
                 }
 
                 account.PasswordHash = _passwordHasher.HashPassword(account, request.NewPassword);
+                account.IsPasswordChange = true;
                 account.ModifiedDate = DateTime.UtcNow;
 
                 _unitOfWork.Accounts.Update(account);
@@ -642,6 +646,7 @@ namespace EVMManagement.BLL.Services.Class
                 }
 
                 account.PasswordHash = _passwordHasher.HashPassword(account, request.NewPassword);
+                account.IsPasswordChange = true;
                 account.ModifiedDate = DateTime.UtcNow;
 
                 _unitOfWork.Accounts.Update(account);

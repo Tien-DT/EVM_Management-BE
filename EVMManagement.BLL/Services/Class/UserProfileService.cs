@@ -208,7 +208,13 @@ namespace EVMManagement.BLL.Services.Class
                 Phone = u.Phone,
                 CardId = u.CardId,
                 Dealer = u.DealerId == null ? null : new DealerDto { Id = u.Dealer!.Id, Name = u.Dealer!.Name },
-                Account = u.Account == null ? null : new AccountDto { Role = u.Account.Role, IsActive = u.Account.IsActive, Email = u.Account.Email },
+                Account = u.Account == null ? null : new AccountDto
+                {
+                    Role = u.Account.Role,
+                    IsActive = u.Account.IsActive,
+                    Email = u.Account.Email,
+                    IsPasswordChange = u.Account.IsPasswordChange
+                },
                 CreatedDate = u.CreatedDate,
                 ModifiedDate = u.ModifiedDate,
                 DeletedDate = u.DeletedDate,
