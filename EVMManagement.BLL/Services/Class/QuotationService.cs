@@ -217,6 +217,7 @@ namespace EVMManagement.BLL.Services.Class
                 {
                     order.FinalAmount = total;
                 }
+                order.Status = OrderStatus.QUOTATION_ACCEPTED;
                 order.ModifiedDate = DateTime.UtcNow;
 
                 _unitOfWork.Quotations.Update(quotation);
