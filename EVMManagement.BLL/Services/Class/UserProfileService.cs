@@ -105,7 +105,7 @@ namespace EVMManagement.BLL.Services.Class
 
        
 
-        public async Task<UserProfileResponse?> UpdateAsync(Guid accId, UserProfile entity)
+        public async Task<UserProfileResponse?> UpdateAsync(Guid accId, UserProfile entity, string? email = null)
         {
             var existing = await _unitOfWork.UserProfiles.GetByAccountIdAsync(accId);
             if (existing == null) return null;
@@ -159,6 +159,102 @@ namespace EVMManagement.BLL.Services.Class
                 }
             }
 
+            // Update email in Account entity if provided
+            if (!string.IsNullOrWhiteSpace(email))
+            {
+                var account = await _unitOfWork.Accounts.GetByIdAsync(accId);
+                if (account == null)
+                    throw new ArgumentException("Account not found.", nameof(accId));
+
+                // Check if email is already in use by another account
+                var emailExists = await _unitOfWork.Accounts.AnyAsync(a => a.Email == email && a.Id != accId && !a.IsDeleted);
+                
+                if (emailExists)
+                    throw new ArgumentException("Email is already in use by another account.", nameof(email));
+
+                account.Email = email;
+                _unitOfWork.Accounts.Update(account);
+            }
+
+            _unitOfWork.UserProfiles.Update(existing);
+            await _unitOfWork.SaveChangesAsync();
+            return MapToResponse(existing);
+        }
+
+        public async Task<UserProfileResponse?> UpdateByUserProfileIdAsync(Guid userProfileId, UserProfile entity, string? email = null)
+        {
+            // Get UserProfile by ID
+            var existing = await _unitOfWork.UserProfiles.GetByIdAsync(userProfileId);
+            if (existing == null) return null;
+
+            // Get the Account ID from the UserProfile
+            var accountId = existing.AccountId;
+
+            if (entity.DealerId.HasValue)
+            {
+                if (entity.DealerId == Guid.Empty)
+                    throw new ArgumentException("DealerId is not valid.", nameof(entity.DealerId));
+
+                existing.DealerId = entity.DealerId;
+            }
+
+            existing.FullName = entity.FullName;
+
+            if (entity.Phone != null)
+            {
+                if (entity.Phone == string.Empty)
+                {
+                    existing.Phone = null;
+                }
+                else
+                {
+                    if (entity.Phone.Length > 20)
+                        throw new ArgumentException("Phone must be at most 20 characters.", nameof(entity.Phone));
+                    bool phoneExists = await _unitOfWork.UserProfiles
+                        .GetAllAsync()
+                        .AnyAsync(u => u.Phone == entity.Phone && u.Id != existing.Id);
+                    if (phoneExists)
+                        throw new ArgumentException("Phone is already in use by another user.", nameof(entity.Phone));
+                    existing.Phone = entity.Phone;
+                }
+            }
+
+            
+            if (entity.CardId != null)
+            {
+                if (entity.CardId == string.Empty)
+                {
+                    existing.CardId = null;
+                }
+                else
+                {
+                    if (entity.CardId.Length > 50)
+                        throw new ArgumentException("CardId must be at most 12 characters.", nameof(entity.CardId));
+                    bool cardExists = await _unitOfWork.UserProfiles
+                        .GetAllAsync()
+                        .AnyAsync(u => u.CardId == entity.CardId && u.Id != existing.Id);
+                    if (cardExists)
+                        throw new ArgumentException("CardId is already in use by another user.", nameof(entity.CardId));
+                    existing.CardId = entity.CardId;
+                }
+            }
+
+            // Update email in Account entity if provided
+            if (!string.IsNullOrWhiteSpace(email))
+            {
+                var account = await _unitOfWork.Accounts.GetByIdAsync(accountId);
+                if (account == null)
+                    throw new ArgumentException("Account not found.", nameof(accountId));
+
+                // Check if email is already in use by another account
+                var emailExists = await _unitOfWork.Accounts.AnyAsync(a => a.Email == email && a.Id != accountId && !a.IsDeleted);
+                
+                if (emailExists)
+                    throw new ArgumentException("Email is already in use by another account.", nameof(email));
+
+                account.Email = email;
+                _unitOfWork.Accounts.Update(account);
+            }
 
             _unitOfWork.UserProfiles.Update(existing);
             await _unitOfWork.SaveChangesAsync();

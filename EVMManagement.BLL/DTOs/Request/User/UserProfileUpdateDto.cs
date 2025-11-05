@@ -17,5 +17,9 @@ namespace EVMManagement.BLL.DTOs.Request.User
 
         [MaxLength(12)]
         public string? CardId { get; set; }
+
+        [MaxLength(255)]
+        [EmailAddress(ErrorMessage = "Invalid email format.")]
+        public string? Email { get; set; }
     }
 }
