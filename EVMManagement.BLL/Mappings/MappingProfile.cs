@@ -164,6 +164,12 @@ namespace EVMManagement.BLL.Mappings
                 .ForMember(dest => dest.VehicleVariantColor, opt => opt.MapFrom(src => src.VehicleVariant != null ? src.VehicleVariant.Color : null))
                 .ForMember(dest => dest.VehicleModelName, opt => opt.MapFrom(src => src.VehicleVariant != null && src.VehicleVariant.VehicleModel != null ? src.VehicleVariant.VehicleModel.Name : null))
                 .ForMember(dest => dest.LineTotal, opt => opt.MapFrom(src => System.Math.Round(src.UnitPrice * src.Quantity * (1m - src.DiscountPercent / 100m), 2)));
+            CreateMap<Order, OrderBasicResponse>();
+            CreateMap<QuotationDetail, QuotationDetailWithOrderResponse>()
+                .ForMember(dest => dest.VehicleVariantColor, opt => opt.MapFrom(src => src.VehicleVariant != null ? src.VehicleVariant.Color : null))
+                .ForMember(dest => dest.VehicleModelName, opt => opt.MapFrom(src => src.VehicleVariant != null && src.VehicleVariant.VehicleModel != null ? src.VehicleVariant.VehicleModel.Name : null))
+                .ForMember(dest => dest.LineTotal, opt => opt.MapFrom(src => System.Math.Round(src.UnitPrice * src.Quantity * (1m - src.DiscountPercent / 100m), 2)))
+                .ForMember(dest => dest.Order, opt => opt.MapFrom(src => src.Quotation != null ? src.Quotation.Order : null));
 
             // Contract Mappings
             CreateMap<ContractCreateDto, Contract>();
