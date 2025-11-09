@@ -25,7 +25,7 @@ namespace EVMManagement.BLL.Services.Class
             _mapper = mapper;
         }
 
-        public async Task<Customer> CreateCustomerAsync(CustomerCreateDto dto)
+        public async Task<Customer> CreateCustomerAsync(CustomerCreateDto dto, Guid? managedByAccountId = null)
         {
             var customer = new Customer
             {
@@ -36,7 +36,8 @@ namespace EVMManagement.BLL.Services.Class
                 Address = dto.Address,
                 Dob = DateTimeHelper.ToUtc(dto.Dob),
                 CardId = dto.CardId,
-                DealerId = dto.DealerId
+                DealerId = dto.DealerId,
+                ManagedBy = managedByAccountId
             };
 
             await _unitOfWork.Customers.AddAsync(customer);
@@ -64,6 +65,23 @@ namespace EVMManagement.BLL.Services.Class
         {
             var query = _unitOfWork.Customers.GetQueryable()
                 .Where(x => x.DealerId == dealerId);
+
+            var totalCount = await query.CountAsync();
+
+            var items = await query
+                .OrderByDescending(x => x.CreatedDate)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ProjectTo<CustomerResponse>(_mapper.ConfigurationProvider)
+                .ToListAsync();
+
+            return PagedResult<CustomerResponse>.Create(items, totalCount, pageNumber, pageSize);
+        }
+
+        public async Task<PagedResult<CustomerResponse>> GetByManagedByAsync(Guid accountId, int pageNumber = 1, int pageSize = 10)
+        {
+            var query = _unitOfWork.Customers.GetQueryable()
+                .Where(x => x.ManagedBy == accountId);
 
             var totalCount = await query.CountAsync();
 

@@ -29,8 +29,10 @@ namespace EVMManagement.DAL.Models.Entities
         public string? CardId { get; set; }
 
         public Guid? DealerId { get; set; }
+        public Guid? ManagedBy { get; set; }
 
         public virtual Dealer? Dealer { get; set; }
+        public virtual Account? ManagedByAccount { get; set; }
         public virtual ICollection<Quotation> Quotations { get; set; } = new HashSet<Quotation>();
         public virtual ICollection<Order> Orders { get; set; } = new HashSet<Order>();
         public virtual ICollection<Contract> Contracts { get; set; } = new HashSet<Contract>();

@@ -105,6 +105,10 @@ namespace EVMManagement.DAL.Data
                     .WithMany(d => d.Customers)
                     .HasForeignKey(e => e.DealerId)
                     .OnDelete(DeleteBehavior.SetNull);
+                entity.HasOne(e => e.ManagedByAccount)
+                    .WithMany(a => a.ManagedCustomers)
+                    .HasForeignKey(e => e.ManagedBy)
+                    .OnDelete(DeleteBehavior.SetNull);
             });
 
             // Configure VehicleModel

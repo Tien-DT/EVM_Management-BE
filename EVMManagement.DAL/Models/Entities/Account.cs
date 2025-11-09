@@ -26,5 +26,6 @@ namespace EVMManagement.DAL.Models.Entities
         public virtual UserProfile? UserProfile { get; set; }
         public virtual ICollection<Deposit> ReceivedDeposits { get; set; } = new HashSet<Deposit>();
         public virtual ICollection<Report> Reports { get; set; } = new HashSet<Report>();
+        public virtual ICollection<Customer> ManagedCustomers { get; set; } = new HashSet<Customer>();
     }
 }
