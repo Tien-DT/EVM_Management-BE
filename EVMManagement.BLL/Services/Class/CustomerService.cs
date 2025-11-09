@@ -95,6 +95,45 @@ namespace EVMManagement.BLL.Services.Class
             return PagedResult<CustomerResponse>.Create(items, totalCount, pageNumber, pageSize);
         }
 
+        public async Task<CustomerSalesSummaryResponse> GetSalesSummaryByManagedAccountAsync(Guid accountId, DateTime? fromDate = null, DateTime? toDate = null)
+        {
+            var customersQuery = _unitOfWork.Customers.GetQueryable()
+                .Where(x => x.ManagedBy == accountId);
+
+            var totalCustomers = await customersQuery.CountAsync();
+
+            var ordersQuery = _unitOfWork.Orders.GetQueryable()
+                .Where(o => o.Customer != null && o.Customer.ManagedBy == accountId);
+
+            var fromUtc = DateTimeHelper.ToUtc(fromDate);
+            var toUtc = DateTimeHelper.ToUtc(toDate);
+
+            if (fromUtc.HasValue)
+            {
+                ordersQuery = ordersQuery.Where(o => o.CreatedDate >= fromUtc.Value);
+            }
+
+            if (toUtc.HasValue)
+            {
+                ordersQuery = ordersQuery.Where(o => o.CreatedDate <= toUtc.Value);
+            }
+
+            var totalOrders = await ordersQuery.CountAsync();
+            var totalRevenue = totalOrders == 0
+                ? 0m
+                : await ordersQuery.SumAsync(o => o.FinalAmount ?? 0m);
+
+            return new CustomerSalesSummaryResponse
+            {
+                ManagedBy = accountId,
+                TotalCustomers = totalCustomers,
+                TotalOrders = totalOrders,
+                TotalRevenue = totalRevenue,
+                FromDate = fromUtc,
+                ToDate = toUtc
+            };
+        }
+
         public async Task<CustomerResponse?> GetByIdAsync(Guid id)
         {
             var entity = await _unitOfWork.Customers.GetByIdAsync(id);

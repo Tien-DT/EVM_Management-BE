@@ -62,6 +62,25 @@ namespace EVMManagement.API.Controllers
             return Ok(ApiResponse<PagedResult<CustomerResponse>>.CreateSuccess(result));
         }
 
+        [HttpGet("managed-by/sales")]
+        [Authorize]
+        public async Task<IActionResult> GetSalesByManagedBy([FromQuery] DateTime? fromDate, [FromQuery] DateTime? toDate)
+        {
+            var managedById = GetCurrentAccountId();
+            if (!managedById.HasValue)
+            {
+                return Unauthorized(ApiResponse<string>.CreateFail("Không xác định được tài khoản đăng nhập", null, 401));
+            }
+
+            if (fromDate.HasValue && toDate.HasValue && fromDate > toDate)
+            {
+                return BadRequest(ApiResponse<string>.CreateFail("Thời gian bắt đầu phải nhỏ hơn hoặc bằng thời gian kết thúc", null, 400));
+            }
+
+            var summary = await Services.CustomerService.GetSalesSummaryByManagedAccountAsync(managedById.Value, fromDate, toDate);
+            return Ok(ApiResponse<CustomerSalesSummaryResponse>.CreateSuccess(summary));
+        }
+
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(Guid id)
         {
