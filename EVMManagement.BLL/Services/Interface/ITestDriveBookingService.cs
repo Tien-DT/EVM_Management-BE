@@ -10,6 +10,7 @@ namespace EVMManagement.BLL.Services.Interface
     public interface ITestDriveBookingService
     {
         Task<TestDriveBookingResponseDto> CreateAsync(TestDriveBookingCreateDto dto);
+        Task<ApiResponse<TestDriveBookingResponseDto>> CreateByStaffAsync(TestDriveBookingCreateByStaffDto dto, Guid dealerStaffId);
         Task<PagedResult<TestDriveBookingResponseDto>> GetAllAsync(int pageNumber = 1, int pageSize = 10);
         Task<TestDriveBookingResponseDto?> GetByIdAsync(Guid id);
         Task<PagedResult<TestDriveBookingResponseDto>> GetByFilterAsync(TestDriveBookingFilterDto filterDto);

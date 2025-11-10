@@ -10,6 +10,10 @@ namespace EVMManagement.BLL.DTOs.Response.MasterTimeSlot
         public int? DurationMinutes { get; set; }
         public bool IsActive { get; set; }
         public Guid? DealerId { get; set; }
+        public DateTime CreatedDate { get; set; }
+        public DateTime? ModifiedDate { get; set; }
+        public DateTime? DeletedDate { get; set; }
+        public bool IsDeleted { get; set; }
     }
 }
 

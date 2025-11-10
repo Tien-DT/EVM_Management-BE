@@ -14,11 +14,11 @@ namespace EVMManagement.API.Controllers
     [Route("api/v1/[controller]")]
     [ApiController]
     [Authorize]
-    public class TestDriveBookingsController : ControllerBase
+    public class TestDriveBookingsController : BaseController
     {
         private readonly IServiceFacade _services;
 
-        public TestDriveBookingsController(IServiceFacade services)
+        public TestDriveBookingsController(IServiceFacade services) : base(services)
         {
             _services = services;
         }
@@ -47,10 +47,62 @@ namespace EVMManagement.API.Controllers
             }
         }
 
+        [HttpPost("create-by-staff")]
+        [Authorize(Roles = "DEALER_STAFF, DEALER_MANAGER")]
+        public async Task<IActionResult> CreateByStaff([FromBody] TestDriveBookingCreateByStaffDto dto)
+        {
+            if (!ModelState.IsValid)
+            {
+                var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
+                return BadRequest(ApiResponse<TestDriveBookingResponseDto>.CreateFail("Validation failed", errors, 400));
+            }
+
+            // Get dealer staff ID from account ID via UserProfile
+            var accountId = GetCurrentAccountId();
+            if (!accountId.HasValue)
+            {
+                return Unauthorized(ApiResponse<string>.CreateFail(
+                    "Không tìm thấy thông tin tài khoản.", errorCode: 401));
+            }
+
+            var userProfile = await Services.UserProfileService.GetByAccountIdAsync(accountId.Value);
+            if (userProfile == null)
+            {
+                return Unauthorized(ApiResponse<string>.CreateFail(
+                    "Không tìm thấy thông tin staff.", errorCode: 401));
+            }
+
+            try
+            {
+                var result = await _services.TestDriveBookingService.CreateByStaffAsync(dto, userProfile.Id);
+
+                if (!result.Success)
+                {
+                    var statusCode = result.ErrorCode ?? 400;
+                    if (statusCode == 404)
+                        return NotFound(result);
+                    if (statusCode == 500)
+                        return StatusCode(500, result);
+                    return BadRequest(result);
+                }
+
+                return CreatedAtAction(
+                    nameof(GetById), 
+                    new { id = result.Data?.Id }, 
+                    result);
+            }
+            catch (Exception ex)
+            {
+                var errors = new List<string> { ex.Message };
+                return StatusCode(500, ApiResponse<TestDriveBookingResponseDto>.CreateFail(
+                    "Đã xảy ra lỗi khi tạo lịch lái thử.", errors, 500));
+            }
+        }
+
         [HttpGet]
         public async Task<IActionResult> GetAll(
             [FromQuery] Guid? vehicleTimeSlotId,
-            [FromQuery] Guid? customerId,
+            [FromQuery] string? customerPhone,
             [FromQuery] Guid? dealerStaffId,
             [FromQuery] EVMManagement.DAL.Models.Enums.TestDriveBookingStatus? status,
             [FromQuery] Guid? dealerId,
@@ -65,7 +117,7 @@ namespace EVMManagement.API.Controllers
             var filterDto = new TestDriveBookingFilterDto
             {
                 VehicleTimeSlotId = vehicleTimeSlotId,
-                CustomerId = customerId,
+                CustomerPhone = customerPhone,
                 DealerStaffId = dealerStaffId,
                 Status = status,
                 DealerId = dealerId,
@@ -94,9 +146,25 @@ namespace EVMManagement.API.Controllers
                 return BadRequest(ApiResponse<TestDriveBookingResponseDto>.CreateFail("Validation failed", errors, 400));
             }
 
-            var updated = await _services.TestDriveBookingService.UpdateAsync(id, dto);
-            if (updated == null) return NotFound(ApiResponse<TestDriveBookingResponseDto>.CreateFail("TestDriveBooking not found", null, 404));
-            return Ok(ApiResponse<TestDriveBookingResponseDto>.CreateSuccess(updated));
+            try
+            {
+                var updated = await _services.TestDriveBookingService.UpdateAsync(id, dto);
+                if (updated == null) return NotFound(ApiResponse<TestDriveBookingResponseDto>.CreateFail("TestDriveBooking not found", null, 404));
+                return Ok(ApiResponse<TestDriveBookingResponseDto>.CreateSuccess(updated));
+            }
+            catch (InvalidOperationException ex)
+            {
+                // Validation errors for check-in/check-out time
+                var errors = new List<string> { ex.Message };
+                return BadRequest(ApiResponse<TestDriveBookingResponseDto>.CreateFail(
+                    "Validation failed", errors, 400));
+            }
+            catch (Exception ex)
+            {
+                var errors = new List<string> { ex.Message };
+                return StatusCode(500, ApiResponse<TestDriveBookingResponseDto>.CreateFail(
+                    "Failed to update test drive booking", errors, 500));
+            }
         }
 
         [HttpPatch("{id}/is-deleted")]
@@ -108,7 +176,7 @@ namespace EVMManagement.API.Controllers
         }
 
         [HttpGet("filter")]
-        public async Task<IActionResult> GetByFilter([FromQuery] Guid? dealerId, [FromQuery] Guid? customerId, [FromQuery] EVMManagement.DAL.Models.Enums.TestDriveBookingStatus? status, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
+        public async Task<IActionResult> GetByFilter([FromQuery] Guid? dealerId, [FromQuery] string? customerPhone, [FromQuery] EVMManagement.DAL.Models.Enums.TestDriveBookingStatus? status, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
         {
             if (pageNumber < 1 || pageSize < 1)
             {
@@ -118,7 +186,7 @@ namespace EVMManagement.API.Controllers
             var filterDto = new TestDriveBookingFilterDto
             {
                 DealerId = dealerId,
-                CustomerId = customerId,
+                CustomerPhone = customerPhone,
                 Status = status,
                 PageNumber = pageNumber,
                 PageSize = pageSize

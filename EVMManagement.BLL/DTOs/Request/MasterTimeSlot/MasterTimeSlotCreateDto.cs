@@ -1,8 +1,9 @@
 using System.ComponentModel.DataAnnotations;
+using EVMManagement.BLL.Helpers;
 
 namespace EVMManagement.BLL.DTOs.Request.MasterTimeSlot
 {
-    public class MasterTimeSlotCreateDto
+    public class MasterTimeSlotCreateDto : IValidatableObject
     {
         [Required]
         [MaxLength(50)]
@@ -17,6 +18,20 @@ namespace EVMManagement.BLL.DTOs.Request.MasterTimeSlot
         public bool IsActive { get; set; } = true;
    
         public Guid? DealerId { get; set; }
+
+        public IEnumerable<ValidationResult> Validate(ValidationContext context)
+        {
+            if (StartOffsetMinutes.HasValue && DurationMinutes.HasValue)
+            {
+                if (!BusinessHoursValidation.IsValidBusinessHourSlot(StartOffsetMinutes.Value, DurationMinutes.Value))
+                {
+                    yield return new ValidationResult(
+                        "Time slot must fall within business hours: 7:30 - 11:30 or 13:30 - 17:30",
+                        new[] { nameof(StartOffsetMinutes) }
+                    );
+                }
+            }
+        }
     }
 }
 
