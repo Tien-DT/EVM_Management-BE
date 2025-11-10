@@ -75,6 +75,47 @@ namespace EVMManagement.API.Controllers
             return Ok(result);
         }
 
+        [HttpGet("dealer-warehouse")]
+        [Authorize(Roles = "DEALER_MANAGER, DEALER_STAFF")]
+        public async Task<IActionResult> GetDealerWarehouseVehicles(
+            [FromQuery] Guid warehouseId,
+            [FromQuery] VehiclePurpose? purpose = null,
+            [FromQuery] VehicleStatus? status = null,
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 10)
+        {
+            if (warehouseId == Guid.Empty)
+            {
+                return BadRequest(ApiResponse<string>.CreateFail("Thông tin WarehouseId là bắt buộc.", null, 400));
+            }
+
+            if (pageNumber < 1 || pageSize < 1)
+            {
+                return BadRequest(ApiResponse<string>.CreateFail("PageNumber and PageSize must be greater than 0", null, 400));
+            }
+
+            var result = await Services.WarehouseService.GetVehiclesInDealerWarehouseAsync(warehouseId, purpose, status, pageNumber, pageSize);
+
+            if (!result.Success)
+            {
+                var statusCode = result.ErrorCode ?? StatusCodes.Status400BadRequest;
+
+                if (statusCode == StatusCodes.Status404NotFound)
+                {
+                    return NotFound(result);
+                }
+
+                if (statusCode == StatusCodes.Status500InternalServerError)
+                {
+                    return StatusCode(StatusCodes.Status500InternalServerError, result);
+                }
+
+                return StatusCode(statusCode, result);
+            }
+
+            return Ok(result);
+        }
+
         [HttpGet("dealer/{dealerId}")]
         public async Task<IActionResult> GetByDealerId(Guid dealerId, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
         {

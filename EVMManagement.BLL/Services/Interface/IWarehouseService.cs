@@ -18,6 +18,7 @@ namespace EVMManagement.BLL.Services.Interface
         Task<PagedResult<WarehouseResponseDto>> GetWarehousesByDealerIdAsync(Guid dealerId, int pageNumber = 1, int pageSize = 10);
         Task<PagedResult<WarehouseResponseDto>> GetWarehousesByTypeAsync(WarehouseType type, int pageNumber = 1, int pageSize = 10);
         Task<ApiResponse<PagedResult<VehicleResponseDto>>> GetVehiclesInEvmWarehouseAsync(Guid warehouseId, VehiclePurpose? purpose = null, VehicleStatus? status = null, int pageNumber = 1, int pageSize = 10);
+        Task<ApiResponse<PagedResult<WarehouseResponseDto>>> GetVehiclesInDealerWarehouseAsync(Guid warehouseId, VehiclePurpose? purpose = null, VehicleStatus? status = null, int pageNumber = 1, int pageSize = 10);
         Task<ApiResponse<WarehouseResponseDto>> CreateWarehouseAsync(WarehouseCreateDto dto, AccountRole currentUserRole, Guid? currentUserDealerId = null);
         Task<ApiResponse<WarehouseResponseDto>> UpdateWarehouseAsync(Guid id, WarehouseUpdateDto dto, AccountRole currentUserRole, Guid? currentUserDealerId = null);
         Task<ApiResponse<WarehouseResponseDto>> UpdateIsDeletedAsync(Guid id, bool isDeleted, AccountRole currentUserRole, Guid? currentUserDealerId = null);

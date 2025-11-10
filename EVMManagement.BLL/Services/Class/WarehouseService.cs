@@ -691,6 +691,69 @@ namespace EVMManagement.BLL.Services.Class
             return _mapper.Map<WarehouseResponseDto>(warehouse);
         }
 
+       
+        public async Task<ApiResponse<PagedResult<WarehouseResponseDto>>> GetVehiclesInDealerWarehouseAsync(
+            Guid warehouseId,
+            VehiclePurpose? purpose = null,
+            VehicleStatus? status = null,
+            int pageNumber = 1,
+            int pageSize = 10)
+        {
+            try
+            {
+                if (pageNumber < 1 || pageSize < 1)
+                {
+                    return ApiResponse<PagedResult<WarehouseResponseDto>>.CreateFail(
+                        "PageNumber và PageSize phải lớn hơn 0.", errorCode: 400);
+                }
+
+                var warehouse = await _unitOfWork.Warehouses.GetQueryable()
+                    .Include(w => w.Vehicles)
+                        .ThenInclude(v => v.VehicleVariant)
+                            .ThenInclude(vv => vv.VehicleModel)
+                    .Include(w => w.Dealer)
+                    .FirstOrDefaultAsync(w => w.Id == warehouseId && !w.IsDeleted);
+
+                if (warehouse == null)
+                {
+                    _logger.LogWarning("Kho Dealer không tồn tại hoặc đã bị xóa. WarehouseId: {WarehouseId}", warehouseId);
+                    return ApiResponse<PagedResult<WarehouseResponseDto>>.CreateFail(
+                        $"Kho Dealer với ID '{warehouseId}' không tồn tại.", errorCode: 404);
+                }
+
+               
+                var filteredVehicles = (warehouse.Vehicles ?? new List<Vehicle>())
+                    .Where(v => !v.IsDeleted)
+                    .Where(v => !purpose.HasValue || v.Purpose == purpose.Value)
+                    .Where(v => !status.HasValue || v.Status == status.Value)
+                    .OrderByDescending(v => v.CreatedDate)
+                    .ToList();
+
+                var totalCount = filteredVehicles.Count;
+
+                var paginatedVehicles = filteredVehicles
+                    .Skip((pageNumber - 1) * pageSize)
+                    .Take(pageSize)
+                    .ToList();
+
+                
+                warehouse.Vehicles = paginatedVehicles;
+
+                var items = new List<WarehouseResponseDto> { _mapper.Map<WarehouseResponseDto>(warehouse) };
+                var pagedResult = PagedResult<WarehouseResponseDto>.Create(items, totalCount, pageNumber, pageSize);
+
+                return ApiResponse<PagedResult<WarehouseResponseDto>>.CreateSuccess(
+                    pagedResult,
+                    $"Lấy danh sách xe thuộc kho Dealer '{warehouse.Name}' thành công.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Đã xảy ra lỗi khi lấy danh sách xe trong kho Dealer. WarehouseId: {WarehouseId}", warehouseId);
+                return ApiResponse<PagedResult<WarehouseResponseDto>>.CreateFail(
+                    "Đã xảy ra lỗi khi lấy danh sách xe trong kho Dealer.", errorCode: 500);
+            }
+        }
+
         public IQueryable<Warehouse> GetQueryableForOData()
         {
             return _unitOfWork.Warehouses.GetQueryable()
