@@ -71,6 +71,174 @@ namespace EVMManagement.BLL.Services.Class
             return result;
         }
 
+        public async Task<ApiResponse<TestDriveBookingResponseDto>> CreateByStaffAsync(TestDriveBookingCreateByStaffDto dto, Guid dealerStaffId)
+        {
+            try
+            {
+                var dealer = await _unitOfWork.Dealers.GetByIdAsync(dto.DealerId);
+                if (dealer == null || dealer.IsDeleted)
+                {
+                    return ApiResponse<TestDriveBookingResponseDto>.CreateFail(
+                        "Dealer không tồn tại.", errorCode: 404);
+                }
+
+                var masterSlot = await _unitOfWork.MasterTimeSlots.GetByIdAsync(dto.MasterSlotId);
+                if (masterSlot == null || masterSlot.IsDeleted || !masterSlot.IsActive)
+                {
+                    return ApiResponse<TestDriveBookingResponseDto>.CreateFail(
+                        "Master Time Slot không tồn tại hoặc không hoạt động.", errorCode: 404);
+                }
+
+                var vehicle = await _unitOfWork.Vehicles.GetQueryable()
+                    .Include(v => v.VehicleVariant)
+                        .ThenInclude(vv => vv.VehicleModel)
+                    .FirstOrDefaultAsync(v => v.Id == dto.VehicleId && !v.IsDeleted);
+
+                if (vehicle == null)
+                {
+                    return ApiResponse<TestDriveBookingResponseDto>.CreateFail(
+                        "Xe không tồn tại.", errorCode: 404);
+                }
+
+                if (vehicle.Purpose != VehiclePurpose.TEST_DRIVE)
+                {
+                    return ApiResponse<TestDriveBookingResponseDto>.CreateFail(
+                        "Xe này không được phép dùng để lái thử.", errorCode: 400);
+                }
+
+                if (vehicle.Status != VehicleStatus.IN_STOCK)
+                {
+                    return ApiResponse<TestDriveBookingResponseDto>.CreateFail(
+                        $"Xe không khả dụng. Trạng thái hiện tại: {vehicle.Status}", errorCode: 400);
+                }
+
+                var bookingDate = dto.BookingDate.Date;
+                
+                var existingCustomer = await _unitOfWork.Customers.GetByPhoneAsync(dto.CustomerPhone);
+
+                Customer customer;
+                if (existingCustomer != null)
+                {
+                    existingCustomer.FullName = dto.CustomerFullName;
+                    if (!string.IsNullOrEmpty(dto.CustomerEmail))
+                        existingCustomer.Email = dto.CustomerEmail;
+                    if (!string.IsNullOrEmpty(dto.CustomerGender))
+                        existingCustomer.Gender = dto.CustomerGender;
+                    if (!string.IsNullOrEmpty(dto.CustomerAddress))
+                        existingCustomer.Address = dto.CustomerAddress;
+                    if (dto.CustomerDob.HasValue)
+                        existingCustomer.Dob = dto.CustomerDob;
+                    if (!string.IsNullOrEmpty(dto.CustomerCardId))
+                        existingCustomer.CardId = dto.CustomerCardId;
+                    
+                    existingCustomer.DealerId = dto.DealerId;
+                    existingCustomer.ModifiedDate = DateTime.UtcNow;
+
+                    _unitOfWork.Customers.Update(existingCustomer);
+                    customer = existingCustomer;
+                }
+                else
+                {
+                    customer = new Customer
+                    {
+                        Phone = dto.CustomerPhone,
+                        FullName = dto.CustomerFullName,
+                        Email = dto.CustomerEmail,
+                        Gender = dto.CustomerGender,
+                        Address = dto.CustomerAddress,
+                        Dob = dto.CustomerDob,
+                        CardId = dto.CustomerCardId,
+                        DealerId = dto.DealerId
+                    };
+                    await _unitOfWork.Customers.AddAsync(customer);
+                }
+
+                await _unitOfWork.SaveChangesAsync();
+
+                var existingVehicleTimeSlot = await _unitOfWork.VehicleTimeSlots.GetQueryable()
+                    .FirstOrDefaultAsync(vts => 
+                        vts.VehicleId == dto.VehicleId &&
+                        vts.MasterSlotId == dto.MasterSlotId &&
+                        vts.SlotDate.Date == bookingDate &&
+                        !vts.IsDeleted);
+
+                VehicleTimeSlot vehicleTimeSlot;
+                if (existingVehicleTimeSlot != null)
+                {
+                    vehicleTimeSlot = existingVehicleTimeSlot;
+                    
+                    if (vehicleTimeSlot.Status == TimeSlotStatus.BOOKED)
+                    {
+                        return ApiResponse<TestDriveBookingResponseDto>.CreateFail(
+                            "Slot này đã được đặt trước. Vui lòng chọn slot khác.", errorCode: 400);
+                    }
+                }
+                else
+                {
+                    vehicleTimeSlot = new VehicleTimeSlot
+                    {
+                        VehicleId = dto.VehicleId,
+                        DealerId = dto.DealerId,
+                        MasterSlotId = dto.MasterSlotId,
+                        SlotDate = bookingDate,
+                        Status = TimeSlotStatus.AVAILABLE
+                    };
+                    await _unitOfWork.VehicleTimeSlots.AddAsync(vehicleTimeSlot);
+                    await _unitOfWork.SaveChangesAsync();
+                }
+
+                var existingBooking = await _unitOfWork.TestDriveBookings.GetExistingBookingAsync(vehicleTimeSlot.Id, customer.Id);
+
+                if (existingBooking != null)
+                {
+                    return ApiResponse<TestDriveBookingResponseDto>.CreateFail(
+                        $"Khách hàng {customer.FullName} đã có lịch lái thử trong slot này rồi.", errorCode: 400);
+                }
+
+                var booking = new TestDriveBooking
+                {
+                    VehicleTimeslotId = vehicleTimeSlot.Id,
+                    CustomerId = customer.Id,
+                    DealerStaffId = dealerStaffId,
+                    Status = TestDriveBookingStatus.BOOKED,
+                    Note = dto.Note
+                };
+
+                await _unitOfWork.TestDriveBookings.AddAsync(booking);
+
+                vehicleTimeSlot.Status = TimeSlotStatus.BOOKED;
+                vehicleTimeSlot.ModifiedDate = DateTime.UtcNow;
+                _unitOfWork.VehicleTimeSlots.Update(vehicleTimeSlot);
+
+                await _unitOfWork.SaveChangesAsync();
+
+                var result = await GetByIdAsync(booking.Id);
+                if (result == null)
+                {
+                    return ApiResponse<TestDriveBookingResponseDto>.CreateFail(
+                        "Lỗi khi tạo booking.", errorCode: 500);
+                }
+
+                try
+                {
+                    await SendTestDriveConfirmationEmailAsync(result);
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Failed to send confirmation email: {ex.Message}");
+                }
+
+                return ApiResponse<TestDriveBookingResponseDto>.CreateSuccess(
+                    result, 
+                    $"Đã tạo lịch lái thử cho khách hàng {customer.FullName} thành công.");
+            }
+            catch (Exception ex)
+            {
+                return ApiResponse<TestDriveBookingResponseDto>.CreateFail(
+                    $"Đã xảy ra lỗi: {ex.Message}", errorCode: 500);
+            }
+        }
+
 
 
         private async Task SendTestDriveConfirmationEmailAsync(TestDriveBookingResponseDto booking)
@@ -132,7 +300,7 @@ namespace EVMManagement.BLL.Services.Class
 
             var query = _unitOfWork.TestDriveBookings.GetQueryableWithFilter(
                 filterDto?.VehicleTimeSlotId, 
-                filterDto?.CustomerId, 
+                filterDto?.CustomerPhone, 
                 filterDto?.DealerStaffId, 
                 filterDto?.Status, 
                 filterDto?.DealerId
@@ -270,15 +438,16 @@ namespace EVMManagement.BLL.Services.Class
         {
             var entity = await _unitOfWork.TestDriveBookings.GetByIdAsync(id);
             if (entity == null) return null;
+
             if (dto.CheckinAt.HasValue)
             {
-                entity.CheckinAt = DateTimeHelper.ToUtc(dto.CheckinAt);
+                entity.CheckinAt = DateTimeHelper.ToUtc(dto.CheckinAt.Value);
                 entity.Status = TestDriveBookingStatus.CHECKED_IN;
             }
 
             if (dto.CheckoutAt.HasValue)
             {
-                entity.CheckoutAt = DateTimeHelper.ToUtc(dto.CheckoutAt);
+                entity.CheckoutAt = DateTimeHelper.ToUtc(dto.CheckoutAt.Value);
                 entity.Status = TestDriveBookingStatus.COMPLETED;
             }
 

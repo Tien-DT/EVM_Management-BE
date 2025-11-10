@@ -6,7 +6,7 @@ namespace EVMManagement.BLL.DTOs.Request.TestDriveBooking
     public class TestDriveBookingFilterDto
     {
         public Guid? VehicleTimeSlotId { get; set; }
-        public Guid? CustomerId { get; set; }
+        public string? CustomerPhone { get; set; }
         public Guid? DealerStaffId { get; set; }
         public TestDriveBookingStatus? Status { get; set; }
         public Guid? DealerId { get; set; }

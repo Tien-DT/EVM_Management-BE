@@ -27,7 +27,7 @@ namespace EVMManagement.DAL.Repositories.Class
             return await GetQueryableWithIncludes().FirstOrDefaultAsync(x => x.Id == id);
         }
 
-        public IQueryable<TestDriveBooking> GetQueryableWithFilter(Guid? vehicleTimeSlotId, Guid? customerId, Guid? dealerStaffId, TestDriveBookingStatus? status, Guid? dealerId)
+        public IQueryable<TestDriveBooking> GetQueryableWithFilter(Guid? vehicleTimeSlotId, string? customerPhone, Guid? dealerStaffId, TestDriveBookingStatus? status, Guid? dealerId)
         {
             var query = GetQueryableWithIncludes();
 
@@ -36,9 +36,9 @@ namespace EVMManagement.DAL.Repositories.Class
                 query = query.Where(x => x.VehicleTimeslotId == vehicleTimeSlotId.Value);
             }
 
-            if (customerId.HasValue)
+            if (!string.IsNullOrEmpty(customerPhone))
             {
-                query = query.Where(x => x.CustomerId == customerId.Value);
+                query = query.Where(x => x.Customer != null && x.Customer.Phone == customerPhone);
             }
 
             if (dealerStaffId.HasValue)
@@ -57,6 +57,16 @@ namespace EVMManagement.DAL.Repositories.Class
             }
 
             return query;
+        }
+
+        public async Task<TestDriveBooking?> GetExistingBookingAsync(Guid vehicleTimeSlotId, Guid customerId)
+        {
+            return await GetQueryableWithIncludes()
+                .FirstOrDefaultAsync(tdb => 
+                    tdb.VehicleTimeslotId == vehicleTimeSlotId &&
+                    tdb.CustomerId == customerId &&
+                    !tdb.IsDeleted &&
+                    tdb.Status != TestDriveBookingStatus.CANCELED);
         }
     }
 }
