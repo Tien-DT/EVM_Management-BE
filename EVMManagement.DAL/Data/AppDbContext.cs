@@ -421,7 +421,6 @@ namespace EVMManagement.DAL.Data
             modelBuilder.Entity<MasterTimeSlot>(entity =>
             {
                 entity.HasKey(e => e.Id);
-                entity.HasIndex(e => e.Code).IsUnique();
                 entity.HasOne(e => e.Dealer)
                     .WithMany(d => d.MasterTimeSlots)
                     .HasForeignKey(e => e.DealerId)

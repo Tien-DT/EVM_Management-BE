@@ -1,13 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using EVMManagement.DAL.Models;
 
 namespace EVMManagement.DAL.Models.Entities
 {
-    public class MasterTimeSlot
+    public class MasterTimeSlot : BaseEntity
     {
-        public Guid Id { get; set; } = Guid.NewGuid();
-
         [Required]
         [MaxLength(50)]
         public string Code { get; set; } = string.Empty;

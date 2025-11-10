@@ -26,7 +26,7 @@ namespace EVMManagement.API.Controllers
             if (!ModelState.IsValid)
             {
                 var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
-                return BadRequest(ApiResponse<MasterTimeSlotResponseDto>.CreateFail("Validation failed", errors, 400));
+                return BadRequest(ApiResponse<MasterTimeSlotResponseDto>.CreateFail("Validation failed. Time slot must be within business hours: 7:30 - 11:30 or 13:30 - 17:30", errors, 400));
             }
 
            
@@ -40,11 +40,19 @@ namespace EVMManagement.API.Controllers
                 dto.DealerId = dealerId.Value;
             }
 
-            var created = await Services.MasterTimeSlotService.CreateMasterTimeSlotAsync(dto);
-            return CreatedAtAction(nameof(GetById), new { id = created.Id }, ApiResponse<MasterTimeSlotResponseDto>.CreateSuccess(created));
+            try
+            {
+                var created = await Services.MasterTimeSlotService.CreateMasterTimeSlotAsync(dto);
+                return CreatedAtAction(nameof(GetById), new { id = created.Id }, ApiResponse<MasterTimeSlotResponseDto>.CreateSuccess(created));
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(ApiResponse<MasterTimeSlotResponseDto>.CreateFail(ex.Message, null, 400));
+            }
         }
 
         [HttpGet]
+        [Authorize]
         public async Task<IActionResult> GetAll([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
         {
             if (pageNumber < 1 || pageSize < 1)
@@ -69,6 +77,7 @@ namespace EVMManagement.API.Controllers
         }
 
         [HttpGet("{id}")]
+        [Authorize]
         public async Task<IActionResult> GetById(Guid id)
         {
             var item = await Services.MasterTimeSlotService.GetByIdAsync(id);
@@ -87,6 +96,7 @@ namespace EVMManagement.API.Controllers
         }
 
         [HttpGet("active")]
+        [Authorize(Roles = "DEALER_MANAGER, DEALER_STAFF")]
         public async Task<IActionResult> GetActive([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
         {
             if (pageNumber < 1 || pageSize < 1)
@@ -116,7 +126,7 @@ namespace EVMManagement.API.Controllers
             if (!ModelState.IsValid)
             {
                 var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
-                return BadRequest(ApiResponse<MasterTimeSlotResponseDto>.CreateFail("Validation failed", errors, 400));
+                return BadRequest(ApiResponse<MasterTimeSlotResponseDto>.CreateFail("Validation failed. Time slot must be within business hours: 7:30 - 11:30 or 13:30 - 17:30", errors, 400));
             }
 
             if (IsDealerManager())
@@ -132,9 +142,16 @@ namespace EVMManagement.API.Controllers
                 dto.DealerId = dealerId.Value; 
             }
 
-            var updated = await Services.MasterTimeSlotService.UpdateAsync(id, dto);
-            if (updated == null) return NotFound(ApiResponse<MasterTimeSlotResponseDto>.CreateFail("MasterTimeSlot not found", null, 404));
-            return Ok(ApiResponse<MasterTimeSlotResponseDto>.CreateSuccess(updated));
+            try
+            {
+                var updated = await Services.MasterTimeSlotService.UpdateAsync(id, dto);
+                if (updated == null) return NotFound(ApiResponse<MasterTimeSlotResponseDto>.CreateFail("MasterTimeSlot not found", null, 404));
+                return Ok(ApiResponse<MasterTimeSlotResponseDto>.CreateSuccess(updated));
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(ApiResponse<MasterTimeSlotResponseDto>.CreateFail(ex.Message, null, 400));
+            }
         }
 
         [HttpPatch("{id}/is-active")]
@@ -154,9 +171,16 @@ namespace EVMManagement.API.Controllers
                 }
             }
 
-            var updated = await Services.MasterTimeSlotService.UpdateIsActiveAsync(id, isActive);
-            if (updated == null) return NotFound(ApiResponse<MasterTimeSlotResponseDto>.CreateFail("MasterTimeSlot not found", null, 404));
-            return Ok(ApiResponse<MasterTimeSlotResponseDto>.CreateSuccess(updated));
+            try
+            {
+                var updated = await Services.MasterTimeSlotService.UpdateIsActiveAsync(id, isActive);
+                if (updated == null) return NotFound(ApiResponse<MasterTimeSlotResponseDto>.CreateFail("MasterTimeSlot not found", null, 404));
+                return Ok(ApiResponse<MasterTimeSlotResponseDto>.CreateSuccess(updated));
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(ApiResponse<MasterTimeSlotResponseDto>.CreateFail(ex.Message, null, 400));
+            }
         }
 
         [HttpDelete("{id}")]
@@ -182,6 +206,7 @@ namespace EVMManagement.API.Controllers
         }
 
         [HttpGet("dealer/{dealerId}")]
+        [Authorize(Roles = "DEALER_MANAGER, DEALER_STAFF")]
         public async Task<IActionResult> GetByDealerId(Guid dealerId, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
         {
             if (pageNumber < 1 || pageSize < 1)
@@ -195,6 +220,7 @@ namespace EVMManagement.API.Controllers
 
        
         [HttpGet("dealer/{dealerId}/active")]
+        [Authorize(Roles = "DEALER_MANAGER, DEALER_STAFF")]
         public async Task<IActionResult> GetActiveByDealerId(Guid dealerId, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
         {
             if (pageNumber < 1 || pageSize < 1)

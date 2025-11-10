@@ -18,7 +18,7 @@ namespace EVMManagement.DAL.Repositories.Class
         public async Task<IEnumerable<MasterTimeSlot>> GetByDealerIdAsync(Guid dealerId)
         {
             return await _context.MasterTimeSlots
-                .Where(m => m.DealerId == dealerId)
+                .Where(m => m.DealerId == dealerId && !m.IsDeleted)
                 .OrderBy(m => m.StartOffsetMinutes)
                 .ToListAsync();
         }
@@ -26,7 +26,7 @@ namespace EVMManagement.DAL.Repositories.Class
         public async Task<IEnumerable<MasterTimeSlot>> GetActiveByDealerIdAsync(Guid dealerId)
         {
             return await _context.MasterTimeSlots
-                .Where(m => m.DealerId == dealerId && m.IsActive)
+                .Where(m => m.DealerId == dealerId && m.IsActive && !m.IsDeleted)
                 .OrderBy(m => m.StartOffsetMinutes)
                 .ToListAsync();
         }
