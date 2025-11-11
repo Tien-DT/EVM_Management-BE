@@ -29,8 +29,15 @@ namespace EVMManagement.API.Controllers
                 return BadRequest(ApiResponse<PromotionResponseDto>.CreateFail("Validation failed", errors, 400));
             }
 
-            var created = await _services.PromotionService.CreatePromotionAsync(dto);
-            return CreatedAtAction(nameof(GetById), new { id = created.Id }, ApiResponse<PromotionResponseDto>.CreateSuccess(created));
+            try
+            {
+                var created = await _services.PromotionService.CreatePromotionAsync(dto);
+                return CreatedAtAction(nameof(GetById), new { id = created.Id }, ApiResponse<PromotionResponseDto>.CreateSuccess(created));
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ApiResponse<string>.CreateFail(ex.Message, null, 400));
+            }
         }
 
         [HttpGet]
@@ -51,6 +58,30 @@ namespace EVMManagement.API.Controllers
             var item = await _services.PromotionService.GetByIdAsync(id);
             if (item == null) return NotFound(ApiResponse<PromotionResponseDto>.CreateFail("Promotion not found", null, 404));
             return Ok(ApiResponse<PromotionResponseDto>.CreateSuccess(item));
+        }
+
+        [HttpGet("vehicle-promotions")]
+        public async Task<IActionResult> GetVehiclePromotions([FromQuery] Guid? variantId, [FromQuery] Guid? promotionId, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
+        {
+            if (pageNumber < 1 || pageSize < 1)
+            {
+                return BadRequest(ApiResponse<string>.CreateFail("PageNumber và PageSize phải lớn hơn 0", null, 400));
+            }
+
+            if (!variantId.HasValue && !promotionId.HasValue)
+            {
+                return BadRequest(ApiResponse<string>.CreateFail("Cần cung cấp VariantId hoặc PromotionId", null, 400));
+            }
+
+            try
+            {
+                var result = await _services.PromotionService.GetVehiclePromotionsAsync(variantId, promotionId, pageNumber, pageSize);
+                return Ok(ApiResponse<PagedResult<VehiclePromotionResponseDto>>.CreateSuccess(result));
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ApiResponse<string>.CreateFail(ex.Message, null, 400));
+            }
         }
 
         [HttpGet("search")]

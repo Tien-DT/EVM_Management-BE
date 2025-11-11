@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 
 namespace EVMManagement.BLL.DTOs.Request.Promotion
@@ -22,6 +23,7 @@ namespace EVMManagement.BLL.DTOs.Request.Promotion
         public DateTime? EndAt { get; set; }
 
         public bool IsActive { get; set; } = true;
+
+        public List<Guid> VariantIds { get; set; } = new();
     }
 }
-

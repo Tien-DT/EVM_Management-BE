@@ -34,6 +34,7 @@ namespace EVMManagement.API.Setup
             services.AddScoped<ICustomerRepository, CustomerRepository>();
             services.AddScoped<IDealerRepository, DealerRepository>();
             services.AddScoped<IPromotionRepository, PromotionRepository>();
+            services.AddScoped<IVehiclePromotionRepository, VehiclePromotionRepository>();
             services.AddScoped<IVehicleTimeSlotRepository, VehicleTimeSlotRepository>();
             services.AddScoped<IMasterTimeSlotRepository, MasterTimeSlotRepository>();
             services.AddScoped<ITestDriveBookingRepository, TestDriveBookingRepository>();

@@ -1,82 +1,90 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using AutoMapper;
 using EVMManagement.BLL.DTOs.Request.Promotion;
 using EVMManagement.BLL.DTOs.Response;
 using EVMManagement.BLL.DTOs.Response.Promotion;
 using EVMManagement.BLL.Services.Interface;
 using EVMManagement.DAL.Models.Entities;
 using EVMManagement.DAL.UnitOfWork;
+using Microsoft.EntityFrameworkCore;
 
 namespace EVMManagement.BLL.Services.Class
 {
     public class PromotionService : IPromotionService
     {
         private readonly IUnitOfWork _unitOfWork;
+        private readonly IMapper _mapper;
 
-        public PromotionService(IUnitOfWork unitOfWork)
+        public PromotionService(IUnitOfWork unitOfWork, IMapper mapper)
         {
             _unitOfWork = unitOfWork;
+            _mapper = mapper;
         }
 
         public async Task<PromotionResponseDto> CreatePromotionAsync(PromotionCreateDto dto)
         {
-            var promotion = new Promotion
+            if (dto.StartAt.HasValue && dto.EndAt.HasValue && dto.StartAt > dto.EndAt)
             {
-                Code = dto.Code,
-                Name = dto.Name,
-                Description = dto.Description,
-                DiscountPercent = dto.DiscountPercent,
-                StartAt = dto.StartAt,
-                EndAt = dto.EndAt,
-                IsActive = dto.IsActive
-            };
+                throw new ArgumentException("Thoi gian bat dau phai nho hon hoac bang thoi gian ket thuc.");
+            }
+
+            var variantIds = dto.VariantIds?
+                .Where(id => id != Guid.Empty)
+                .Distinct()
+                .ToList() ?? new List<Guid>();
+
+            if (variantIds.Count > 0)
+            {
+                var existingVariantIds = await _unitOfWork.VehicleVariants.GetQueryable()
+                    .Where(v => variantIds.Contains(v.Id) && !v.IsDeleted)
+                    .Select(v => v.Id)
+                    .ToListAsync();
+
+                var missingVariantIds = variantIds.Except(existingVariantIds).ToList();
+                if (missingVariantIds.Any())
+                {
+                    throw new ArgumentException("Khong tim thay cac phien ban xe: " + string.Join(", ", missingVariantIds));
+                }
+            }
+
+            var promotion = _mapper.Map<Promotion>(dto);
 
             await _unitOfWork.Promotions.AddAsync(promotion);
+
+            if (variantIds.Count > 0)
+            {
+                var vehiclePromotions = variantIds.Select(id => new VehiclePromotion
+                {
+                    VariantId = id,
+                    PromotionId = promotion.Id
+                }).ToList();
+
+                await _unitOfWork.VehiclePromotions.AddRangeAsync(vehiclePromotions);
+                promotion.VehiclePromotions = vehiclePromotions;
+            }
+
             await _unitOfWork.SaveChangesAsync();
 
-            return new PromotionResponseDto
-            {
-                Id = promotion.Id,
-                Code = promotion.Code,
-                Name = promotion.Name,
-                Description = promotion.Description,
-                DiscountPercent = promotion.DiscountPercent,
-                StartAt = promotion.StartAt,
-                EndAt = promotion.EndAt,
-                IsActive = promotion.IsActive,
-                CreatedDate = promotion.CreatedDate,
-                ModifiedDate = promotion.ModifiedDate,
-                IsDeleted = promotion.IsDeleted
-            };
+            return _mapper.Map<PromotionResponseDto>(promotion);
         }
 
         public async Task<PagedResult<PromotionResponseDto>> GetAllAsync(int pageNumber = 1, int pageSize = 10)
         {
             var query = _unitOfWork.Promotions.GetQueryable();
-            var totalCount = await _unitOfWork.Promotions.CountAsync();
+            var totalCount = await query.CountAsync();
 
-            var items = query
+            var items = await query
                 .OrderByDescending(x => x.CreatedDate)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
-                .Select(x => new PromotionResponseDto
-                {
-                    Id = x.Id,
-                    Code = x.Code,
-                    Name = x.Name,
-                    Description = x.Description,
-                    DiscountPercent = x.DiscountPercent,
-                    StartAt = x.StartAt,
-                    EndAt = x.EndAt,
-                    IsActive = x.IsActive,
-                    CreatedDate = x.CreatedDate,
-                    ModifiedDate = x.ModifiedDate,
-                    IsDeleted = x.IsDeleted
-                })
-                .ToList();
+                .ToListAsync();
 
-            return PagedResult<PromotionResponseDto>.Create(items, totalCount, pageNumber, pageSize);
+            var responses = _mapper.Map<List<PromotionResponseDto>>(items);
+
+            return PagedResult<PromotionResponseDto>.Create(responses, totalCount, pageNumber, pageSize);
         }
 
         public async Task<PromotionResponseDto?> GetByIdAsync(Guid id)
@@ -84,23 +92,10 @@ namespace EVMManagement.BLL.Services.Class
             var entity = await _unitOfWork.Promotions.GetByIdAsync(id);
             if (entity == null) return null;
 
-            return new PromotionResponseDto
-            {
-                Id = entity.Id,
-                Code = entity.Code,
-                Name = entity.Name,
-                Description = entity.Description,
-                DiscountPercent = entity.DiscountPercent,
-                StartAt = entity.StartAt,
-                EndAt = entity.EndAt,
-                IsActive = entity.IsActive,
-                CreatedDate = entity.CreatedDate,
-                ModifiedDate = entity.ModifiedDate,
-                IsDeleted = entity.IsDeleted
-            };
+            return _mapper.Map<PromotionResponseDto>(entity);
         }
 
-        public Task<PagedResult<PromotionResponseDto>> SearchAsync(string? query, int pageNumber = 1, int pageSize = 10)
+        public async Task<PagedResult<PromotionResponseDto>> SearchAsync(string? query, int pageNumber = 1, int pageSize = 10)
         {
             var queryable = _unitOfWork.Promotions.GetQueryable();
 
@@ -114,29 +109,17 @@ namespace EVMManagement.BLL.Services.Class
                 );
             }
 
-            var totalCount = queryable.Count();
+            var totalCount = await queryable.CountAsync();
 
-            var items = queryable
+            var items = await queryable
                 .OrderByDescending(x => x.CreatedDate)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
-                .Select(x => new PromotionResponseDto
-                {
-                    Id = x.Id,
-                    Code = x.Code,
-                    Name = x.Name,
-                    Description = x.Description,
-                    DiscountPercent = x.DiscountPercent,
-                    StartAt = x.StartAt,
-                    EndAt = x.EndAt,
-                    IsActive = x.IsActive,
-                    CreatedDate = x.CreatedDate,
-                    ModifiedDate = x.ModifiedDate,
-                    IsDeleted = x.IsDeleted
-                })
-                .ToList();
+                .ToListAsync();
 
-            return Task.FromResult(PagedResult<PromotionResponseDto>.Create(items, totalCount, pageNumber, pageSize));
+            var responses = _mapper.Map<List<PromotionResponseDto>>(items);
+
+            return PagedResult<PromotionResponseDto>.Create(responses, totalCount, pageNumber, pageSize);
         }
 
         public async Task<PromotionResponseDto?> UpdateAsync(Guid id, PromotionUpdateDto dto)
@@ -144,20 +127,13 @@ namespace EVMManagement.BLL.Services.Class
             var entity = await _unitOfWork.Promotions.GetByIdAsync(id);
             if (entity == null) return null;
 
-            if (dto.Code != null) entity.Code = dto.Code;
-            if (dto.Name != null) entity.Name = dto.Name;
-            if (dto.Description != null) entity.Description = dto.Description;
-            if (dto.DiscountPercent.HasValue) entity.DiscountPercent = dto.DiscountPercent;
-            if (dto.StartAt.HasValue) entity.StartAt = dto.StartAt;
-            if (dto.EndAt.HasValue) entity.EndAt = dto.EndAt;
-            if (dto.IsActive.HasValue) entity.IsActive = dto.IsActive.Value;
-
+            _mapper.Map(dto, entity);
             entity.ModifiedDate = DateTime.UtcNow;
 
             _unitOfWork.Promotions.Update(entity);
             await _unitOfWork.SaveChangesAsync();
 
-            return await GetByIdAsync(id);
+            return _mapper.Map<PromotionResponseDto>(entity);
         }
 
         public async Task<PromotionResponseDto?> UpdateIsActiveAsync(Guid id, bool isActive)
@@ -171,7 +147,7 @@ namespace EVMManagement.BLL.Services.Class
             _unitOfWork.Promotions.Update(entity);
             await _unitOfWork.SaveChangesAsync();
 
-            return await GetByIdAsync(id);
+            return _mapper.Map<PromotionResponseDto>(entity);
         }
 
         public async Task<PromotionResponseDto?> UpdateIsDeletedAsync(Guid id, bool isDeleted)
@@ -189,7 +165,45 @@ namespace EVMManagement.BLL.Services.Class
             _unitOfWork.Promotions.Update(entity);
             await _unitOfWork.SaveChangesAsync();
 
-            return await GetByIdAsync(id);
+            return _mapper.Map<PromotionResponseDto>(entity);
+        }
+
+        public async Task<PagedResult<VehiclePromotionResponseDto>> GetVehiclePromotionsAsync(Guid? variantId, Guid? promotionId, int pageNumber = 1, int pageSize = 10)
+        {
+            if (!variantId.HasValue && !promotionId.HasValue)
+            {
+                throw new ArgumentException("Can cung cap VariantId hoac PromotionId.");
+            }
+
+            var now = DateTime.UtcNow;
+            var query = _unitOfWork.VehiclePromotions.GetWithRelations()
+                .Where(vp => vp.Promotion.IsActive && !vp.Promotion.IsDeleted)
+                .Where(vp =>
+                    (!vp.Promotion.StartAt.HasValue || vp.Promotion.StartAt <= now) &&
+                    (!vp.Promotion.EndAt.HasValue || vp.Promotion.EndAt >= now));
+
+            if (variantId.HasValue)
+            {
+                query = query.Where(vp => vp.VariantId == variantId.Value);
+            }
+
+            if (promotionId.HasValue)
+            {
+                query = query.Where(vp => vp.PromotionId == promotionId.Value);
+            }
+
+            var totalCount = await query.CountAsync();
+
+            var items = await query
+                .OrderByDescending(vp => vp.Promotion.StartAt ?? vp.Promotion.CreatedDate)
+                .ThenBy(vp => vp.VehicleVariant.Color)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            var responses = _mapper.Map<List<VehiclePromotionResponseDto>>(items);
+
+            return PagedResult<VehiclePromotionResponseDto>.Create(responses, totalCount, pageNumber, pageSize);
         }
 
         public async Task<bool> DeleteAsync(Guid id)
