@@ -16,6 +16,6 @@ namespace EVMManagement.BLL.Services.Interface
         Task<PromotionResponseDto?> UpdateIsActiveAsync(Guid id, bool isActive);
         Task<PromotionResponseDto?> UpdateIsDeletedAsync(Guid id, bool isDeleted);
         Task<bool> DeleteAsync(Guid id);
+        Task<PagedResult<VehiclePromotionResponseDto>> GetVehiclePromotionsAsync(Guid? variantId, Guid? promotionId, int pageNumber = 1, int pageSize = 10);
     }
 }
-

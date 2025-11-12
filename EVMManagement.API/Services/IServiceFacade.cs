@@ -35,5 +35,6 @@ namespace EVMManagement.API.Services
         ITransportDetailService TransportDetailService { get; }
         IInstallmentPlanService InstallmentPlanService { get; }
         IInstallmentPaymentService InstallmentPaymentService { get; }
+        IChatbotService ChatbotService { get; }
     }
 }

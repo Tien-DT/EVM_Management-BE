@@ -14,6 +14,7 @@ namespace EVMManagement.DAL.UnitOfWork
         IWarehouseRepository Warehouses { get; }
         IDealerRepository Dealers { get; }
         IPromotionRepository Promotions { get; }
+        IVehiclePromotionRepository VehiclePromotions { get; }
         IContractRepository Contracts { get; }
         IOrderRepository Orders { get; }
         IOrderDetailRepository OrderDetails { get; }

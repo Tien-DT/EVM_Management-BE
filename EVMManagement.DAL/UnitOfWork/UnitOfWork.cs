@@ -21,6 +21,7 @@ namespace EVMManagement.DAL.UnitOfWork
         private ICustomerRepository? _customers;
         private IDealerRepository? _dealers;
         private IPromotionRepository? _promotions;
+        private IVehiclePromotionRepository? _vehiclePromotions;
         private IContractRepository? _contracts;
         private IOrderRepository? _orders;
         private IOrderDetailRepository? _orderDetails;
@@ -57,6 +58,7 @@ namespace EVMManagement.DAL.UnitOfWork
         public ICustomerRepository Customers => _customers ??= new CustomerRepository(_context);
         public IDealerRepository Dealers => _dealers ??= new DealerRepository(_context);
         public IPromotionRepository Promotions => _promotions ??= new PromotionRepository(_context);
+        public IVehiclePromotionRepository VehiclePromotions => _vehiclePromotions ??= new VehiclePromotionRepository(_context);
         public IContractRepository Contracts => _contracts ??= new ContractRepository(_context);
         public IOrderRepository Orders => _orders ??= new OrderRepository(_context);
         public IOrderDetailRepository OrderDetails => _orderDetails ??= new OrderDetailRepository(_context);

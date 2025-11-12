@@ -116,6 +116,7 @@ namespace EVMManagement.BLL.Mappings
             CreateMap<PromotionUpdateDto, Promotion>()
                 .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
             CreateMap<Promotion, PromotionResponseDto>();
+            CreateMap<VehiclePromotion, VehiclePromotionResponseDto>();
 
             // VehicleTimeSlot Mappings
             CreateMap<VehicleTimeSlotCreateDto, VehicleTimeSlot>();

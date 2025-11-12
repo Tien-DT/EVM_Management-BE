@@ -16,6 +16,16 @@ services:
     
     # Environment variables (add your actual values in Render dashboard)
     envVars:
+      # Logging
+      - key: Logging__LogLevel__Default
+        value: Information
+      
+      - key: Logging__LogLevel__Microsoft.AspNetCore
+        value: Warning
+      
+      - key: AllowedHosts
+        value: "*"
+      
       - key: ASPNETCORE_ENVIRONMENT
         value: Production
       
@@ -50,29 +60,33 @@ services:
         value: "EVMManagement:"
       
       - key: RedisSettings__DefaultCacheExpirationMinutes
-        value: "30"
+        value: "10080"
       
-      # SMTP Settings
-      - key: SmtpSettings__Host
-        value: smtp.gmail.com
-      
-      - key: SmtpSettings__Port
-        value: "587"
-      
-      - key: SmtpSettings__Username
+      # Gmail API Settings
+      - key: GmailApiSettings__ClientId
         sync: false # Set this in Render dashboard
       
-      - key: SmtpSettings__Password
+      - key: GmailApiSettings__ClientSecret
         sync: false # Set this in Render dashboard
       
-      - key: SmtpSettings__FromEmail
+      - key: GmailApiSettings__RefreshToken
         sync: false # Set this in Render dashboard
       
-      - key: SmtpSettings__FromName
+      - key: GmailApiSettings__FromEmail
+        value: tienalex167@gmail.com
+      
+      - key: GmailApiSettings__FromName
         value: EVM Management
       
-      - key: SmtpSettings__EnableSsl
-        value: "true"
+      # Resend Settings
+      - key: ResendSettings__ApiToken
+        sync: false # Set this in Render dashboard
+      
+      - key: ResendSettings__FromEmail
+        value: onboarding@resend.dev
+      
+      - key: ResendSettings__FromName
+        value: EVM Management
       
       # Supabase Settings
       - key: SupabaseSettings__Url
