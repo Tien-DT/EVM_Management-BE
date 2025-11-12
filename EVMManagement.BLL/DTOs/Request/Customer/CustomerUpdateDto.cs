@@ -9,6 +9,7 @@ namespace EVMManagement.BLL.DTOs.Request.Customer
         public string? FullName { get; set; }
 
         [MaxLength(20)]
+        [RegularExpression(@"^\d{10}$", ErrorMessage = "Số điện thoại phải gồm 10 chữ số.")]
         public string? Phone { get; set; }
 
         [MaxLength(255)]
@@ -24,6 +25,7 @@ namespace EVMManagement.BLL.DTOs.Request.Customer
         public DateTime? Dob { get; set; }
 
         [MaxLength(50)]
+        [RegularExpression(@"^\d{12}$", ErrorMessage = "CCCD phải gồm 12 chữ số.")]
         public string? CardId { get; set; }
 
         public Guid? DealerId { get; set; }

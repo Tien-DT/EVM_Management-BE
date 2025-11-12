@@ -1,10 +1,11 @@
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
 using EVMManagement.BLL.DTOs.Request.Customer;
 using EVMManagement.BLL.DTOs.Response;
 using EVMManagement.BLL.DTOs.Response.Customer;
+using EVMManagement.BLL.Exceptions;
 using EVMManagement.DAL.Models.Entities;
 using EVMManagement.API.Services;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
 using System;
 using System.Linq;
@@ -108,8 +109,15 @@ namespace EVMManagement.API.Controllers
         {
             if (!ModelState.IsValid)
             {
-                var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
-                return BadRequest(ApiResponse<Customer>.CreateFail("Validation failed", errors, 400));
+                var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).Where(e => !string.IsNullOrWhiteSpace(e)).ToList();
+                var errorMessage = errors.Count switch
+                {
+                    0 => "Dữ liệu không hợp lệ.",
+                    1 => errors[0],
+                    _ => string.Join("; ", errors)
+                };
+
+                return BadRequest(ApiResponse<Customer>.CreateFail(errorMessage, null, 400));
             }
 
             var accountId = GetCurrentAccountId();
@@ -118,8 +126,23 @@ namespace EVMManagement.API.Controllers
                 return Unauthorized(ApiResponse<Customer>.CreateFail("Không xác định được tài khoản đăng nhập", null, 401));
             }
 
-            var created = await Services.CustomerService.CreateCustomerAsync(dto, accountId.Value);
-            return CreatedAtAction(nameof(GetById), new { id = created.Id }, ApiResponse<Customer>.CreateSuccess(created));
+            try
+            {
+                var created = await Services.CustomerService.CreateCustomerAsync(dto, accountId.Value);
+                return CreatedAtAction(nameof(GetById), new { id = created.Id }, ApiResponse<Customer>.CreateSuccess(created));
+            }
+            catch (CustomerValidationException ex)
+            {
+                var errors = ex.Errors?.Where(e => !string.IsNullOrWhiteSpace(e)).ToList() ?? new System.Collections.Generic.List<string>();
+                var errorMessage = errors.Count switch
+                {
+                    0 => ex.Message,
+                    1 => errors[0],
+                    _ => string.Join("; ", errors)
+                };
+
+                return BadRequest(ApiResponse<Customer>.CreateFail(errorMessage, null, 400));
+            }
         }
 
         [HttpPut("{id}")]
@@ -128,12 +151,34 @@ namespace EVMManagement.API.Controllers
             if (!ModelState.IsValid)
             {
                 var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
-                return BadRequest(ApiResponse<CustomerResponse>.CreateFail("Validation failed", errors, 400));
+                var errorMessage = errors.Count switch
+                {
+                    0 => "Dữ liệu không hợp lệ.",
+                    1 => errors[0],
+                    _ => string.Join("; ", errors)
+                };
+
+                return BadRequest(ApiResponse<CustomerResponse>.CreateFail(errorMessage, null, 400));
             }
 
-            var updated = await Services.CustomerService.UpdateAsync(id, dto);
-            if (updated == null) return NotFound(ApiResponse<CustomerResponse>.CreateFail("Customer not found", null, 404));
-            return Ok(ApiResponse<CustomerResponse>.CreateSuccess(updated));
+            try
+            {
+                var updated = await Services.CustomerService.UpdateAsync(id, dto);
+                if (updated == null) return NotFound(ApiResponse<CustomerResponse>.CreateFail("Customer not found", null, 404));
+                return Ok(ApiResponse<CustomerResponse>.CreateSuccess(updated));
+            }
+            catch (CustomerValidationException ex)
+            {
+                var errors = ex.Errors?.Where(e => !string.IsNullOrWhiteSpace(e)).ToList() ?? new System.Collections.Generic.List<string>();
+                var errorMessage = errors.Count switch
+                {
+                    0 => ex.Message,
+                    1 => errors[0],
+                    _ => string.Join("; ", errors)
+                };
+
+                return BadRequest(ApiResponse<CustomerResponse>.CreateFail(errorMessage, null, 400));
+            }
         }
 
         [HttpPatch("{id}")]
