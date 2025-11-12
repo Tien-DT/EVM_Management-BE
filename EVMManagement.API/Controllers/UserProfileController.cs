@@ -77,15 +77,31 @@ namespace EVMManagement.API.Controllers
         }
        
         [HttpPatch("{accId}")]
-        public Task<IActionResult> Update(Guid accId, [FromBody] UserProfileUpdateDto dto)
+        public Task<IActionResult> Update(Guid accId, [FromBody] UserProfilePatchDto dto)
             => UpdateInternalAsync(accId, dto);
 
         [HttpPut("{accId}")]
         public Task<IActionResult> Replace(Guid accId, [FromBody] UserProfileUpdateDto dto)
-            => UpdateInternalAsync(accId, dto);
-
-        private async Task<IActionResult> UpdateInternalAsync(Guid accId, UserProfileUpdateDto dto)
         {
+            var patchDto = new UserProfilePatchDto
+            {
+                DealerId = dto.DealerId,
+                FullName = dto.FullName,
+                Phone = dto.Phone,
+                CardId = dto.CardId,
+                Email = dto.Email
+            };
+
+            return UpdateInternalAsync(accId, patchDto);
+        }
+
+        private async Task<IActionResult> UpdateInternalAsync(Guid accId, UserProfilePatchDto dto)
+        {
+            if (dto == null)
+            {
+                return BadRequest(ApiResponse<UserProfileResponse>.CreateFail("Khong co du lieu duoc gui len.", null, 400));
+            }
+
             if (!ModelState.IsValid)
             {
                 var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
@@ -167,7 +183,6 @@ namespace EVMManagement.API.Controllers
                 {
                     if (skipGenericDbMessage && index == 0 && current is DbUpdateException)
                     {
-                        // Bỏ qua thông điệp mặc định của EF Core, dùng bản dịch thân thiện hơn
                         messages.Add("Có lỗi cơ sở dữ liệu khi lưu thông tin người dùng.");
                     }
                     else

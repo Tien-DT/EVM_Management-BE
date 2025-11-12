@@ -129,6 +129,9 @@ namespace EVMManagement.BLL.Services.Class
             if (entity.FullName != null)
             {
                 var newFullName = entity.FullName.Trim();
+                if (newFullName.Length == 0)
+                    throw new ArgumentException("Ho ten khong duoc de trong.", nameof(entity.FullName));
+
                 if (existing.FullName != newFullName)
                 {
                     existing.FullName = newFullName;
@@ -226,7 +229,7 @@ namespace EVMManagement.BLL.Services.Class
                         .AnyAsync(a => a.Email == trimmedEmail && a.Id != accId);
                     
                     if (emailExists)
-                        throw new ArgumentException("Email đã được sử dụng bởi tài khoản khác.", nameof(email));
+                        throw new ArgumentException("Email đã được sử dụng bởi tài khoản khác.");
 
                     account.Email = trimmedEmail;
                     _unitOfWork.Accounts.Update(account);
