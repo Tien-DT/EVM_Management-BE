@@ -136,10 +136,12 @@ namespace EVMManagement.BLL.Services.Class
 
                     _unitOfWork.Customers.Update(existingCustomer);
                     customer = existingCustomer;
+                    await _unitOfWork.SaveChangesAsync();
                 }
                 else
                 {
-                    customer = new Customer
+                    
+                    var customerCreateDto = new CustomerCreateDto
                     {
                         Phone = dto.CustomerPhone,
                         FullName = dto.CustomerFullName,
@@ -150,10 +152,9 @@ namespace EVMManagement.BLL.Services.Class
                         CardId = dto.CustomerCardId,
                         DealerId = dto.DealerId
                     };
-                    await _unitOfWork.Customers.AddAsync(customer);
-                }
 
-                await _unitOfWork.SaveChangesAsync();
+                    customer = await _customerService.CreateCustomerAsync(customerCreateDto);
+                }
 
                 var existingVehicleTimeSlot = await _unitOfWork.VehicleTimeSlots.GetQueryable()
                     .FirstOrDefaultAsync(vts => 
