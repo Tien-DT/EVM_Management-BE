@@ -27,7 +27,7 @@ namespace EVMManagement.DAL.Repositories.Class
             return await GetQueryableWithIncludes().FirstOrDefaultAsync(x => x.Id == id);
         }
 
-        public IQueryable<TestDriveBooking> GetQueryableWithFilter(Guid? vehicleTimeSlotId, string? customerPhone, Guid? dealerStaffId, TestDriveBookingStatus? status, Guid? dealerId)
+        public IQueryable<TestDriveBooking> GetQueryableWithFilter(Guid? vehicleTimeSlotId, string? customerPhone, Guid? dealerStaffId, TestDriveBookingStatus? status, Guid? dealerId, DateTime? fromDate = null, DateTime? toDate = null)
         {
             var query = GetQueryableWithIncludes();
 
@@ -54,6 +54,16 @@ namespace EVMManagement.DAL.Repositories.Class
             if (dealerId.HasValue)
             {
                 query = query.Where(x => x.VehicleTimeSlot != null && x.VehicleTimeSlot.DealerId == dealerId.Value);
+            }
+
+            if (fromDate.HasValue)
+            {
+                query = query.Where(x => x.VehicleTimeSlot != null && x.VehicleTimeSlot.SlotDate >= fromDate.Value.Date);
+            }
+
+            if (toDate.HasValue)
+            {
+                query = query.Where(x => x.VehicleTimeSlot != null && x.VehicleTimeSlot.SlotDate <= toDate.Value.Date.AddDays(1).AddTicks(-1));
             }
 
             return query;

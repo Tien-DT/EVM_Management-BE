@@ -106,6 +106,8 @@ namespace EVMManagement.API.Controllers
             [FromQuery] Guid? dealerStaffId,
             [FromQuery] EVMManagement.DAL.Models.Enums.TestDriveBookingStatus? status,
             [FromQuery] Guid? dealerId,
+            [FromQuery] DateTime? fromDate,
+            [FromQuery] DateTime? toDate,
             [FromQuery] int pageNumber = 1,
             [FromQuery] int pageSize = 10)
         {
@@ -121,6 +123,8 @@ namespace EVMManagement.API.Controllers
                 DealerStaffId = dealerStaffId,
                 Status = status,
                 DealerId = dealerId,
+                FromDate = fromDate,
+                ToDate = toDate,
                 PageNumber = pageNumber,
                 PageSize = pageSize
             };
@@ -176,7 +180,14 @@ namespace EVMManagement.API.Controllers
         }
 
         [HttpGet("filter")]
-        public async Task<IActionResult> GetByFilter([FromQuery] Guid? dealerId, [FromQuery] string? customerPhone, [FromQuery] EVMManagement.DAL.Models.Enums.TestDriveBookingStatus? status, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
+        public async Task<IActionResult> GetByFilter(
+            [FromQuery] Guid? dealerId, 
+            [FromQuery] string? customerPhone, 
+            [FromQuery] EVMManagement.DAL.Models.Enums.TestDriveBookingStatus? status,
+            [FromQuery] DateTime? fromDate,
+            [FromQuery] DateTime? toDate,
+            [FromQuery] int pageNumber = 1, 
+            [FromQuery] int pageSize = 10)
         {
             if (pageNumber < 1 || pageSize < 1)
             {
@@ -188,6 +199,8 @@ namespace EVMManagement.API.Controllers
                 DealerId = dealerId,
                 CustomerPhone = customerPhone,
                 Status = status,
+                FromDate = fromDate,
+                ToDate = toDate,
                 PageNumber = pageNumber,
                 PageSize = pageSize
             };
