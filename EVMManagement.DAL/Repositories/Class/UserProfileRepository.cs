@@ -20,7 +20,7 @@ namespace EVMManagement.DAL.Repositories.Class
             var query = _dbSet
                 .Include(u => u.Account)
                 .Include(u => u.Dealer)
-                .Where(u => u.Account.Role == role);
+                .Where(u => u.Account.Role == role && !u.IsDeleted);
 
             if (isActive.HasValue)
             {
