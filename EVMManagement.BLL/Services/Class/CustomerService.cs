@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using AutoMapper;
@@ -6,6 +7,7 @@ using AutoMapper.QueryableExtensions;
 using EVMManagement.BLL.DTOs.Request.Customer;
 using EVMManagement.BLL.DTOs.Response;
 using EVMManagement.BLL.DTOs.Response.Customer;
+using EVMManagement.BLL.Exceptions;
 using EVMManagement.BLL.Helpers;
 using EVMManagement.BLL.Services.Interface;
 using EVMManagement.DAL.Models.Entities;
@@ -27,15 +29,58 @@ namespace EVMManagement.BLL.Services.Class
 
         public async Task<Customer> CreateCustomerAsync(CustomerCreateDto dto, Guid? managedByAccountId = null)
         {
+            var validationErrors = new List<string>();
+            var customersQuery = _unitOfWork.Customers.GetQueryable().Where(c => !c.IsDeleted);
+
+            var normalizedPhone = dto.Phone?.Trim() ?? string.Empty;
+            var normalizedEmail = dto.Email?.Trim();
+            var normalizedCardId = dto.CardId?.Trim();
+            var normalizedFullName = dto.FullName?.Trim();
+            var normalizedGender = dto.Gender?.Trim();
+            var normalizedAddress = dto.Address?.Trim();
+
+            if (!string.IsNullOrEmpty(normalizedPhone))
+            {
+                var phoneExists = await customersQuery.AnyAsync(c => c.Phone == normalizedPhone);
+                if (phoneExists)
+                {
+                    validationErrors.Add("Số điện thoại đã được sử dụng.");
+                }
+            }
+
+            if (!string.IsNullOrEmpty(normalizedEmail))
+            {
+                var lowerEmail = normalizedEmail.ToLower();
+                var emailExists = await customersQuery.AnyAsync(c => c.Email != null && c.Email.ToLower() == lowerEmail);
+                if (emailExists)
+                {
+                    validationErrors.Add("Email đã được sử dụng.");
+                }
+            }
+
+            if (!string.IsNullOrEmpty(normalizedCardId))
+            {
+                var cardExists = await customersQuery.AnyAsync(c => c.CardId == normalizedCardId);
+                if (cardExists)
+                {
+                    validationErrors.Add("CCCD đã được sử dụng.");
+                }
+            }
+
+            if (validationErrors.Any())
+            {
+                throw new CustomerValidationException(validationErrors);
+            }
+
             var customer = new Customer
             {
-                FullName = dto.FullName,
-                Phone = dto.Phone,
-                Email = dto.Email,
-                Gender = dto.Gender,
-                Address = dto.Address,
+                FullName = normalizedFullName,
+                Phone = normalizedPhone,
+                Email = normalizedEmail,
+                Gender = normalizedGender,
+                Address = normalizedAddress,
                 Dob = DateTimeHelper.ToUtc(dto.Dob),
-                CardId = dto.CardId,
+                CardId = normalizedCardId,
                 DealerId = dto.DealerId,
                 ManagedBy = managedByAccountId
             };
@@ -147,13 +192,57 @@ namespace EVMManagement.BLL.Services.Class
             var entity = await _unitOfWork.Customers.GetByIdAsync(id);
             if (entity == null) return null;
 
-            if (dto.FullName != null) entity.FullName = dto.FullName;
-            if (dto.Phone != null) entity.Phone = dto.Phone;
-            if (dto.Email != null) entity.Email = dto.Email;
-            if (dto.Gender != null) entity.Gender = dto.Gender;
-            if (dto.Address != null) entity.Address = dto.Address;
+            var validationErrors = new List<string>();
+            var customersQuery = _unitOfWork.Customers.GetQueryable()
+                .Where(c => c.Id != id && !c.IsDeleted);
+
+            var normalizedFullName = dto.FullName?.Trim();
+            var normalizedPhone = dto.Phone?.Trim();
+            var normalizedEmail = dto.Email?.Trim();
+            var normalizedGender = dto.Gender?.Trim();
+            var normalizedAddress = dto.Address?.Trim();
+            var normalizedCardId = dto.CardId?.Trim();
+
+            if (!string.IsNullOrEmpty(normalizedPhone))
+            {
+                var phoneExists = await customersQuery.AnyAsync(c => c.Phone == normalizedPhone);
+                if (phoneExists)
+                {
+                    validationErrors.Add("Số điện thoại đã được sử dụng.");
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(normalizedEmail))
+            {
+                var lowerEmail = normalizedEmail.ToLower();
+                var emailExists = await customersQuery.AnyAsync(c => c.Email != null && c.Email.ToLower() == lowerEmail);
+                if (emailExists)
+                {
+                    validationErrors.Add("Email đã được sử dụng.");
+                }
+            }
+
+            if (!string.IsNullOrEmpty(normalizedCardId))
+            {
+                var cardExists = await customersQuery.AnyAsync(c => c.CardId == normalizedCardId);
+                if (cardExists)
+                {
+                    validationErrors.Add("CCCD đã được sử dụng.");
+                }
+            }
+
+            if (validationErrors.Any())
+            {
+                throw new CustomerValidationException(validationErrors);
+            }
+
+            if (dto.FullName != null) entity.FullName = normalizedFullName;
+            if (dto.Phone != null) entity.Phone = normalizedPhone ?? string.Empty;
+            if (dto.Email != null) entity.Email = normalizedEmail;
+            if (dto.Gender != null) entity.Gender = normalizedGender;
+            if (dto.Address != null) entity.Address = normalizedAddress;
             if (dto.Dob.HasValue) entity.Dob = DateTimeHelper.ToUtc(dto.Dob);
-            if (dto.CardId != null) entity.CardId = dto.CardId;
+            if (dto.CardId != null) entity.CardId = normalizedCardId;
             if (dto.DealerId.HasValue) entity.DealerId = dto.DealerId;
 
             entity.ModifiedDate = DateTime.UtcNow;
