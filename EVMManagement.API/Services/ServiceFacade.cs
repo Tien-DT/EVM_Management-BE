@@ -35,6 +35,7 @@ namespace EVMManagement.API.Services
         public ITransportDetailService TransportDetailService { get; }
         public IInstallmentPlanService InstallmentPlanService { get; }
         public IInstallmentPaymentService InstallmentPaymentService { get; }
+        public IChatbotService ChatbotService { get; }
 
         public ServiceFacade(
             IAuthService authService,
@@ -67,7 +68,8 @@ namespace EVMManagement.API.Services
             ITransportService transportService,
             ITransportDetailService transportDetailService,
             IInstallmentPlanService installmentPlanService,
-            IInstallmentPaymentService installmentPaymentService)
+            IInstallmentPaymentService installmentPaymentService,
+            IChatbotService chatbotService)
         {
             AuthService = authService;
             CustomerService = customerService;
@@ -100,6 +102,7 @@ namespace EVMManagement.API.Services
             TransportDetailService = transportDetailService;
             InstallmentPlanService = installmentPlanService;
             InstallmentPaymentService = installmentPaymentService;
+            ChatbotService = chatbotService;
         }
     }
 }

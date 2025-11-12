@@ -25,6 +25,9 @@ namespace EVMManagement.API.Setup
             services.Configure<JwtSettings>(configuration.GetSection(JwtSettings.SectionName));
             services.Configure<GmailApiSettings>(configuration.GetSection(GmailApiSettings.SectionName));
             services.Configure<VnPaySettings>(configuration.GetSection(VnPaySettings.SectionName));
+            services.Configure<GeminiSettings>(configuration.GetSection("GeminiSettings"));
+
+            services.AddHttpClient();
 
             services.AddScoped<IUserProfileRepository, UserProfileRepository>();
             services.AddScoped<IVehicleVariantRepository, VehicleVariantRepository>();
@@ -79,6 +82,8 @@ namespace EVMManagement.API.Setup
             services.AddScoped<IInstallmentPaymentService, InstallmentPaymentService>();
 
             services.AddScoped<IHandoverRecordService, HandoverRecordService>();
+
+            services.AddScoped<IChatbotService, ChatbotService>();
 
             services.AddScoped<IServiceFacade, ServiceFacade>();
 
