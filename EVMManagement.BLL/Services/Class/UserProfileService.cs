@@ -111,33 +111,64 @@ namespace EVMManagement.BLL.Services.Class
             var existing = await _unitOfWork.UserProfiles.GetByAccountIdAsync(accId);
             if (existing == null) return null;
 
+            // Track what fields are being updated
+            bool hasChanges = false;
+
             if (entity.DealerId.HasValue)
             {
                 if (entity.DealerId == Guid.Empty)
                     throw new ArgumentException("DealerId không hợp lệ.", nameof(entity.DealerId));
 
-                existing.DealerId = entity.DealerId;
+                if (existing.DealerId != entity.DealerId)
+                {
+                    existing.DealerId = entity.DealerId;
+                    hasChanges = true;
+                }
             }
 
-            existing.FullName = entity.FullName?.Trim() ?? existing.FullName;
+            if (entity.FullName != null)
+            {
+                var newFullName = entity.FullName.Trim();
+                if (existing.FullName != newFullName)
+                {
+                    existing.FullName = newFullName;
+                    hasChanges = true;
+                }
+            }
 
             if (entity.Phone != null)
             {
                 var phoneValue = entity.Phone.Trim();
                 if (phoneValue == string.Empty)
                 {
-                    existing.Phone = null;
+                    if (existing.Phone != null)
+                    {
+                        existing.Phone = null;
+                        hasChanges = true;
+                    }
                 }
                 else
                 {
-                    if (!Regex.IsMatch(phoneValue, @"^\d{10}$"))
-                        throw new ArgumentException("Số điện thoại phải gồm đúng 10 chữ số.", nameof(entity.Phone));
-                    bool phoneExists = await _unitOfWork.UserProfiles
-                        .GetAllAsync()
-                        .AnyAsync(u => !u.IsDeleted && u.Phone == phoneValue && u.Id != existing.Id && u.Account != null && !u.Account.IsDeleted);
-                    if (phoneExists)
-                        throw new ArgumentException("Số điện thoại đã được sử dụng.", nameof(entity.Phone));
-                    existing.Phone = phoneValue;
+                    // Normalize existing phone for comparison
+                    var existingPhone = existing.Phone?.Trim();
+                    
+                    // Skip update if Phone hasn't changed
+                    if (!string.Equals(existingPhone, phoneValue, StringComparison.Ordinal))
+                    {
+                        if (!Regex.IsMatch(phoneValue, @"^\d{10}$"))
+                            throw new ArgumentException("Số điện thoại phải gồm đúng 10 chữ số.", nameof(entity.Phone));
+                        
+                        bool phoneExists = await _unitOfWork.UserProfiles
+                            .GetQueryable()
+                            .AsNoTracking()
+                            .AnyAsync(u => u.Phone == phoneValue && u.Id != existing.Id);
+                        
+                        if (phoneExists)
+                            throw new ArgumentException("Số điện thoại đã được sử dụng.");
+                        
+                        existing.Phone = phoneValue;
+                        hasChanges = true;
+                    }
                 }
             }
 
@@ -146,18 +177,35 @@ namespace EVMManagement.BLL.Services.Class
                 var cardValue = entity.CardId.Trim();
                 if (cardValue == string.Empty)
                 {
-                    existing.CardId = null;
+                    if (existing.CardId != null)
+                    {
+                        existing.CardId = null;
+                        hasChanges = true;
+                    }
                 }
                 else
                 {
-                    if (!Regex.IsMatch(cardValue, @"^\d{12}$"))
-                        throw new ArgumentException("Căn cước phải gồm đúng 12 chữ số.", nameof(entity.CardId));
-                    bool cardExists = await _unitOfWork.UserProfiles
-                        .GetAllAsync()
-                        .AnyAsync(u => !u.IsDeleted && u.CardId == cardValue && u.Id != existing.Id && u.Account != null && !u.Account.IsDeleted);
-                    if (cardExists)
-                        throw new ArgumentException("Căn cước đã được sử dụng.", nameof(entity.CardId));
-                    existing.CardId = cardValue;
+                    // Normalize existing CardId for comparison
+                    var existingCardId = existing.CardId?.Trim();
+                    
+                    // Skip update if CardId hasn't changed (exact match)
+                    if (!string.Equals(existingCardId, cardValue, StringComparison.Ordinal))
+                    {
+                        if (!Regex.IsMatch(cardValue, @"^\d{12}$"))
+                            throw new ArgumentException("Căn cước phải gồm đúng 12 chữ số.", nameof(entity.CardId));
+                        
+                        // Check if this CardId is already used by another user
+                        bool cardExists = await _unitOfWork.UserProfiles
+                            .GetQueryable()
+                            .AsNoTracking()
+                            .AnyAsync(u => u.CardId == cardValue && u.Id != existing.Id);
+                        
+                        if (cardExists)
+                            throw new ArgumentException("Căn cước đã được sử dụng.");
+                        
+                        existing.CardId = cardValue;
+                        hasChanges = true;
+                    }
                 }
             }
 
@@ -169,18 +217,29 @@ namespace EVMManagement.BLL.Services.Class
                 if (account == null)
                     throw new ArgumentException("Không tìm thấy tài khoản.", nameof(accId));
 
-                // Check if email is already in use by another account
-                var emailExists = await _unitOfWork.Accounts.AnyAsync(a => a.Email == trimmedEmail && a.Id != accId && !a.IsDeleted);
-                
-                if (emailExists)
-                    throw new ArgumentException("Email đã được sử dụng bởi tài khoản khác.", nameof(email));
+                if (account.Email != trimmedEmail)
+                {
+                    // Check if email is already in use by another account
+                    var emailExists = await _unitOfWork.Accounts
+                        .GetQueryable()
+                        .AsNoTracking()
+                        .AnyAsync(a => a.Email == trimmedEmail && a.Id != accId);
+                    
+                    if (emailExists)
+                        throw new ArgumentException("Email đã được sử dụng bởi tài khoản khác.", nameof(email));
 
-                account.Email = trimmedEmail;
-                _unitOfWork.Accounts.Update(account);
+                    account.Email = trimmedEmail;
+                    _unitOfWork.Accounts.Update(account);
+                    hasChanges = true;
+                }
             }
 
-            _unitOfWork.UserProfiles.Update(existing);
-            await _unitOfWork.SaveChangesAsync();
+            // Only save if there are actual changes
+            if (hasChanges)
+            {
+                await _unitOfWork.SaveChangesAsync();
+            }
+            
             return MapToResponse(existing);
         }
 

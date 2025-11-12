@@ -5,7 +5,9 @@ using EVMManagement.DAL.Models.Entities;
 using EVMManagement.DAL.Models.Enums;
 using EVMManagement.BLL.DTOs.Response.User;
 using EVMManagement.API.Services;
+using System;
 using System.Collections.Generic;
+using Microsoft.EntityFrameworkCore;
 
 namespace EVMManagement.API.Controllers
 {
@@ -110,17 +112,26 @@ namespace EVMManagement.API.Controllers
             }
             catch (ArgumentException ex)
             {
-                var errors = new List<string> { ex.Message };
-                return BadRequest(ApiResponse<UserProfileResponse>.CreateFail("Dữ liệu không hợp lệ.", errors, 400));
+                return BadRequest(ApiResponse<UserProfileResponse>.CreateFail(ex.Message, null, 400));
             }
             catch (InvalidOperationException ex)
             {
-                var errors = new List<string> { ex.Message };
-                return BadRequest(ApiResponse<UserProfileResponse>.CreateFail("Dữ liệu không hợp lệ.", errors, 400));
+                return BadRequest(ApiResponse<UserProfileResponse>.CreateFail(ex.Message, null, 400));
+            }
+            catch (DbUpdateException ex)
+            {
+                var constraintMessage = TryMapConstraintMessage(ex);
+                if (constraintMessage != null)
+                {
+                    return BadRequest(ApiResponse<UserProfileResponse>.CreateFail(constraintMessage, null, 400));
+                }
+
+                var errors = ExtractExceptionMessages(ex, true);
+                return BadRequest(ApiResponse<UserProfileResponse>.CreateFail("Không thể lưu hồ sơ người dùng do vi phạm ràng buộc dữ liệu.", errors, 400));
             }
             catch (Exception ex)
             {
-                var errors = new List<string> { ex.Message };
+                var errors = ExtractExceptionMessages(ex);
                 return StatusCode(500, ApiResponse<UserProfileResponse>.CreateFail("Đã xảy ra lỗi khi cập nhật hồ sơ người dùng.", errors, 500));
             }
         }
@@ -135,6 +146,70 @@ namespace EVMManagement.API.Controllers
             return Ok(ApiResponse<UserProfileResponse>.CreateSuccess(updated));
         }
 
-        
+        private static readonly Dictionary<string, string> ConstraintErrorMessages = new(StringComparer.OrdinalIgnoreCase)
+        {
+            { "IX_UserProfiles_Phone", "Số điện thoại đã được sử dụng." },
+            { "IX_UserProfiles_CardId", "Căn cước đã được sử dụng." },
+            { "IX_Accounts_Email", "Email đã được sử dụng bởi tài khoản khác." }
+        };
+
+        private static List<string> ExtractExceptionMessages(Exception exception, bool skipGenericDbMessage = false)
+        {
+            var messages = new List<string>();
+            var current = exception;
+            var index = 0;
+
+            while (current != null)
+            {
+                var message = (current.Message ?? string.Empty).Trim();
+
+                if (!string.IsNullOrEmpty(message))
+                {
+                    if (skipGenericDbMessage && index == 0 && current is DbUpdateException)
+                    {
+                        // Bỏ qua thông điệp mặc định của EF Core, dùng bản dịch thân thiện hơn
+                        messages.Add("Có lỗi cơ sở dữ liệu khi lưu thông tin người dùng.");
+                    }
+                    else
+                    {
+                        if (string.Equals(message, "An error occurred while saving changes to the database.", StringComparison.OrdinalIgnoreCase))
+                        {
+                            message = "Có lỗi cơ sở dữ liệu khi lưu thông tin người dùng.";
+                        }
+
+                        messages.Add(message);
+                    }
+                }
+
+                current = current.InnerException;
+                index++;
+            }
+
+            if (messages.Count == 0)
+            {
+                messages.Add("Lỗi không xác định.");
+            }
+
+            return messages;
+        }
+
+        private static string? TryMapConstraintMessage(DbUpdateException exception)
+        {
+            var current = exception as Exception;
+
+            while (current != null)
+            {
+                var message = current.Message ?? string.Empty;
+                foreach (var constraint in ConstraintErrorMessages)
+                {
+                    if (message.IndexOf(constraint.Key, StringComparison.OrdinalIgnoreCase) >= 0)
+                        return constraint.Value;
+                }
+
+                current = current.InnerException;
+            }
+
+            return null;
+        }
     }
 }
