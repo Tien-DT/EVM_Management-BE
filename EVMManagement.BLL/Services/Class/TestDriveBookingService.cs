@@ -303,7 +303,9 @@ namespace EVMManagement.BLL.Services.Class
                 filterDto?.CustomerPhone, 
                 filterDto?.DealerStaffId, 
                 filterDto?.Status, 
-                filterDto?.DealerId
+                filterDto?.DealerId,
+                filterDto?.FromDate,
+                filterDto?.ToDate
             );
 
             var total = await query.CountAsync();
