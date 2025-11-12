@@ -114,7 +114,7 @@ namespace EVMManagement.BLL.Services.Class
             if (entity.DealerId.HasValue)
             {
                 if (entity.DealerId == Guid.Empty)
-                    throw new ArgumentException("DealerId is not valid.", nameof(entity.DealerId));
+                    throw new ArgumentException("DealerId không hợp lệ.", nameof(entity.DealerId));
 
                 existing.DealerId = entity.DealerId;
             }

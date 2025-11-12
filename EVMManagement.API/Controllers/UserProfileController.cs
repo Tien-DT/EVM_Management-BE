@@ -5,6 +5,7 @@ using EVMManagement.DAL.Models.Entities;
 using EVMManagement.DAL.Models.Enums;
 using EVMManagement.BLL.DTOs.Response.User;
 using EVMManagement.API.Services;
+using System.Collections.Generic;
 
 namespace EVMManagement.API.Controllers
 {
@@ -74,29 +75,54 @@ namespace EVMManagement.API.Controllers
         }
        
         [HttpPatch("{accId}")]
-        public async Task<IActionResult> Update(Guid accId, [FromBody] UserProfileUpdateDto dto)
+        public Task<IActionResult> Update(Guid accId, [FromBody] UserProfileUpdateDto dto)
+            => UpdateInternalAsync(accId, dto);
+
+        [HttpPut("{accId}")]
+        public Task<IActionResult> Replace(Guid accId, [FromBody] UserProfileUpdateDto dto)
+            => UpdateInternalAsync(accId, dto);
+
+        private async Task<IActionResult> UpdateInternalAsync(Guid accId, UserProfileUpdateDto dto)
         {
             if (!ModelState.IsValid)
             {
                 var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
                 return BadRequest(ApiResponse<UserProfileResponse>.CreateFail("Dữ liệu không hợp lệ.", errors, 400));
             }
-            var existing = await _services.UserProfileService.GetByAccountIdAsync(accId);
-            if (existing == null) return NotFound(ApiResponse<UserProfileResponse>.CreateFail("Không tìm thấy hồ sơ người dùng.", null, 404));
-
 
             var toUpdate = new UserProfile
             {
-                
                 DealerId = dto.DealerId,
                 FullName = dto.FullName,
                 Phone = dto.Phone,
                 CardId = dto.CardId
             };
 
-            var updated = await _services.UserProfileService.UpdateAsync(accId, toUpdate, dto.Email);
-            if (updated == null) return NotFound(ApiResponse<UserProfileResponse>.CreateFail("Không tìm thấy hồ sơ người dùng.", null, 404));
-            return Ok(ApiResponse<UserProfileResponse>.CreateSuccess(updated));
+            try
+            {
+                var updated = await _services.UserProfileService.UpdateAsync(accId, toUpdate, dto.Email);
+                if (updated == null)
+                {
+                    return NotFound(ApiResponse<UserProfileResponse>.CreateFail("Không tìm thấy hồ sơ người dùng.", null, 404));
+                }
+
+                return Ok(ApiResponse<UserProfileResponse>.CreateSuccess(updated));
+            }
+            catch (ArgumentException ex)
+            {
+                var errors = new List<string> { ex.Message };
+                return BadRequest(ApiResponse<UserProfileResponse>.CreateFail("Dữ liệu không hợp lệ.", errors, 400));
+            }
+            catch (InvalidOperationException ex)
+            {
+                var errors = new List<string> { ex.Message };
+                return BadRequest(ApiResponse<UserProfileResponse>.CreateFail("Dữ liệu không hợp lệ.", errors, 400));
+            }
+            catch (Exception ex)
+            {
+                var errors = new List<string> { ex.Message };
+                return StatusCode(500, ApiResponse<UserProfileResponse>.CreateFail("Đã xảy ra lỗi khi cập nhật hồ sơ người dùng.", errors, 500));
+            }
         }
 
 
