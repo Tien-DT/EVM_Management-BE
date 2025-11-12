@@ -358,6 +358,10 @@ namespace EVMManagement.BLL.Services.Class
                     FullName = entity.Customer.FullName,
                     Phone = entity.Customer.Phone,
                     Email = entity.Customer.Email,
+                    Gender = entity.Customer.Gender,
+                    Address = entity.Customer.Address,
+                    Dob = entity.Customer.Dob,
+                    CardId = entity.Customer.CardId,
                     CreatedDate = entity.Customer.CreatedDate,
                     ModifiedDate = entity.Customer.ModifiedDate,
                     IsDeleted = entity.Customer.IsDeleted
