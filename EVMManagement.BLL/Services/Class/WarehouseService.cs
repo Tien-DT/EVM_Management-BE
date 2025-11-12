@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -466,6 +466,11 @@ namespace EVMManagement.BLL.Services.Class
         {
             try
             {
+                if (dto == null || dto.Vehicles == null || !dto.Vehicles.Any())
+                {
+                    return ApiResponse<List<VehicleResponseDto>>.CreateFail("Danh sách xe cần thêm không được để trống.", errorCode: 400);
+                }
+
                 var warehouse = await _unitOfWork.Warehouses.GetByIdAsync(dto.WarehouseId);
                 if (warehouse == null || warehouse.IsDeleted)
                 {
@@ -478,6 +483,34 @@ namespace EVMManagement.BLL.Services.Class
                 }
 
                 var createdVehicles = new List<VehicleResponseDto>();
+                var vinSet = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+                foreach (var vehicle in dto.Vehicles)
+                {
+                    if (string.IsNullOrWhiteSpace(vehicle.Vin))
+                    {
+                        return ApiResponse<List<VehicleResponseDto>>.CreateFail("Mỗi xe bắt buộc phải có số VIN.", errorCode: 400);
+                    }
+
+                    var trimmedVin = vehicle.Vin.Trim();
+                    if (!vinSet.Add(trimmedVin))
+                    {
+                        return ApiResponse<List<VehicleResponseDto>>.CreateFail($"VIN '{trimmedVin}' đang bị trùng trong danh sách gửi lên.", errorCode: 400);
+                    }
+                }
+
+                var normalizedRequestVins = vinSet.Select(v => v.ToUpperInvariant()).ToList();
+                var existedVinList = await _unitOfWork.Vehicles.GetQueryable()
+                    .Where(v => !string.IsNullOrEmpty(v.Vin) && normalizedRequestVins.Contains(v.Vin.ToUpper()))
+                    .Select(v => v.Vin)
+                    .ToListAsync();
+
+                if (existedVinList.Any())
+                {
+                    var duplicates = string.Join(", ", existedVinList.Distinct());
+                    return ApiResponse<List<VehicleResponseDto>>.CreateFail($"Các VIN sau đã tồn tại trong hệ thống: {duplicates}", errorCode: 400);
+                }
+
                 var variantIds = dto.Vehicles.Select(v => v.VariantId).Distinct().ToList();
                 var variants = await _unitOfWork.VehicleVariants.GetQueryable()
                     .Where(v => variantIds.Contains(v.Id) && !v.IsDeleted)
@@ -491,27 +524,11 @@ namespace EVMManagement.BLL.Services.Class
                         continue;
                     }
 
-                    if (string.IsNullOrWhiteSpace(vehicleDto.Vin))
-                    {
-                        _logger.LogWarning("Phát hiện số VIN trống, bỏ qua...");
-                        continue;
-                    }
-
-                    var existingVehicle = await _unitOfWork.Vehicles.GetQueryable()
-                        .Where(v => v.Vin == vehicleDto.Vin)
-                        .FirstOrDefaultAsync();
-
-                    if (existingVehicle != null)
-                    {
-                        _logger.LogWarning("VIN {VIN} đã tồn tại, bỏ qua...", vehicleDto.Vin);
-                        continue;
-                    }
-
                     var vehicle = new Vehicle
                     {
                         VariantId = vehicleDto.VariantId,
                         WarehouseId = warehouse.Id,
-                        Vin = vehicleDto.Vin,
+                        Vin = vehicleDto.Vin.Trim().ToUpperInvariant(),
                         Status = vehicleDto.Status,
                         Purpose = vehicleDto.Purpose,
                         ImageUrl = vehicleDto.ImageUrl
@@ -635,7 +652,7 @@ namespace EVMManagement.BLL.Services.Class
                     {
                         VariantId = vehicleDto.VariantId,
                         WarehouseId = warehouse!.Id,
-                        Vin = vehicleDto.Vin,
+                        Vin = vehicleDto.Vin.Trim().ToUpperInvariant(),
                         Status = vehicleDto.Status,
                         Purpose = vehicleDto.Purpose,
                         ImageUrl = vehicleDto.ImageUrl
@@ -765,3 +782,5 @@ namespace EVMManagement.BLL.Services.Class
         }
     }
 }
+
+

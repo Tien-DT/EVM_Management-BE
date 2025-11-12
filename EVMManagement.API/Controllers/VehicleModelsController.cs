@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using Microsoft.AspNetCore.Mvc;
 using EVMManagement.BLL.DTOs.Request.Vehicle;
 using EVMManagement.BLL.DTOs.Response;
@@ -28,8 +31,15 @@ namespace EVMManagement.API.Controllers
                 return BadRequest(ApiResponse<VehicleModelResponseDto>.CreateFail("Validation failed", errors, 400));
             }
 
-            var created = await _services.VehicleModelService.CreateVehicleModelAsync(dto);
-            return Ok(ApiResponse<VehicleModelResponseDto>.CreateSuccess(created));
+            try
+            {
+                var created = await _services.VehicleModelService.CreateVehicleModelAsync(dto);
+                return Ok(ApiResponse<VehicleModelResponseDto>.CreateSuccess(created));
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ApiResponse<VehicleModelResponseDto>.CreateFail(ex.Message, new List<string> { ex.Message }, 400));
+            }
         }
 
         [HttpGet]
@@ -74,17 +84,24 @@ namespace EVMManagement.API.Controllers
                 return BadRequest(ApiResponse<VehicleModelResponseDto>.CreateFail("Validation failed", errors, 400));
             }
 
-            var updated = await _services.VehicleModelService.UpdateVehicleModelAsync(id, dto);
-            if (updated == null) return NotFound(ApiResponse<VehicleModelResponseDto>.CreateFail("VehicleModel not found", null, 404));
-            return Ok(ApiResponse<VehicleModelResponseDto>.CreateSuccess(updated));
+            try
+            {
+                var updated = await _services.VehicleModelService.UpdateVehicleModelAsync(id, dto);
+                if (updated == null) return NotFound(ApiResponse<VehicleModelResponseDto>.CreateFail("VehicleModel not found", null, 404));
+                return Ok(ApiResponse<VehicleModelResponseDto>.CreateSuccess(updated));
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ApiResponse<VehicleModelResponseDto>.CreateFail(ex.Message, new List<string> { ex.Message }, 400));
+            }
         }
 
         [HttpDelete("{id}")]
-        public async Task<IActionResult> UpdateIsDeleted([FromRoute] Guid id, [FromQuery] bool isDeleted)
+        public async Task<IActionResult> SoftDelete([FromRoute] Guid id)
         {
-            var updated = await _services.VehicleModelService.UpdateIsDeletedAsync(id, isDeleted);
-            if (updated == null) return NotFound(ApiResponse<VehicleModelResponseDto>.CreateFail("VehicleModel not found", null, 404));
-            return Ok(ApiResponse<VehicleModelResponseDto>.CreateSuccess(updated));
+            var deleted = await _services.VehicleModelService.SoftDeleteAsync(id);
+            if (deleted == null) return NotFound(ApiResponse<VehicleModelResponseDto>.CreateFail("Không tìm thấy mẫu xe.", null, 404));
+            return Ok(ApiResponse<VehicleModelResponseDto>.CreateSuccess(deleted, "Đã xóa mềm mẫu xe."));
         }
 
         [HttpGet("search")]
