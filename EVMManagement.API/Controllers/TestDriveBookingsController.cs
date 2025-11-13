@@ -171,6 +171,25 @@ namespace EVMManagement.API.Controllers
             }
         }
 
+        [HttpPatch("{id}/status")]
+        [Authorize]
+        public async Task<IActionResult> UpdateStatus(Guid id, [FromQuery] EVMManagement.DAL.Models.Enums.TestDriveBookingStatus status)
+        {
+            try
+            {
+                var dto = new TestDriveBookingUpdateStatusDto { Status = status };
+                var updated = await _services.TestDriveBookingService.UpdateStatusAsync(id, dto);
+                if (updated == null) return NotFound(ApiResponse<TestDriveBookingResponseDto>.CreateFail("TestDriveBooking not found", null, 404));
+                return Ok(ApiResponse<TestDriveBookingResponseDto>.CreateSuccess(updated));
+            }
+            catch (Exception ex)
+            {
+                var errors = new List<string> { ex.Message };
+                return StatusCode(500, ApiResponse<TestDriveBookingResponseDto>.CreateFail(
+                    "Failed to update test drive booking status", errors, 500));
+            }
+        }
+
         [HttpPatch("{id}/is-deleted")]
         public async Task<IActionResult> UpdateIsDeleted(Guid id, [FromQuery] bool isDeleted)
         {
