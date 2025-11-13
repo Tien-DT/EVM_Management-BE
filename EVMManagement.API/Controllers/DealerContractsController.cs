@@ -65,8 +65,19 @@ namespace EVMManagement.API.Controllers
                 evmSignerAccountId = aid;
             }
 
-            var created = await _services.DealerContractService.CreateAsync(dto, evmSignerAccountId, signAsEvm: evmSignerAccountId.HasValue);
-            return CreatedAtAction(nameof(GetById), new { id = created.Id }, ApiResponse<DealerContractResponseDto>.CreateSuccess(created));
+            try
+            {
+                var created = await _services.DealerContractService.CreateAsync(dto, evmSignerAccountId, signAsEvm: evmSignerAccountId.HasValue);
+                return CreatedAtAction(nameof(GetById), new { id = created.Id }, ApiResponse<DealerContractResponseDto>.CreateSuccess(created));
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ApiResponse<DealerContractResponseDto>.CreateFail(ex.Message, null, 400));
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(ApiResponse<DealerContractResponseDto>.CreateFail(ex.Message, null, 400));
+            }
         }
 
       
