@@ -26,9 +26,36 @@ namespace EVMManagement.BLL.Services.Class
 
         public async Task<PromotionResponseDto> CreatePromotionAsync(PromotionCreateDto dto)
         {
+            var code = dto.Code?.Trim();
+            if (string.IsNullOrWhiteSpace(code))
+            {
+                throw new ArgumentException("Mã khuyến mãi không được để trống.");
+            }
+
+            dto.Code = code;
+            var name = dto.Name?.Trim();
+            dto.Name = string.IsNullOrWhiteSpace(name) ? null : name;
+
             if (dto.StartAt.HasValue && dto.EndAt.HasValue && dto.StartAt > dto.EndAt)
             {
-                throw new ArgumentException("Thoi gian bat dau phai nho hon hoac bang thoi gian ket thuc.");
+                throw new ArgumentException("Thời gian bắt đầu phải nhỏ hơn hoặc bằng thời gian kết thúc.");
+            }
+
+            var promotionsQuery = _unitOfWork.Promotions.GetQueryable().Where(p => !p.IsDeleted);
+
+            var codeExists = await promotionsQuery.AnyAsync(p => p.Code.ToLower() == dto.Code.ToLower());
+            if (codeExists)
+            {
+                throw new ArgumentException("Mã khuyến mãi đã tồn tại.");
+            }
+
+            if (!string.IsNullOrEmpty(dto.Name))
+            {
+                var nameExists = await promotionsQuery.AnyAsync(p => p.Name != null && p.Name.ToLower() == dto.Name.ToLower());
+                if (nameExists)
+                {
+                    throw new ArgumentException("Tên khuyến mãi đã tồn tại.");
+                }
             }
 
             var variantIds = dto.VariantIds?
@@ -46,7 +73,7 @@ namespace EVMManagement.BLL.Services.Class
                 var missingVariantIds = variantIds.Except(existingVariantIds).ToList();
                 if (missingVariantIds.Any())
                 {
-                    throw new ArgumentException("Khong tim thay cac phien ban xe: " + string.Join(", ", missingVariantIds));
+                    throw new ArgumentException("Không tìm thấy các phiên bản xe: " + string.Join(", ", missingVariantIds));
                 }
             }
 
@@ -127,7 +154,77 @@ namespace EVMManagement.BLL.Services.Class
             var entity = await _unitOfWork.Promotions.GetByIdAsync(id);
             if (entity == null) return null;
 
-            _mapper.Map(dto, entity);
+            var promotionsQuery = _unitOfWork.Promotions.GetQueryable()
+                .Where(p => !p.IsDeleted && p.Id != id);
+
+            if (dto.Code != null)
+            {
+                var trimmedCode = dto.Code.Trim();
+                if (string.IsNullOrWhiteSpace(trimmedCode))
+                {
+                    throw new ArgumentException("Mã khuyến mãi không được để trống.");
+                }
+
+                var codeExists = await promotionsQuery.AnyAsync(p => p.Code.ToLower() == trimmedCode.ToLower());
+                if (codeExists)
+                {
+                    throw new ArgumentException("Mã khuyến mãi đã tồn tại.");
+                }
+
+                entity.Code = trimmedCode;
+            }
+
+            if (dto.Name != null)
+            {
+                var trimmedName = dto.Name.Trim();
+                if (trimmedName.Length == 0)
+                {
+                    entity.Name = null;
+                }
+                else
+                {
+                    var nameExists = await promotionsQuery.AnyAsync(p => p.Name != null && p.Name.ToLower() == trimmedName.ToLower());
+                    if (nameExists)
+                    {
+                        throw new ArgumentException("Tên khuyến mãi đã tồn tại.");
+                    }
+
+                    entity.Name = trimmedName;
+                }
+            }
+
+            if (dto.Description != null)
+            {
+                entity.Description = dto.Description.Trim();
+            }
+
+            if (dto.DiscountPercent.HasValue)
+            {
+                entity.DiscountPercent = dto.DiscountPercent.Value;
+            }
+
+            if (dto.StartAt.HasValue)
+            {
+                entity.StartAt = dto.StartAt;
+            }
+
+            if (dto.EndAt.HasValue)
+            {
+                entity.EndAt = dto.EndAt;
+            }
+
+            var startAt = entity.StartAt;
+            var endAt = entity.EndAt;
+            if (startAt.HasValue && endAt.HasValue && startAt > endAt)
+            {
+                throw new ArgumentException("Thời gian bắt đầu phải nhỏ hơn hoặc bằng thời gian kết thúc.");
+            }
+
+            if (dto.IsActive.HasValue)
+            {
+                entity.IsActive = dto.IsActive.Value;
+            }
+
             entity.ModifiedDate = DateTime.UtcNow;
 
             _unitOfWork.Promotions.Update(entity);
@@ -172,7 +269,7 @@ namespace EVMManagement.BLL.Services.Class
         {
             if (!variantId.HasValue && !promotionId.HasValue)
             {
-                throw new ArgumentException("Can cung cap VariantId hoac PromotionId.");
+                throw new ArgumentException("Cần cung cấp VariantId hoặc PromotionId.");
             }
 
             var now = DateTime.UtcNow;

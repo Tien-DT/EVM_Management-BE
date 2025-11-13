@@ -31,20 +31,45 @@ namespace EVMManagement.BLL.Services.Class
 
         public async Task<DealerContractResponseDto> CreateAsync(DealerContractCreateDto dto, Guid? evmSignerAccountId = null, bool signAsEvm = false)
         {
+            if (!dto.EffectiveDate.HasValue || !dto.ExpirationDate.HasValue)
+            {
+                throw new ArgumentException("Ngày hiệu lực và ngày hết hạn là bắt buộc.");
+            }
+
+            if (dto.EffectiveDate.Value >= dto.ExpirationDate.Value)
+            {
+                throw new ArgumentException("Ngày hết hạn phải lớn hơn ngày hiệu lực.");
+            }
+
+            var baseQuery = _unitOfWork.DealerContracts.GetQueryable().Where(c => !c.IsDeleted);
+
+            if (await baseQuery.AnyAsync(c => c.ContractCode == dto.ContractCode))
+            {
+                throw new ArgumentException($"Mã hợp đồng '{dto.ContractCode}' đã tồn tại.");
+            }
+
+            if (await baseQuery.AnyAsync(c => c.DealerId == dto.DealerId))
+            {
+                throw new ArgumentException("Đại lý đã có hợp đồng đang hoạt động vui lòng kiểm tra lại.");
+            }
+
+            var effectiveDate = DateTimeHelper.ToUtc(dto.EffectiveDate.Value);
+            var expirationDate = DateTimeHelper.ToUtc(dto.ExpirationDate.Value);
+
             var entity = new DealerContract
             {
                 DealerId = dto.DealerId,
                 ContractCode = dto.ContractCode,
                 Terms = dto.Terms,
                 Status = dto.Status,
-                EffectiveDate = DateTimeHelper.ToUtc(dto.EffectiveDate),
-                ExpirationDate = DateTimeHelper.ToUtc(dto.ExpirationDate),
+                EffectiveDate = effectiveDate,
+                ExpirationDate = expirationDate,
                 SignedByDealerUserId = null,
                 SignedByEvmUserId = null,
                 ContractLink = dto.ContractLink
             };
 
-          
+
             if (signAsEvm && evmSignerAccountId.HasValue)
             {
                 var signerProfile = await _userProfileService.GetByAccountIdAsync(evmSignerAccountId.Value);

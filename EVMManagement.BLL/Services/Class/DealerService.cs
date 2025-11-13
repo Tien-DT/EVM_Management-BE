@@ -8,6 +8,8 @@ using EVMManagement.BLL.Services.Interface;
 using EVMManagement.DAL.Models.Entities;
 using EVMManagement.DAL.UnitOfWork;
 using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations;
+using System.Text.RegularExpressions;
 
 namespace EVMManagement.BLL.Services.Class
 {
@@ -22,12 +24,75 @@ namespace EVMManagement.BLL.Services.Class
 
         public async Task<Dealer> CreateDealerAsync(CreateDealerDto dto)
         {
+            if (dto == null)
+            {
+                throw new ArgumentException("Dữ liệu tạo đại lý không hợp lệ.");
+            }
+
+            var name = dto.Name?.Trim();
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                throw new ArgumentException("Tên đại lý là bắt buộc.");
+            }
+
+            var email = dto.Email?.Trim();
+            if (string.IsNullOrWhiteSpace(email))
+            {
+                throw new ArgumentException("Email đại lý là bắt buộc.");
+            }
+
+            if (!new EmailAddressAttribute().IsValid(email))
+            {
+                throw new ArgumentException("Email đại lý không hợp lệ.");
+            }
+
+            var address = string.IsNullOrWhiteSpace(dto.Address) ? null : dto.Address.Trim();
+            var phone = string.IsNullOrWhiteSpace(dto.Phone) ? null : dto.Phone.Trim();
+
+            var lowerName = name.ToLower();
+            var lowerEmail = email.ToLower();
+
+            if (await _unitOfWork.Dealers.AnyAsync(d => !d.IsDeleted && d.Name.ToLower() == lowerName))
+            {
+                throw new ArgumentException($"Tên đại lý '{name}' đã tồn tại.");
+            }
+
+            if (await _unitOfWork.Dealers.AnyAsync(d => !d.IsDeleted && d.Email.ToLower() == lowerEmail))
+            {
+                throw new ArgumentException($"Email '{email}' đã được sử dụng.");
+            }
+
+            if (address != null)
+            {
+                var lowerAddress = address.ToLower();
+                if (await _unitOfWork.Dealers.AnyAsync(d =>
+                        !d.IsDeleted &&
+                        d.Address != null &&
+                        d.Address.ToLower() == lowerAddress))
+                {
+                    throw new ArgumentException("Địa chỉ đại lý đã được sử dụng.");
+                }
+            }
+
+            if (phone != null)
+            {
+                if (!Regex.IsMatch(phone, @"^\d{10}$"))
+                {
+                    throw new ArgumentException("Số điện thoại đại lý phải gồm đúng 10 chữ số.");
+                }
+
+                if (await _unitOfWork.Dealers.AnyAsync(d => !d.IsDeleted && d.Phone == phone))
+                {
+                    throw new ArgumentException($"Số điện thoại '{phone}' đã được sử dụng.");
+                }
+            }
+
             var dealer = new Dealer
             {
-                Name = dto.Name,
-                Address = dto.Address,
-                Phone = dto.Phone,
-                Email = dto.Email,
+                Name = name,
+                Address = address,
+                Phone = phone,
+                Email = email,
                 EstablishedAt = dto.EstablishedAt,
                 IsActive = dto.IsActive
             };

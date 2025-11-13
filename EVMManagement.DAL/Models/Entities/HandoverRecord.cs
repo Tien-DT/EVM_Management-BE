@@ -10,8 +10,7 @@ namespace EVMManagement.DAL.Models.Entities
 
         [Required]
         public Guid VehicleId { get; set; }
-
-        public Guid? TransportDetailId { get; set; }
+        public Guid? TransportId { get; set; }
 
         public string? Notes { get; set; }
         [MaxLength(500)]
@@ -23,7 +22,7 @@ namespace EVMManagement.DAL.Models.Entities
 
         public virtual Order Order { get; set; } = null!;
         public virtual Vehicle Vehicle { get; set; } = null!;
-        public virtual TransportDetail? TransportDetail { get; set; }
+        public virtual Transport? Transport { get; set; }
         public virtual ICollection<DigitalSignature> DigitalSignatures { get; set; } = new List<DigitalSignature>();
     }
 }

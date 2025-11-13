@@ -28,6 +28,18 @@ namespace EVMManagement.BLL.Services.Class
 
         public async Task<Contract> CreateContractAsync(ContractCreateDto dto)
         {
+            var contractsQuery = _unitOfWork.Contracts.GetQueryable().Where(c => !c.IsDeleted);
+
+            if (await contractsQuery.AnyAsync(c => c.Code == dto.Code))
+            {
+                throw new ArgumentException($"Mã hợp đồng '{dto.Code}' đã tồn tại.");
+            }
+
+            if (await contractsQuery.AnyAsync(c => c.OrderId == dto.OrderId))
+            {
+                throw new ArgumentException("Đơn hàng này đã có hợp đồng, vui lòng kiểm tra lại.");
+            }
+
             var contract = new Contract
             {
                 Code = dto.Code,

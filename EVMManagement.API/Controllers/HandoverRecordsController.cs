@@ -86,5 +86,26 @@ namespace EVMManagement.API.Controllers
             var result = await _service.GetByFilterAsync(filter);
             return Ok(ApiResponse<PagedResult<HandoverRecordResponseDto>>.CreateSuccess(result));
         }
+
+        [HttpGet("lookup")]
+        public async Task<IActionResult> Lookup([FromQuery] HandoverRecordFilterDto filter)
+        {
+            var hasDealer = filter.DealerId.HasValue;
+            var hasOrder = filter.OrderId.HasValue;
+            var hasTransport = filter.TransportId.HasValue;
+
+            if (!hasDealer && !hasOrder && !hasTransport)
+            {
+                return BadRequest(ApiResponse<string>.CreateFail("Vui lòng cung cấp DealerId hoặc OrderId hoặc TransportId", null, 400));
+            }
+
+            if (filter.PageNumber < 1 || filter.PageSize < 1)
+            {
+                return BadRequest(ApiResponse<string>.CreateFail("Số trang và kích thước trang phải lớn hơn 0", null, 400));
+            }
+
+            var result = await _service.GetByFilterAsync(filter);
+            return Ok(ApiResponse<PagedResult<HandoverRecordResponseDto>>.CreateSuccess(result));
+        }
     }
 }

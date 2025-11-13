@@ -122,6 +122,28 @@ namespace EVMManagement.API.Controllers
             }
         }
 
+        [HttpPost("{id}/handover/confirm")]
+        public async Task<IActionResult> ConfirmHandover(Guid id)
+        {
+            try
+            {
+                var result = await _services.TransportService.ConfirmHandoverAsync(id);
+                return Ok(ApiResponse<TransportResponseDto>.CreateSuccess(result));
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(ApiResponse<TransportResponseDto>.CreateFail(ex.Message, null, 404));
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(ApiResponse<TransportResponseDto>.CreateFail(ex.Message, null, 400));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ApiResponse<TransportResponseDto>.CreateFail($"Xảy ra lỗi khi xác nhận bàn giao: {ex.Message}", null, 500));
+            }
+        }
+
         [HttpPut("{id}")]
         public async Task<IActionResult> Update(Guid id, [FromBody] TransportUpdateDto dto)
         {

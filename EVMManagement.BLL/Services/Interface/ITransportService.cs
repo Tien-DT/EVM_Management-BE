@@ -18,6 +18,7 @@ namespace EVMManagement.BLL.Services.Interface
         Task<TransportResponseDto?> UpdateAsync(Guid id, TransportUpdateDto dto);
         Task<bool> DeleteAsync(Guid id);
         Task<TransportResponseDto> CancelAsync(Guid id);
+        Task<TransportResponseDto> ConfirmHandoverAsync(Guid transportId);
         IQueryable<Transport> GetQueryableForOData();
     }
 }

@@ -5,7 +5,7 @@ namespace EVMManagement.BLL.DTOs.Request.HandoverRecord
 {
     public class HandoverRecordUpdateDto
     {
-        public Guid? TransportDetailId { get; set; }
+        public Guid? TransportId { get; set; }
         public string? Notes { get; set; }
         [MaxLength(500)]
         public string? FileUrl { get; set; }

@@ -1,10 +1,11 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using EVMManagement.BLL.DTOs.Request.Promotion;
 using EVMManagement.BLL.DTOs.Response;
 using EVMManagement.BLL.DTOs.Response.Promotion;
 using System;
 using System.Threading.Tasks;
 using System.Linq;
+using System.Collections.Generic;
 using EVMManagement.API.Services;
 
 namespace EVMManagement.API.Controllers
@@ -26,7 +27,7 @@ namespace EVMManagement.API.Controllers
             if (!ModelState.IsValid)
             {
                 var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
-                return BadRequest(ApiResponse<PromotionResponseDto>.CreateFail("Validation failed", errors, 400));
+                return BadRequest(ApiResponse<PromotionResponseDto>.CreateFail("Dữ liệu không hợp lệ.", errors, 400));
             }
 
             try
@@ -36,7 +37,8 @@ namespace EVMManagement.API.Controllers
             }
             catch (ArgumentException ex)
             {
-                return BadRequest(ApiResponse<string>.CreateFail(ex.Message, null, 400));
+                var errors = new List<string> { ex.Message };
+                return BadRequest(ApiResponse<PromotionResponseDto>.CreateFail("Dữ liệu không hợp lệ.", errors, 400));
             }
         }
 
@@ -80,7 +82,8 @@ namespace EVMManagement.API.Controllers
             }
             catch (ArgumentException ex)
             {
-                return BadRequest(ApiResponse<string>.CreateFail(ex.Message, null, 400));
+                var errors = new List<string> { ex.Message };
+                return BadRequest(ApiResponse<VehiclePromotionResponseDto>.CreateFail("Dữ liệu không hợp lệ.", errors, 400));
             }
         }
 
@@ -102,12 +105,20 @@ namespace EVMManagement.API.Controllers
             if (!ModelState.IsValid)
             {
                 var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
-                return BadRequest(ApiResponse<PromotionResponseDto>.CreateFail("Validation failed", errors, 400));
+                return BadRequest(ApiResponse<PromotionResponseDto>.CreateFail("Dữ liệu không hợp lệ.", errors, 400));
             }
 
-            var updated = await _services.PromotionService.UpdateAsync(id, dto);
-            if (updated == null) return NotFound(ApiResponse<PromotionResponseDto>.CreateFail("Promotion not found", null, 404));
-            return Ok(ApiResponse<PromotionResponseDto>.CreateSuccess(updated));
+            try
+            {
+                var updated = await _services.PromotionService.UpdateAsync(id, dto);
+                if (updated == null) return NotFound(ApiResponse<PromotionResponseDto>.CreateFail("Promotion not found", null, 404));
+                return Ok(ApiResponse<PromotionResponseDto>.CreateSuccess(updated));
+            }
+            catch (ArgumentException ex)
+            {
+                var errors = new List<string> { ex.Message };
+                return BadRequest(ApiResponse<PromotionResponseDto>.CreateFail("Dữ liệu không hợp lệ.", errors, 400));
+            }
         }
 
         [HttpPatch("{id}/is-active")]

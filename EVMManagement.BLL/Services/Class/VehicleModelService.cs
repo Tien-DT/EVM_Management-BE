@@ -1,3 +1,7 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 using AutoMapper;
 using EVMManagement.BLL.DTOs.Request.Vehicle;
 using EVMManagement.BLL.DTOs.Response;
@@ -23,8 +27,31 @@ namespace EVMManagement.BLL.Services.Class
             _mapper = mapper;
         }
 
-    public async Task<VehicleModelResponseDto> CreateVehicleModelAsync(VehicleModelCreateDto dto)
+        public async Task<VehicleModelResponseDto> CreateVehicleModelAsync(VehicleModelCreateDto dto)
         {
+            if (dto == null)
+            {
+                throw new ArgumentException("Thông tin mẫu xe không hợp lệ.");
+            }
+
+            var normalizedCode = dto.Code?.Trim();
+            var normalizedName = dto.Name?.Trim();
+
+            if (string.IsNullOrWhiteSpace(normalizedCode))
+            {
+                throw new ArgumentException("Mã mẫu xe không được để trống.");
+            }
+
+            if (string.IsNullOrWhiteSpace(normalizedName))
+            {
+                throw new ArgumentException("Tên mẫu xe không được để trống.");
+            }
+
+            dto.Code = normalizedCode;
+            dto.Name = normalizedName;
+
+            await EnsureVehicleModelUniquenessAsync(normalizedCode, normalizedName);
+
             var model = _mapper.Map<VehicleModel>(dto);
 
             await _unitOfWork.VehicleModels.AddAsync(model);
@@ -78,9 +105,31 @@ namespace EVMManagement.BLL.Services.Class
 
         public async Task<VehicleModelResponseDto?> UpdateVehicleModelAsync(Guid id, VehicleModelUpdateDto dto)
         {
-          
+            if (dto == null)
+            {
+                throw new ArgumentException("Thông tin cập nhật không hợp lệ.");
+            }
+
             var existing = await _unitOfWork.VehicleModels.GetByIdAsync(id);
             if (existing == null) return null;
+
+            var normalizedCode = dto.Code?.Trim();
+            var normalizedName = dto.Name?.Trim();
+
+            if (string.IsNullOrWhiteSpace(normalizedCode))
+            {
+                throw new ArgumentException("Mã mẫu xe không được để trống.");
+            }
+
+            if (string.IsNullOrWhiteSpace(normalizedName))
+            {
+                throw new ArgumentException("Tên mẫu xe không được để trống.");
+            }
+
+            await EnsureVehicleModelUniquenessAsync(normalizedCode, normalizedName, id);
+
+            dto.Code = normalizedCode;
+            dto.Name = normalizedName;
 
             _mapper.Map(dto, existing);
             _unitOfWork.VehicleModels.Update(existing);
@@ -88,16 +137,49 @@ namespace EVMManagement.BLL.Services.Class
             return _mapper.Map<VehicleModelResponseDto>(existing);
         }
 
-        public async Task<VehicleModelResponseDto?> UpdateIsDeletedAsync(Guid id, bool isDeleted)
+        public async Task<VehicleModelResponseDto?> SoftDeleteAsync(Guid id)
         {
             var existing = await _unitOfWork.VehicleModels.GetByIdAsync(id);
-            if (existing == null) return null;
+            if (existing == null || existing.IsDeleted) return null;
 
-            existing.IsDeleted = isDeleted;
-            existing.DeletedDate = isDeleted ? DateTime.UtcNow : null;
+            existing.IsDeleted = true;
+            existing.DeletedDate = DateTime.UtcNow;
+            existing.ModifiedDate = DateTime.UtcNow;
+
             _unitOfWork.VehicleModels.Update(existing);
             await _unitOfWork.SaveChangesAsync();
             return _mapper.Map<VehicleModelResponseDto>(existing);
+        }
+
+        private async Task EnsureVehicleModelUniquenessAsync(string code, string name, Guid? excludeId = null)
+        {
+            var normalizedCodeLower = code.Trim().ToLowerInvariant();
+            var normalizedNameLower = name.Trim().ToLowerInvariant();
+
+            var query = _unitOfWork.VehicleModels.GetQueryable()
+                .Where(vm => !vm.IsDeleted);
+
+            if (excludeId.HasValue)
+            {
+                query = query.Where(vm => vm.Id != excludeId.Value);
+            }
+
+            var conflicts = await query
+                .Where(vm =>
+                    (vm.Code != null && vm.Code.ToLower() == normalizedCodeLower) ||
+                    (vm.Name != null && vm.Name.ToLower() == normalizedNameLower))
+                .Select(vm => new { vm.Code, vm.Name })
+                .ToListAsync();
+
+            if (conflicts.Any(c => !string.IsNullOrWhiteSpace(c.Code) && string.Equals(c.Code, code, StringComparison.OrdinalIgnoreCase)))
+            {
+                throw new ArgumentException($"Mã mẫu xe '{code}' đã tồn tại.");
+            }
+
+            if (conflicts.Any(c => !string.IsNullOrWhiteSpace(c.Name) && string.Equals(c.Name, name, StringComparison.OrdinalIgnoreCase)))
+            {
+                throw new ArgumentException($"Tên mẫu xe '{name}' đã tồn tại.");
+            }
         }
 
 
