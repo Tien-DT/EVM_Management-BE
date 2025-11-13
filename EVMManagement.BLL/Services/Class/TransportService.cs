@@ -413,24 +413,18 @@ namespace EVMManagement.BLL.Services.Class
                 throw new InvalidOperationException($"Vận chuyển phải ở trạng thái DELIVERED để thêm xe vào kho (hiện tại: {transport.Status})");
             }
 
-            var dealer = await _unitOfWork.Dealers.GetQueryable()
-                .Include(d => d.Warehouses.Where(w => !w.IsDeleted))
-                .FirstOrDefaultAsync(d => d.Id == dto.DealerId && !d.IsDeleted);
+            var warehouse = await _unitOfWork.Warehouses.GetQueryable()
+                .Include(w => w.Dealer)
+                .FirstOrDefaultAsync(w => w.Id == dto.WarehouseId && !w.IsDeleted);
 
-            if (dealer == null)
+            if (warehouse == null)
             {
-                throw new KeyNotFoundException($"Không tìm thấy đại lý với mã {dto.DealerId}");
+                throw new KeyNotFoundException($"Không tìm thấy kho hàng với mã {dto.WarehouseId}");
             }
 
-            if (!dealer.IsActive)
+            if (warehouse.DealerId.HasValue && warehouse.Dealer != null && !warehouse.Dealer.IsActive)
             {
-                throw new InvalidOperationException("Đại lý không hoạt động, không thể thêm xe vào kho");
-            }
-
-            var dealerWarehouse = dealer.Warehouses.FirstOrDefault();
-            if (dealerWarehouse == null)
-            {
-                throw new InvalidOperationException($"Đại lý {dealer.Name} chưa có kho hàng");
+                throw new InvalidOperationException("Kho hàng thuộc đại lý không hoạt động, không thể thêm xe vào kho");
             }
 
             var transportDetails = transport.TransportDetails
@@ -463,7 +457,7 @@ namespace EVMManagement.BLL.Services.Class
                     var vehicle = detail.Vehicle;
                     if (vehicle == null) continue;
 
-                    vehicle.WarehouseId = dealerWarehouse.Id;
+                    vehicle.WarehouseId = warehouse.Id;
                     vehicle.Status = VehicleStatus.IN_STOCK;
                     vehicle.ModifiedDate = DateTime.UtcNow;
 
