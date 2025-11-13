@@ -57,14 +57,12 @@ namespace EVMManagement.BLL.Helpers
 
         /// <summary>
         /// Tạo nội dung chuyển khoản với mã giao dịch
+        /// Format đơn giản: EVM{timestamp} - Ví dụ: EVM20251113221731
         /// </summary>
         public string CreateTransactionContent(string prefix, string transactionCode, string orderInfo = "")
         {
-            if (string.IsNullOrEmpty(orderInfo))
-            {
-                return $"{prefix} {transactionCode}";
-            }
-            return $"{prefix} {transactionCode} {orderInfo}";
+            // Chỉ trả về transaction code đơn giản, không thêm prefix hay orderInfo
+            return transactionCode;
         }
 
         /// <summary>

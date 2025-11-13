@@ -11,5 +11,6 @@ namespace EVMManagement.BLL.Services.Interface
         Task<PaymentResponse> CreatePaymentUrlAsync(PaymentRequest request, string ipAddress);
         Task<PaymentCallbackResponse> ProcessCallbackAsync(Dictionary<string, string> callbackData);
         Task<PaymentCallbackResponse> ProcessReturnUrlAsync(Dictionary<string, string> returnData);
+        Task<PaymentCallbackResponse> CheckTransactionStatusAsync(string transactionCode);
     }
 }
