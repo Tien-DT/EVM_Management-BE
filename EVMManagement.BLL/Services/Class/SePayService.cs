@@ -51,33 +51,26 @@ namespace EVMManagement.BLL.Services.Class
             var vnTimeZone = TimeZoneInfo.FindSystemTimeZoneById("SE Asia Standard Time");
             var createDateVn = TimeZoneInfo.ConvertTimeFromUtc(createDate, vnTimeZone);
             
-            // Transaction code format: ORD{orderId_8chars}{timestamp}
-            var transactionCode = $"ORD{request.OrderId.ToString("N")[..8]}{createDateVn:yyyyMMddHHmmss}";
+            // Transaction code format: {PREFIX}{timestamp}
+            var transactionCode = $"{_sePaySettings.TransactionPrefix}{createDateVn:yyyyMMddHHmmss}";
 
             var sepay = new SePayLibrary();
             
-            // Add required parameters for SEPay
-            sepay.AddRequestData("merchant_code", _sePaySettings.MerchantCode);
-            sepay.AddRequestData("order_id", transactionCode);
-            sepay.AddRequestData("amount", ((long)request.Amount).ToString());
-            sepay.AddRequestData("currency", _sePaySettings.Currency);
-            sepay.AddRequestData("order_info", request.OrderInfo);
-            sepay.AddRequestData("return_url", _sePaySettings.ReturnUrl);
-            sepay.AddRequestData("callback_url", _sePaySettings.CallbackUrl);
-            sepay.AddRequestData("locale", request.Locale ?? _sePaySettings.Locale);
-            sepay.AddRequestData("created_at", createDateVn.ToString("yyyy-MM-dd HH:mm:ss"));
-            sepay.AddRequestData("version", _sePaySettings.Version);
+            // Tạo nội dung chuyển khoản
+            var transactionContent = sepay.CreateTransactionContent(
+                _sePaySettings.TransactionPrefix,
+                transactionCode,
+                request.OrderInfo
+            );
 
-            // Optional bank code
-            if (!string.IsNullOrEmpty(request.BankCode))
-            {
-                sepay.AddRequestData("bank_code", request.BankCode);
-            }
-
-            var paymentUrl = sepay.CreateRequestUrl(
-                _sePaySettings.PaymentUrl, 
-                _sePaySettings.SecretKey,
-                _sePaySettings.SignatureType
+            // Tạo QR code URL cho khách hàng quét mã
+            var qrCodeUrl = sepay.CreateQRCodeUrl(
+                _sePaySettings.QRApiUrl,
+                _sePaySettings.AccountNumber,
+                _sePaySettings.AccountName,
+                _sePaySettings.BankCode,
+                request.Amount,
+                transactionContent
             );
 
             // Create transaction record
@@ -88,8 +81,8 @@ namespace EVMManagement.BLL.Services.Class
                 Status = TransactionStatus.PENDING,
                 TransactionTime = createDate,
                 PaymentGateway = "SEPAY",
-                VnpayTransactionCode = transactionCode, // Reuse this field for SEPay transaction code
-                TransactionInfo = request.OrderInfo
+                VnpayTransactionCode = transactionCode,
+                TransactionInfo = transactionContent
             };
 
             // Handle deposit or invoice
@@ -129,11 +122,11 @@ namespace EVMManagement.BLL.Services.Class
 
             return new PaymentResponse
             {
-                PaymentUrl = paymentUrl,
+                PaymentUrl = qrCodeUrl, // Trả về QR code URL thay vì payment URL
                 TransactionCode = transactionCode,
                 OrderId = request.OrderId,
                 Amount = request.Amount,
-                OrderInfo = request.OrderInfo,
+                OrderInfo = transactionContent,
                 CreatedDate = createDate,
                 PaymentGateway = "SEPAY"
             };
@@ -144,32 +137,57 @@ namespace EVMManagement.BLL.Services.Class
             var sepay = new SePayLibrary();
             sepay.ParseResponseData(callbackData);
 
-            var orderIdFromGateway = sepay.GetResponseData("order_id");
-            var gatewayTransactionNo = sepay.GetResponseData("transaction_id");
-            var responseCode = sepay.GetResponseData("status");
-            var signature = callbackData.ContainsKey("signature") ? callbackData["signature"] : "";
-            var amount = decimal.Parse(sepay.GetResponseData("amount"));
-            var bankCode = sepay.GetResponseData("bank_code");
-            var cardType = sepay.GetResponseData("card_type");
-            var orderInfo = sepay.GetResponseData("order_info");
-            var payDateStr = sepay.GetResponseData("paid_at");
+            // Validate webhook signature nếu có WebhookSecret
+            if (!string.IsNullOrEmpty(_sePaySettings.WebhookSecret))
+            {
+                var signature = sepay.GetResponseData("signature");
+                var payload = sepay.GetResponseData("payload");
+                
+                if (!sepay.ValidateWebhookSignature(payload, signature, _sePaySettings.WebhookSecret))
+                {
+                    return new PaymentCallbackResponse
+                    {
+                        Success = false,
+                        Message = "Invalid webhook signature",
+                        ResponseCode = "97",
+                        PaymentGateway = "SEPAY"
+                    };
+                }
+            }
 
-            // Validate signature
-            var isValidSignature = sepay.ValidateSignature(signature, _sePaySettings.SecretKey, _sePaySettings.SignatureType);
-            if (!isValidSignature)
+            // Parse webhook data từ SEPay
+            var transactionCode = sepay.GetResponseData("transaction_content") ?? sepay.GetResponseData("content");
+            var gatewayTransactionNo = sepay.GetResponseData("transaction_id") ?? sepay.GetResponseData("id");
+            var amountStr = sepay.GetResponseData("amount_in") ?? sepay.GetResponseData("amount");
+            var amount = !string.IsNullOrEmpty(amountStr) ? decimal.Parse(amountStr) : 0;
+            var bankCode = _sePaySettings.BankCode;
+            var description = sepay.GetResponseData("description");
+            var payDateStr = sepay.GetResponseData("transaction_date") ?? sepay.GetResponseData("when");
+            
+            DateTime payDate = DateTime.UtcNow;
+            if (!string.IsNullOrEmpty(payDateStr))
+            {
+                DateTime.TryParse(payDateStr, out payDate);
+            }
+
+            // Extract transaction code from content (format: PREFIX YYYYMMDDHHMMSS Order Info)
+            var extractedTransactionCode = ExtractTransactionCode(transactionCode, _sePaySettings.TransactionPrefix);
+            
+            if (string.IsNullOrEmpty(extractedTransactionCode))
             {
                 return new PaymentCallbackResponse
                 {
                     Success = false,
-                    Message = "Invalid signature",
-                    ResponseCode = "97",
+                    Message = "Invalid transaction content format",
+                    ResponseCode = "02",
+                    TransactionCode = transactionCode,
                     PaymentGateway = "SEPAY"
                 };
             }
 
             // Find transaction
             var transaction = _unitOfWork.Transactions.GetQueryable()
-                .FirstOrDefault(t => t.VnpayTransactionCode == orderIdFromGateway);
+                .FirstOrDefault(t => t.VnpayTransactionCode == extractedTransactionCode);
 
             if (transaction == null)
             {
@@ -178,229 +196,196 @@ namespace EVMManagement.BLL.Services.Class
                     Success = false,
                     Message = "Transaction not found",
                     ResponseCode = "01",
-                    TransactionCode = orderIdFromGateway,
+                    TransactionCode = extractedTransactionCode,
                     PaymentGateway = "SEPAY"
                 };
             }
 
-            // Update transaction
-            transaction.VnpayTransactionNo = gatewayTransactionNo; // Reuse field for SEPay transaction no
+            // Check if transaction already processed
+            if (transaction.Status == TransactionStatus.SUCCESS)
+            {
+                return new PaymentCallbackResponse
+                {
+                    Success = true,
+                    Message = "Transaction already processed",
+                    ResponseCode = "00",
+                    TransactionCode = extractedTransactionCode,
+                    GatewayTransactionNo = transaction.VnpayTransactionNo ?? string.Empty,
+                    Amount = transaction.Amount,
+                    OrderId = GetOrderId(transaction),
+                    TransactionId = transaction.Id,
+                    PaymentGateway = "SEPAY"
+                };
+            }
+
+            // Validate amount
+            if (Math.Abs(amount - transaction.Amount) > 1)
+            {
+                return new PaymentCallbackResponse
+                {
+                    Success = false,
+                    Message = $"Amount mismatch. Expected: {transaction.Amount}, Received: {amount}",
+                    ResponseCode = "04",
+                    TransactionCode = extractedTransactionCode,
+                    Amount = amount,
+                    PaymentGateway = "SEPAY"
+                };
+            }
+
+            // Update transaction - Payment từ SEPay luôn là thành công khi nhận được webhook
+            transaction.VnpayTransactionNo = gatewayTransactionNo;
             transaction.BankCode = bankCode;
-            transaction.CardType = cardType;
-            transaction.ResponseCode = responseCode;
-            transaction.SecureHash = signature;
+            transaction.ResponseCode = "success";
+            transaction.Status = TransactionStatus.SUCCESS;
+            transaction.TransactionTime = payDate;
             transaction.ModifiedDate = DateTime.UtcNow;
 
-            DateTime payDate = DateTime.UtcNow;
-            if (!string.IsNullOrEmpty(payDateStr))
+            // Update deposit status
+            if (transaction.DepositId.HasValue)
             {
-                DateTime.TryParse(payDateStr, out payDate);
-            }
-
-            // Check if payment is successful (SEPay uses "success" or "00" for success)
-            bool isSuccess = responseCode?.ToLower() == "success" || responseCode == "00";
-
-            if (isSuccess)
-            {
-                transaction.Status = TransactionStatus.SUCCESS;
-                transaction.TransactionTime = payDate;
-
-                // Update deposit status
-                if (transaction.DepositId.HasValue)
+                var deposit = await _unitOfWork.Deposits.GetByIdAsync(transaction.DepositId.Value);
+                if (deposit != null)
                 {
-                    var deposit = await _unitOfWork.Deposits.GetByIdAsync(transaction.DepositId.Value);
-                    if (deposit != null)
+                    deposit.Status = DepositStatus.PAID;
+                    deposit.ModifiedDate = DateTime.UtcNow;
+                    _unitOfWork.Deposits.Update(deposit);
+
+                    // Update Order status to IN_PROGRESS after successful deposit
+                    var order = await _unitOfWork.Orders.GetByIdAsync(deposit.OrderId);
+                    if (order != null && order.Status == OrderStatus.AWAITING_DEPOSIT)
                     {
-                        deposit.Status = DepositStatus.PAID;
-                        deposit.ModifiedDate = DateTime.UtcNow;
-                        _unitOfWork.Deposits.Update(deposit);
-
-                        // Update Order status to IN_PROGRESS after successful deposit
-                        var order = await _unitOfWork.Orders.GetByIdAsync(deposit.OrderId);
-                        if (order != null && order.Status == OrderStatus.AWAITING_DEPOSIT)
-                        {
-                            order.Status = OrderStatus.IN_PROGRESS;
-                            order.ModifiedDate = DateTime.UtcNow;
-                            _unitOfWork.Orders.Update(order);
-                        }
-                    }
-                }
-
-                // Update invoice status
-                if (transaction.InvoiceId.HasValue)
-                {
-                    var invoice = await _unitOfWork.Invoices.GetByIdAsync(transaction.InvoiceId.Value);
-                    if (invoice != null)
-                    {
-                        invoice.Status = InvoiceStatus.PAID;
-                        invoice.ModifiedDate = DateTime.UtcNow;
-                        _unitOfWork.Invoices.Update(invoice);
-
-                        var order = await _unitOfWork.Orders.GetByIdAsync(invoice.OrderId);
-                        if (order != null)
-                        {
-                            order.Status = OrderStatus.PAY_SUCCESS;
-                            order.ModifiedDate = DateTime.UtcNow;
-                            _unitOfWork.Orders.Update(order);
-                        }
+                        order.Status = OrderStatus.IN_PROGRESS;
+                        order.ModifiedDate = DateTime.UtcNow;
+                        _unitOfWork.Orders.Update(order);
                     }
                 }
             }
-            else
+
+            // Update invoice status
+            if (transaction.InvoiceId.HasValue)
             {
-                transaction.Status = TransactionStatus.FAILED;
+                var invoice = await _unitOfWork.Invoices.GetByIdAsync(transaction.InvoiceId.Value);
+                if (invoice != null)
+                {
+                    invoice.Status = InvoiceStatus.PAID;
+                    invoice.ModifiedDate = DateTime.UtcNow;
+                    _unitOfWork.Invoices.Update(invoice);
+
+                    var order = await _unitOfWork.Orders.GetByIdAsync(invoice.OrderId);
+                    if (order != null)
+                    {
+                        order.Status = OrderStatus.PAY_SUCCESS;
+                        order.ModifiedDate = DateTime.UtcNow;
+                        _unitOfWork.Orders.Update(order);
+                    }
+                }
             }
 
             _unitOfWork.Transactions.Update(transaction);
             await _unitOfWork.SaveChangesAsync();
 
-            // Get order ID
-            Guid? orderId = null;
-            if (transaction.InvoiceId.HasValue)
-            {
-                var invoice = await _unitOfWork.Invoices.GetByIdAsync(transaction.InvoiceId.Value);
-                orderId = invoice?.OrderId;
-            }
-            else if (transaction.DepositId.HasValue)
-            {
-                var deposit = await _unitOfWork.Deposits.GetByIdAsync(transaction.DepositId.Value);
-                orderId = deposit?.OrderId;
-            }
-
             return new PaymentCallbackResponse
             {
-                Success = isSuccess,
-                ResponseCode = responseCode ?? "99",
-                TransactionCode = orderIdFromGateway,
+                Success = true,
+                ResponseCode = "00",
+                TransactionCode = extractedTransactionCode,
                 GatewayTransactionNo = gatewayTransactionNo,
                 Amount = amount,
                 BankCode = bankCode,
-                CardType = cardType,
-                OrderInfo = orderInfo,
+                OrderInfo = description,
                 PayDate = payDate,
-                OrderId = orderId,
+                OrderId = GetOrderId(transaction),
                 TransactionId = transaction.Id,
                 PaymentGateway = "SEPAY",
-                Message = isSuccess ? "Payment successful" : GetResponseMessage(responseCode)
+                Message = "Payment successful"
             };
+        }
+
+        private string ExtractTransactionCode(string content, string prefix)
+        {
+            if (string.IsNullOrEmpty(content))
+                return string.Empty;
+
+            // Format: PREFIX YYYYMMDDHHMMSS Optional Info
+            var parts = content.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            if (parts.Length < 2)
+                return string.Empty;
+
+            if (!parts[0].Equals(prefix, StringComparison.OrdinalIgnoreCase))
+                return string.Empty;
+
+            // Return full transaction code: PREFIX + TIMESTAMP
+            return parts[0] + parts[1];
+        }
+
+        private Guid? GetOrderId(Transaction transaction)
+        {
+            if (transaction.InvoiceId.HasValue)
+            {
+                var invoice = _unitOfWork.Invoices.GetQueryable()
+                    .FirstOrDefault(i => i.Id == transaction.InvoiceId.Value);
+                return invoice?.OrderId;
+            }
+            
+            if (transaction.DepositId.HasValue)
+            {
+                var deposit = _unitOfWork.Deposits.GetQueryable()
+                    .FirstOrDefault(d => d.Id == transaction.DepositId.Value);
+                return deposit?.OrderId;
+            }
+            
+            return null;
         }
 
         public async Task<PaymentCallbackResponse> ProcessReturnUrlAsync(Dictionary<string, string> returnData)
         {
-            var sepay = new SePayLibrary();
-            sepay.ParseResponseData(returnData);
+            // SEPay return URL chỉ dùng để check status, payment đã được xử lý qua webhook
+            var transactionCode = returnData.ContainsKey("transaction_code") 
+                ? returnData["transaction_code"] 
+                : string.Empty;
 
-            var orderIdFromGateway = sepay.GetResponseData("order_id");
-            var gatewayTransactionNo = sepay.GetResponseData("transaction_id");
-            var responseCode = sepay.GetResponseData("status");
-            var signature = returnData.ContainsKey("signature") ? returnData["signature"] : "";
-            var amount = decimal.Parse(sepay.GetResponseData("amount"));
-            var bankCode = sepay.GetResponseData("bank_code");
-            var cardType = sepay.GetResponseData("card_type");
-            var orderInfo = sepay.GetResponseData("order_info");
-            var payDateStr = sepay.GetResponseData("paid_at");
-
-            // Validate signature
-            var isValidSignature = sepay.ValidateSignature(signature, _sePaySettings.SecretKey, _sePaySettings.SignatureType);
-
-            DateTime payDate = DateTime.UtcNow;
-            if (!string.IsNullOrEmpty(payDateStr))
+            if (string.IsNullOrEmpty(transactionCode))
             {
-                DateTime.TryParse(payDateStr, out payDate);
+                return new PaymentCallbackResponse
+                {
+                    Success = false,
+                    Message = "Missing transaction code",
+                    ResponseCode = "99",
+                    PaymentGateway = "SEPAY"
+                };
             }
 
             var transaction = _unitOfWork.Transactions.GetQueryable()
-                .FirstOrDefault(t => t.VnpayTransactionCode == orderIdFromGateway);
+                .FirstOrDefault(t => t.VnpayTransactionCode == transactionCode);
 
-            Guid? orderId = null;
-            bool isSuccess = responseCode?.ToLower() == "success" || responseCode == "00";
-
-            // Update transaction if payment is successful and signature is valid
-            if (isValidSignature && isSuccess && transaction != null)
+            if (transaction == null)
             {
-                transaction.VnpayTransactionNo = gatewayTransactionNo;
-                transaction.BankCode = bankCode;
-                transaction.CardType = cardType;
-                transaction.ResponseCode = responseCode;
-                transaction.SecureHash = signature;
-                transaction.Status = TransactionStatus.SUCCESS;
-                transaction.TransactionTime = payDate;
-                transaction.ModifiedDate = DateTime.UtcNow;
-                _unitOfWork.Transactions.Update(transaction);
-
-                if (transaction.DepositId.HasValue)
+                return new PaymentCallbackResponse
                 {
-                    var deposit = await _unitOfWork.Deposits.GetByIdAsync(transaction.DepositId.Value);
-                    if (deposit != null && deposit.Status != DepositStatus.PAID)
-                    {
-                        deposit.Status = DepositStatus.PAID;
-                        deposit.ModifiedDate = DateTime.UtcNow;
-                        _unitOfWork.Deposits.Update(deposit);
-
-                        var order = await _unitOfWork.Orders.GetByIdAsync(deposit.OrderId);
-                        if (order != null && order.Status == OrderStatus.AWAITING_DEPOSIT)
-                        {
-                            order.Status = OrderStatus.IN_PROGRESS;
-                            order.ModifiedDate = DateTime.UtcNow;
-                            _unitOfWork.Orders.Update(order);
-                        }
-
-                        orderId = deposit.OrderId;
-                    }
-                }
-                else if (transaction.InvoiceId.HasValue)
-                {
-                    var invoice = await _unitOfWork.Invoices.GetByIdAsync(transaction.InvoiceId.Value);
-                    if (invoice != null && invoice.Status != InvoiceStatus.PAID)
-                    {
-                        invoice.Status = InvoiceStatus.PAID;
-                        invoice.ModifiedDate = DateTime.UtcNow;
-                        _unitOfWork.Invoices.Update(invoice);
-
-                        var order = await _unitOfWork.Orders.GetByIdAsync(invoice.OrderId);
-                        if (order != null)
-                        {
-                            order.Status = OrderStatus.PAY_SUCCESS;
-                            order.ModifiedDate = DateTime.UtcNow;
-                            _unitOfWork.Orders.Update(order);
-                        }
-
-                        orderId = invoice.OrderId;
-                    }
-                }
-
-                await _unitOfWork.SaveChangesAsync();
+                    Success = false,
+                    Message = "Transaction not found",
+                    ResponseCode = "01",
+                    TransactionCode = transactionCode,
+                    PaymentGateway = "SEPAY"
+                };
             }
-            else
-            {
-                // Just get orderId for response
-                if (transaction?.InvoiceId.HasValue == true)
-                {
-                    var invoice = _unitOfWork.Invoices.GetQueryable().FirstOrDefault(i => i.Id == transaction.InvoiceId.Value);
-                    orderId = invoice?.OrderId;
-                }
-                else if (transaction?.DepositId.HasValue == true)
-                {
-                    var deposit = _unitOfWork.Deposits.GetQueryable().FirstOrDefault(d => d.Id == transaction.DepositId.Value);
-                    orderId = deposit?.OrderId;
-                }
-            }
+
+            var isSuccess = transaction.Status == TransactionStatus.SUCCESS;
 
             return new PaymentCallbackResponse
             {
-                Success = isValidSignature && isSuccess,
-                ResponseCode = responseCode ?? "99",
-                TransactionCode = orderIdFromGateway,
-                GatewayTransactionNo = gatewayTransactionNo,
-                Amount = amount,
-                BankCode = bankCode,
-                CardType = cardType,
-                OrderInfo = orderInfo,
-                PayDate = payDate,
-                OrderId = orderId,
-                TransactionId = transaction?.Id,
+                Success = isSuccess,
+                ResponseCode = isSuccess ? "00" : transaction.ResponseCode ?? "99",
+                TransactionCode = transactionCode,
+                GatewayTransactionNo = transaction.VnpayTransactionNo ?? string.Empty,
+                Amount = transaction.Amount,
+                BankCode = transaction.BankCode ?? string.Empty,
+                OrderInfo = transaction.TransactionInfo ?? string.Empty,
+                PayDate = transaction.TransactionTime,
+                OrderId = GetOrderId(transaction),
+                TransactionId = transaction.Id,
                 PaymentGateway = "SEPAY",
-                Message = !isValidSignature ? "Invalid signature" : (isSuccess ? "Payment successful" : GetResponseMessage(responseCode))
+                Message = isSuccess ? "Payment successful" : "Payment pending or failed"
             };
         }
 

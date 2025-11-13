@@ -1,18 +1,20 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
 using System.Net;
-using System.Security.Cryptography;
 using System.Text;
+using System.Security.Cryptography;
 
 namespace EVMManagement.BLL.Helpers
 {
-
+    /// <summary>
+    /// SEPay Helper - Hỗ trợ tạo QR code và xử lý webhook từ SEPay
+    /// SEPay hoạt động bằng cách tạo QR VietQR, khách hàng quét mã và chuyển khoản
+    /// </summary>
     public class SePayLibrary
     {
-        private readonly SortedDictionary<string, string> _requestData = new SortedDictionary<string, string>();
-        private readonly SortedDictionary<string, string> _responseData = new SortedDictionary<string, string>();
+        private readonly Dictionary<string, string> _requestData = new Dictionary<string, string>();
+        private readonly Dictionary<string, string> _responseData = new Dictionary<string, string>();
 
         public void AddRequestData(string key, string value)
         {
@@ -35,34 +37,67 @@ namespace EVMManagement.BLL.Helpers
             return _responseData.TryGetValue(key, out var value) ? value : string.Empty;
         }
 
-        public string CreateRequestUrl(string baseUrl, string secretKey, string signatureType = "SHA256")
+        /// <summary>
+        /// Tạo URL QR code VietQR cho khách hàng quét và thanh toán
+        /// </summary>
+        public string CreateQRCodeUrl(
+            string qrApiUrl,
+            string accountNumber,
+            string accountName,
+            string bankCode,
+            decimal amount,
+            string transactionContent,
+            string template = "compact2")
         {
-            var queryString = BuildQueryString(_requestData);
-            var signData = BuildSignData(_requestData);
+            var encodedContent = WebUtility.UrlEncode(transactionContent);
+            var encodedAccountName = WebUtility.UrlEncode(accountName);
             
-            var signature = signatureType.ToUpper() == "MD5" 
-                ? CreateMD5Signature(secretKey, signData) 
-                : CreateSHA256Signature(secretKey, signData);
-
-            queryString += "&signature=" + signature;
-
-            return baseUrl + "?" + queryString;
+            return $"{qrApiUrl}/image/{bankCode}-{accountNumber}-{template}.png?amount={amount}&addInfo={encodedContent}&accountName={encodedAccountName}";
         }
 
-        public bool ValidateSignature(string inputSignature, string secretKey, string signatureType = "SHA256")
+        /// <summary>
+        /// Tạo nội dung chuyển khoản với mã giao dịch
+        /// </summary>
+        public string CreateTransactionContent(string prefix, string transactionCode, string orderInfo = "")
         {
-            var dataToSign = new SortedDictionary<string, string>(_responseData);
-            
-            dataToSign.Remove("signature");
-            dataToSign.Remove("sig");
-            
-            var signData = BuildSignData(dataToSign);
-            
-            var calculatedSignature = signatureType.ToUpper() == "MD5"
-                ? CreateMD5Signature(secretKey, signData)
-                : CreateSHA256Signature(secretKey, signData);
+            if (string.IsNullOrEmpty(orderInfo))
+            {
+                return $"{prefix} {transactionCode}";
+            }
+            return $"{prefix} {transactionCode} {orderInfo}";
+        }
 
-            return calculatedSignature.Equals(inputSignature, StringComparison.InvariantCultureIgnoreCase);
+        /// <summary>
+        /// Validate webhook signature từ SEPay (nếu có webhook secret)
+        /// </summary>
+        public bool ValidateWebhookSignature(string payload, string signature, string webhookSecret)
+        {
+            if (string.IsNullOrEmpty(webhookSecret))
+            {
+                return true; // Không yêu cầu validate nếu không có secret
+            }
+
+            var calculatedSignature = CreateHmacSHA256(payload, webhookSecret);
+            return calculatedSignature.Equals(signature, StringComparison.OrdinalIgnoreCase);
+        }
+
+        private string CreateHmacSHA256(string data, string key)
+        {
+            var encoding = new UTF8Encoding();
+            var keyBytes = encoding.GetBytes(key);
+            var dataBytes = encoding.GetBytes(data);
+
+            using (var hmac = new HMACSHA256(keyBytes))
+            {
+                var hashBytes = hmac.ComputeHash(dataBytes);
+                return BitConverter.ToString(hashBytes).Replace("-", "").ToLower();
+            }
+        }
+
+        public string CreateRequestUrl(string baseUrl)
+        {
+            var queryString = BuildQueryString(_requestData);
+            return baseUrl + "?" + queryString;
         }
 
         private string BuildQueryString(IDictionary<string, string> data)
@@ -82,47 +117,6 @@ namespace EVMManagement.BLL.Helpers
             }
 
             return query.ToString();
-        }
-
-        private string BuildSignData(IDictionary<string, string> data)
-        {
-            var signData = new StringBuilder();
-            foreach (var kvp in data.Where(x => !string.IsNullOrEmpty(x.Value)))
-            {
-                signData.Append(kvp.Key)
-                        .Append("=")
-                        .Append(kvp.Value)
-                        .Append("&");
-            }
-
-            if (signData.Length > 0)
-            {
-                signData.Remove(signData.Length - 1, 1);
-            }
-
-            return signData.ToString();
-        }
-
-        private string CreateSHA256Signature(string key, string data)
-        {
-            var keyBytes = Encoding.UTF8.GetBytes(key);
-            var dataBytes = Encoding.UTF8.GetBytes(data);
-
-            using (var hmac = new HMACSHA256(keyBytes))
-            {
-                var hashValue = hmac.ComputeHash(dataBytes);
-                return BitConverter.ToString(hashValue).Replace("-", "").ToLower();
-            }
-        }
-
-        private string CreateMD5Signature(string key, string data)
-        {
-            var signData = data + key;
-            using (var md5 = MD5.Create())
-            {
-                var hashBytes = md5.ComputeHash(Encoding.UTF8.GetBytes(signData));
-                return BitConverter.ToString(hashBytes).Replace("-", "").ToLower();
-            }
         }
 
         public void ParseResponseData(Dictionary<string, string> queryData)
