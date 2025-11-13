@@ -411,9 +411,9 @@ namespace EVMManagement.DAL.Data
                     .WithOne(v => v.HandoverRecord)
                     .HasForeignKey<HandoverRecord>(e => e.VehicleId)
                     .OnDelete(DeleteBehavior.Restrict);
-                entity.HasOne(e => e.TransportDetail)
-                    .WithOne(t => t.HandoverRecord)
-                    .HasForeignKey<HandoverRecord>(e => e.TransportDetailId)
+                entity.HasOne(e => e.Transport)
+                    .WithMany(t => t.HandoverRecords)
+                    .HasForeignKey(e => e.TransportId)
                     .OnDelete(DeleteBehavior.SetNull);
             });
 

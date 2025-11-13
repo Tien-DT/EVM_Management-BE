@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using AutoMapper;
+using EVMManagement.BLL.Helpers;
 using Microsoft.EntityFrameworkCore;
 using EVMManagement.BLL.DTOs.Request.Transport;
 using EVMManagement.BLL.DTOs.Response;
@@ -158,18 +159,23 @@ namespace EVMManagement.BLL.Services.Class
 
         public async Task<TransportResponseDto?> UpdateAsync(Guid id, TransportUpdateDto dto)
         {
-            var transport = await _unitOfWork.Transports.GetByIdAsync(id);
+            var transport = await BuildTransportQuery()
+                .FirstOrDefaultAsync(t => t.Id == id);
+
             if (transport == null) return null;
+
+            var previousStatus = transport.Status;
 
             if (dto.ProviderName != null) transport.ProviderName = dto.ProviderName;
             if (dto.PickupLocation != null) transport.PickupLocation = dto.PickupLocation;
             if (dto.DropoffLocation != null) transport.DropoffLocation = dto.DropoffLocation;
             if (dto.Status.HasValue) transport.Status = dto.Status.Value;
-            if (dto.ScheduledPickupAt.HasValue) transport.ScheduledPickupAt = dto.ScheduledPickupAt;
-            if (dto.DeliveredAt.HasValue) transport.DeliveredAt = dto.DeliveredAt;
+            if (dto.ScheduledPickupAt.HasValue) transport.ScheduledPickupAt = DateTimeHelper.ToUtc(dto.ScheduledPickupAt);
+            if (dto.DeliveredAt.HasValue) transport.DeliveredAt = DateTimeHelper.ToUtc(dto.DeliveredAt);
             if (dto.OrderId.HasValue)
             {
-                var orderExists = await _unitOfWork.Orders.AnyAsync(o => o.Id == dto.OrderId.Value && !o.IsDeleted);
+                var orderExists = await _unitOfWork.Orders.GetQueryable()
+                    .AnyAsync(o => o.Id == dto.OrderId.Value && !o.IsDeleted);
                 if (!orderExists)
                 {
                     throw new KeyNotFoundException("Không tìm thấy đơn hàng cần cập nhật");
@@ -177,10 +183,35 @@ namespace EVMManagement.BLL.Services.Class
                 transport.OrderId = dto.OrderId.Value;
             }
 
+            var isDeliveredState = dto.Status.HasValue
+                && dto.Status.Value == TransportStatus.DELIVERED
+                && previousStatus != TransportStatus.DELIVERED;
+
             transport.ModifiedDate = DateTime.UtcNow;
 
-            _unitOfWork.Transports.Update(transport);
-            await _unitOfWork.SaveChangesAsync();
+            if (!isDeliveredState)
+            {
+                _unitOfWork.Transports.Update(transport);
+                await _unitOfWork.SaveChangesAsync();
+                return await GetByIdAsync(id);
+            }
+
+            await _unitOfWork.BeginTransactionAsync();
+
+            try
+            {
+                await CreateHandoverRecordsForTransportAsync(transport);
+
+                _unitOfWork.Transports.Update(transport);
+
+                await _unitOfWork.SaveChangesAsync();
+                await _unitOfWork.CommitTransactionAsync();
+            }
+            catch
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                throw;
+            }
 
             return await GetByIdAsync(id);
         }
@@ -278,17 +309,116 @@ namespace EVMManagement.BLL.Services.Class
             return BuildTransportQuery();
         }
 
+        private async Task CreateHandoverRecordsForTransportAsync(Transport transport)
+        {
+            if (!transport.OrderId.HasValue)
+            {
+                throw new InvalidOperationException("Vận chuyển chưa được gán đơn hàng nên không thể chuyển sang trạng thái DELIVERED");
+            }
+
+            var details = transport.TransportDetails
+                .Where(td => !td.IsDeleted)
+                .ToList();
+
+            if (details.Count == 0)
+            {
+                throw new InvalidOperationException("Vận chuyển chưa có xe để bàn giao");
+            }
+
+            transport.HandoverRecords ??= new List<HandoverRecord>();
+
+            if (transport.HandoverRecords.Any(hr => !hr.IsDeleted))
+            {
+                throw new InvalidOperationException("Đã tồn tại biên bản bàn giao cho chuyến vận chuyển này");
+            }
+
+            if (details.Any(td => td.Vehicle == null))
+            {
+                throw new InvalidOperationException("Thông tin xe không hợp lệ, không thể tạo biên bản bàn giao");
+            }
+
+            var order = transport.Order;
+            if (order == null)
+            {
+                order = await _unitOfWork.Orders.GetQueryable()
+                    .Include(o => o.HandoverRecord)
+                    .FirstOrDefaultAsync(o => o.Id == transport.OrderId.Value);
+            }
+
+            if (order == null)
+            {
+                throw new InvalidOperationException("Không tìm thấy đơn hàng gắn với vận chuyển");
+            }
+
+            if (order.HandoverRecord != null && !order.HandoverRecord.IsDeleted)
+            {
+                throw new InvalidOperationException("Đơn hàng đã có biên bản bàn giao");
+            }
+
+            transport.Order = order;
+
+            var vehicles = details
+                .Where(td => td.Vehicle != null)
+                .Select(td => td.Vehicle!)
+                .GroupBy(v => v.Id)
+                .Select(g => g.First())
+                .ToList();
+
+            var primaryDetail = details
+                .OrderBy(td => td.CreatedDate)
+                .First();
+
+            if (primaryDetail.VehicleId == Guid.Empty)
+            {
+                throw new InvalidOperationException("Xe trong chuyến vận chuyển không hợp lệ");
+            }
+
+            var handoverDate = transport.DeliveredAt ?? DateTime.UtcNow;
+            var normalizedHandoverDate = DateTimeHelper.ToUtc(handoverDate);
+            transport.DeliveredAt = normalizedHandoverDate;
+
+            var handoverRecord = new HandoverRecord
+            {
+                OrderId = transport.OrderId.Value,
+                VehicleId = primaryDetail.VehicleId,
+                TransportId = transport.Id,
+                HandoverDate = normalizedHandoverDate,
+                IsAccepted = true,
+                Notes = "Tạo tự động khi vận chuyển hoàn tất"
+            };
+
+            await _unitOfWork.HandoverRecords.AddAsync(handoverRecord);
+            order.HandoverRecord = handoverRecord;
+            transport.HandoverRecords.Add(handoverRecord);
+
+            foreach (var vehicle in vehicles)
+            {
+                vehicle.Status = VehicleStatus.SOLD;
+                vehicle.ModifiedDate = DateTime.UtcNow;
+            }
+
+            if (vehicles.Count > 0)
+            {
+                _unitOfWork.Vehicles.UpdateRange(vehicles);
+            }
+
+            order.Status = OrderStatus.COMPLETED;
+            order.ModifiedDate = DateTime.UtcNow;
+            _unitOfWork.Orders.Update(order);
+        }
+
         private IQueryable<Transport> BuildTransportQuery()
         {
             return _unitOfWork.Transports.GetQueryable()
                 .Include(t => t.Order)
                     .ThenInclude(o => o!.Dealer)
+                .Include(t => t.Order)
+                    .ThenInclude(o => o!.HandoverRecord)
+                .Include(t => t.HandoverRecords)
                 .Include(t => t.TransportDetails)
                     .ThenInclude(td => td.Vehicle)
                         .ThenInclude(v => v.VehicleVariant)
                             .ThenInclude(vv => vv.VehicleModel)
-                .Include(t => t.TransportDetails)
-                    .ThenInclude(td => td.HandoverRecord)
                 .Where(t => !t.IsDeleted);
         }
 

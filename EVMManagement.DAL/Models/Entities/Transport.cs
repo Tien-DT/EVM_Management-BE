@@ -28,5 +28,6 @@ namespace EVMManagement.DAL.Models.Entities
         public virtual Order? Order { get; set; }
         public virtual ICollection<TransportDetail> TransportDetails { get; set; } = new HashSet<TransportDetail>();
         public virtual ICollection<Report> Reports { get; set; } = new HashSet<Report>();
+        public virtual ICollection<HandoverRecord> HandoverRecords { get; set; } = new HashSet<HandoverRecord>();
     }
 }

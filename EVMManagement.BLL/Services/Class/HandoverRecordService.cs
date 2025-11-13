@@ -34,7 +34,7 @@ namespace EVMManagement.BLL.Services.Class
             {
                 OrderId = dto.OrderId,
                 VehicleId = dto.VehicleId,
-                TransportDetailId = dto.TransportDetailId,
+                TransportId = dto.TransportId,
                 Notes = dto.Notes,
                 FileUrl = dto.FileUrl,
                 HandoverDate = DateTimeHelper.ToUtc(dto.HandoverDate)
@@ -75,7 +75,7 @@ namespace EVMManagement.BLL.Services.Class
             var entity = await _unitOfWork.HandoverRecords.GetByIdAsync(id);
             if (entity == null) return null;
 
-            if (dto.TransportDetailId.HasValue) entity.TransportDetailId = dto.TransportDetailId.Value;
+            if (dto.TransportId.HasValue) entity.TransportId = dto.TransportId.Value;
             if (dto.Notes != null) entity.Notes = dto.Notes;
             if (dto.FileUrl != null) entity.FileUrl = dto.FileUrl;
             if (dto.IsAccepted.HasValue) entity.IsAccepted = dto.IsAccepted.Value;
@@ -198,8 +198,8 @@ namespace EVMManagement.BLL.Services.Class
             if (filter.VehicleId.HasValue)
                 query = query.Where(x => x.VehicleId == filter.VehicleId.Value);
 
-            if (filter.TransportDetailId.HasValue)
-                query = query.Where(x => x.TransportDetailId == filter.TransportDetailId.Value);
+            if (filter.TransportId.HasValue)
+                query = query.Where(x => x.TransportId == filter.TransportId.Value);
 
             if (filter.IsAccepted.HasValue)
                 query = query.Where(x => x.IsAccepted == filter.IsAccepted.Value);
@@ -223,8 +223,8 @@ namespace EVMManagement.BLL.Services.Class
                 .Include(h => h.Vehicle)
                     .ThenInclude(v => v.VehicleVariant)
                         .ThenInclude(vv => vv.VehicleModel)
-                .Include(h => h.TransportDetail!)
-                    .ThenInclude(td => td.Transport)
+                .Include(h => h.Transport)
+                    .ThenInclude(t => t!.Order)
                 .Where(h => !h.IsDeleted);
         }
     }

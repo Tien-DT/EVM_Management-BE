@@ -13,6 +13,5 @@ namespace EVMManagement.DAL.Models.Entities
 
         public virtual Transport Transport { get; set; } = null!;
         public virtual Vehicle Vehicle { get; set; } = null!;
-        public virtual HandoverRecord? HandoverRecord { get; set; }
     }
 }

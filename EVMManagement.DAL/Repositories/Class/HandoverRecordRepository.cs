@@ -16,7 +16,7 @@ namespace EVMManagement.DAL.Repositories.Class
             return _dbSet
                 .Include(x => x.Order)
                 .Include(x => x.Vehicle)
-                .Include(x => x.TransportDetail);
+                .Include(x => x.Transport);
                 
         }
 

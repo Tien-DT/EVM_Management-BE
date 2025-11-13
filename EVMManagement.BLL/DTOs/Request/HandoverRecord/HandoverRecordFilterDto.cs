@@ -6,7 +6,7 @@ namespace EVMManagement.BLL.DTOs.Request.HandoverRecord
     {
         public Guid? OrderId { get; set; }
         public Guid? VehicleId { get; set; }
-        public Guid? TransportDetailId { get; set; }
+        public Guid? TransportId { get; set; }
         public bool? IsAccepted { get; set; }
         public int PageNumber { get; set; } = 1;
         public int PageSize { get; set; } = 10;
