@@ -293,6 +293,7 @@ namespace EVMManagement.BLL.Services.Class
         public async Task<TransportResponseDto> ConfirmHandoverAsync(Guid transportId)
         {
             var transport = await _unitOfWork.Transports.GetQueryable()
+                .Include(t => t.Order)
                 .Include(t => t.HandoverRecords.Where(hr => !hr.IsDeleted))
                 .FirstOrDefaultAsync(t => t.Id == transportId && !t.IsDeleted);
 
@@ -333,6 +334,24 @@ namespace EVMManagement.BLL.Services.Class
                 transport.ModifiedDate = DateTime.UtcNow;
                 _unitOfWork.Transports.Update(transport);
 
+                if (transport.OrderId.HasValue)
+                {
+                    var order = transport.Order;
+                    if (order == null)
+                    {
+                        order = await _unitOfWork.Orders.GetByIdAsync(transport.OrderId.Value);
+                    }
+
+                    if (order == null)
+                    {
+                        throw new InvalidOperationException("Kh�ng t�m th?y don h�ng li�n quan v?i v?n chuy?n");
+                    }
+
+                    order.Status = OrderStatus.HANDOVER_SUCCESS;
+                    order.ModifiedDate = DateTime.UtcNow;
+                    _unitOfWork.Orders.Update(order);
+                }
+
                 await _unitOfWork.SaveChangesAsync();
                 await _unitOfWork.CommitTransactionAsync();
             }
@@ -368,6 +387,116 @@ namespace EVMManagement.BLL.Services.Class
         public IQueryable<Transport> GetQueryableForOData()
         {
             return BuildTransportQuery();
+        }
+
+        public async Task<TransportResponseDto> AddTransportToWarehouseAsync(AddTransportToWarehouseDto dto)
+        {
+            var transport = await _unitOfWork.Transports.GetQueryable()
+                .Include(t => t.Order)
+                .Include(t => t.TransportDetails)
+                    .ThenInclude(td => td.Vehicle)
+                        .ThenInclude(v => v.Warehouse)
+                .FirstOrDefaultAsync(t => t.Id == dto.TransportId && !t.IsDeleted);
+
+            if (transport == null)
+            {
+                throw new KeyNotFoundException($"Không tìm thấy vận chuyển với mã {dto.TransportId}");
+            }
+
+            if (transport.Status == TransportStatus.END)
+            {
+                throw new InvalidOperationException("Vận chuyển đã kết thúc, không thể thêm xe vào kho");
+            }
+
+            if (transport.Status != TransportStatus.DELIVERED)
+            {
+                throw new InvalidOperationException($"Vận chuyển phải ở trạng thái DELIVERED để thêm xe vào kho (hiện tại: {transport.Status})");
+            }
+
+            var dealer = await _unitOfWork.Dealers.GetQueryable()
+                .Include(d => d.Warehouses.Where(w => !w.IsDeleted))
+                .FirstOrDefaultAsync(d => d.Id == dto.DealerId && !d.IsDeleted);
+
+            if (dealer == null)
+            {
+                throw new KeyNotFoundException($"Không tìm thấy đại lý với mã {dto.DealerId}");
+            }
+
+            if (!dealer.IsActive)
+            {
+                throw new InvalidOperationException("Đại lý không hoạt động, không thể thêm xe vào kho");
+            }
+
+            var dealerWarehouse = dealer.Warehouses.FirstOrDefault();
+            if (dealerWarehouse == null)
+            {
+                throw new InvalidOperationException($"Đại lý {dealer.Name} chưa có kho hàng");
+            }
+
+            var transportDetails = transport.TransportDetails
+                .Where(td => !td.IsDeleted && td.Vehicle != null)
+                .ToList();
+
+            if (transportDetails.Count == 0)
+            {
+                throw new InvalidOperationException("Vận chuyển không có xe nào để thêm vào kho");
+            }
+
+            Order? order = null;
+            if (transport.OrderId.HasValue)
+            {
+                order = transport.Order ?? await _unitOfWork.Orders.GetQueryable()
+                    .FirstOrDefaultAsync(o => o.Id == transport.OrderId.Value && !o.IsDeleted);
+
+                if (order == null)
+                {
+                    throw new KeyNotFoundException($"Không tìm thấy đơn hàng với mã {transport.OrderId.Value}");
+                }
+            }
+
+            await _unitOfWork.BeginTransactionAsync();
+
+            try
+            {
+                foreach (var detail in transportDetails)
+                {
+                    var vehicle = detail.Vehicle;
+                    if (vehicle == null) continue;
+
+                    vehicle.WarehouseId = dealerWarehouse.Id;
+                    vehicle.Status = VehicleStatus.IN_STOCK;
+                    vehicle.ModifiedDate = DateTime.UtcNow;
+
+                    _unitOfWork.Vehicles.Update(vehicle);
+                }
+
+                transport.Status = TransportStatus.END;
+                transport.ModifiedDate = DateTime.UtcNow;
+                _unitOfWork.Transports.Update(transport);
+
+                if (order != null)
+                {
+                    order.Status = OrderStatus.COMPLETED;
+                    order.ModifiedDate = DateTime.UtcNow;
+                    _unitOfWork.Orders.Update(order);
+                }
+
+                await _unitOfWork.SaveChangesAsync();
+                await _unitOfWork.CommitTransactionAsync();
+            }
+            catch (Exception ex)
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                throw new InvalidOperationException($"Xảy ra lỗi khi thêm xe vào kho: {ex.Message}", ex);
+            }
+
+            var result = await GetByIdAsync(transport.Id);
+            if (result == null)
+            {
+                throw new InvalidOperationException("Không thể truy xuất thông tin vận chuyển sau khi thêm xe vào kho");
+            }
+
+            return result;
         }
 
         private async Task CreateHandoverRecordsForTransportAsync(Transport transport)

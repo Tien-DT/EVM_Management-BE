@@ -7,6 +7,7 @@ namespace EVMManagement.DAL.Models.Enums
         DELIVERED,
         FAILED,
         COMPLETED,
-        CANCELED
+        CANCELED,
+        END
     }
 }
