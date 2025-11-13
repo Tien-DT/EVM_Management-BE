@@ -51,8 +51,15 @@ namespace EVMManagement.API.Controllers
                 return BadRequest(ApiResponse<Contract>.CreateFail("Dữ liệu không hợp lệ", errors, 400));
             }
 
-            var created = await _services.ContractService.CreateContractAsync(dto);
-            return CreatedAtAction(nameof(GetById), new { id = created.Id }, ApiResponse<Contract>.CreateSuccess(created));
+            try
+            {
+                var created = await _services.ContractService.CreateContractAsync(dto);
+                return CreatedAtAction(nameof(GetById), new { id = created.Id }, ApiResponse<Contract>.CreateSuccess(created));
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ApiResponse<Contract>.CreateFail(ex.Message, null, 400));
+            }
         }
 
         [HttpPut("{id}")]
