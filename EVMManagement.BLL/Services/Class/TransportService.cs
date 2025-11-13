@@ -290,6 +290,67 @@ namespace EVMManagement.BLL.Services.Class
             return result;
         }
 
+        public async Task<TransportResponseDto> ConfirmHandoverAsync(Guid transportId)
+        {
+            var transport = await _unitOfWork.Transports.GetQueryable()
+                .Include(t => t.HandoverRecords.Where(hr => !hr.IsDeleted))
+                .FirstOrDefaultAsync(t => t.Id == transportId && !t.IsDeleted);
+
+            if (transport == null)
+            {
+                throw new KeyNotFoundException("Không tìm thấy vận chuyển với mã yêu cầu");
+            }
+
+            if (transport.Status != TransportStatus.DELIVERED)
+            {
+                throw new InvalidOperationException("Chỉ xác nhận bàn giao cho vận chuyển đang ở trạng thái DELIVERED");
+            }
+
+            var handoverRecord = transport.HandoverRecords.FirstOrDefault();
+            if (handoverRecord == null)
+            {
+                throw new InvalidOperationException("Chưa có biên bản bàn giao cho vận chuyển này");
+            }
+
+            if (handoverRecord.IsAccepted)
+            {
+                var current = await GetByIdAsync(transportId);
+                if (current == null)
+                {
+                    throw new InvalidOperationException("Không thể truy xuất thông tin vận chuyển sau khi xác nhận bàn giao");
+                }
+                return current;
+            }
+
+            await _unitOfWork.BeginTransactionAsync();
+            try
+            {
+                handoverRecord.IsAccepted = true;
+                handoverRecord.ModifiedDate = DateTime.UtcNow;
+                _unitOfWork.HandoverRecords.Update(handoverRecord);
+
+                transport.Status = TransportStatus.COMPLETED;
+                transport.ModifiedDate = DateTime.UtcNow;
+                _unitOfWork.Transports.Update(transport);
+
+                await _unitOfWork.SaveChangesAsync();
+                await _unitOfWork.CommitTransactionAsync();
+            }
+            catch (Exception ex)
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                throw new InvalidOperationException($"Xảy ra lỗi khi xác nhận bàn giao: {ex.Message}", ex);
+            }
+
+            var result = await GetByIdAsync(transportId);
+            if (result == null)
+            {
+                throw new InvalidOperationException("Không thể truy xuất thông tin vận chuyển sau khi xác nhận bàn giao");
+            }
+
+            return result;
+        }
+
         public async Task<bool> DeleteAsync(Guid id)
         {
             var transport = await _unitOfWork.Transports.GetByIdAsync(id);
@@ -383,7 +444,7 @@ namespace EVMManagement.BLL.Services.Class
                 VehicleId = primaryDetail.VehicleId,
                 TransportId = transport.Id,
                 HandoverDate = normalizedHandoverDate,
-                IsAccepted = true,
+                IsAccepted = false,
                 Notes = "Tạo tự động khi vận chuyển hoàn tất"
             };
 
