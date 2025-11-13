@@ -466,6 +466,20 @@ namespace EVMManagement.BLL.Services.Class
             return await GetByIdAsync(id);
         }
 
+        public async Task<TestDriveBookingResponseDto?> UpdateStatusAsync(Guid id, TestDriveBookingUpdateStatusDto dto)
+        {
+            var entity = await _unitOfWork.TestDriveBookings.GetByIdAsync(id);
+            if (entity == null) return null;
+
+            entity.Status = dto.Status;
+            entity.ModifiedDate = DateTime.UtcNow;
+
+            _unitOfWork.TestDriveBookings.Update(entity);
+            await _unitOfWork.SaveChangesAsync();
+
+            return await GetByIdAsync(id);
+        }
+
         public async Task<TestDriveBookingResponseDto?> UpdateIsDeletedAsync(Guid id, bool isDeleted)
         {
             var entity = await _unitOfWork.TestDriveBookings.GetByIdAsync(id);
