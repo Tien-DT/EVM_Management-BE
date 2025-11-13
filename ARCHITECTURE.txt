@@ -1,0 +1,52 @@
+EVM Management System - Architecture Overview
+==============================================
+
+System Architecture
+--------------------
+The system follows a layered architecture pattern:
+
+1. API Layer (EVMManagement.API)
+   - Controllers handle HTTP requests
+   - Authentication and authorization
+   - Request/Response handling
+   - OData support
+
+2. Business Logic Layer (EVMManagement.BLL)
+   - Service implementations
+   - Business rules and validation
+   - DTOs for data transfer
+   - Mapping between layers
+
+3. Data Access Layer (EVMManagement.DAL)
+   - Entity models
+   - Repository pattern
+   - Unit of Work pattern
+   - Database context
+
+Key Design Patterns
+-------------------
+- Repository Pattern: Data access abstraction
+- Unit of Work: Transaction management
+- Dependency Injection: Loose coupling
+- DTO Pattern: Data transfer objects
+
+Technology Stack
+----------------
+- .NET 8.0
+- Entity Framework Core
+- OData
+- JWT Authentication
+- RESTful API
+
+Data Flow
+---------
+Client Request -> Controller -> Service -> Repository -> Database
+Response <- Controller <- Service <- Repository <- Database
+
+Notes
+-----
+- Clean separation of concerns
+- Scalable architecture
+- Maintainable codebase
+- Testable components
+
