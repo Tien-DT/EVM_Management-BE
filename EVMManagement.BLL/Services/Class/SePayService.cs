@@ -15,18 +15,18 @@ using Microsoft.Extensions.Options;
 
 namespace EVMManagement.BLL.Services.Class
 {
-    public class VnPayService : IVnPayService
+    public class SePayService : ISePayService
     {
         private readonly IUnitOfWork _unitOfWork;
-        private readonly VnPaySettings _vnPaySettings;
+        private readonly SePaySettings _sePaySettings;
 
-        public VnPayService(IUnitOfWork unitOfWork, IOptions<VnPaySettings> vnPaySettings)
+        public SePayService(IUnitOfWork unitOfWork, IOptions<SePaySettings> sePaySettings)
         {
             _unitOfWork = unitOfWork;
-            _vnPaySettings = vnPaySettings.Value;
+            _sePaySettings = sePaySettings.Value;
         }
 
-        public async Task<VnPayPaymentResponse> CreatePaymentUrlAsync(VnPayPaymentRequest request, string ipAddress)
+        public async Task<PaymentResponse> CreatePaymentUrlAsync(PaymentRequest request, string ipAddress)
         {
             var order = await _unitOfWork.Orders.GetByIdAsync(request.OrderId);
             if (order == null)
@@ -40,52 +40,59 @@ namespace EVMManagement.BLL.Services.Class
                 throw new Exception($"Invalid payment amount: {request.Amount}. Amount must be greater than 0.");
             }
 
-            // VNPay minimum amount is 10,000 VND
-            const decimal VNPAY_MIN_AMOUNT = 10000;
-            if (request.Amount < VNPAY_MIN_AMOUNT)
+            // SEPay minimum amount is 10,000 VND
+            const decimal SEPAY_MIN_AMOUNT = 10000;
+            if (request.Amount < SEPAY_MIN_AMOUNT)
             {
-                throw new Exception($"Payment amount ({request.Amount:N0} VND) is less than VNPay minimum ({VNPAY_MIN_AMOUNT:N0} VND). Order TotalAmount: {order.TotalAmount:N0}, FinalAmount: {order.FinalAmount:N0}");
+                throw new Exception($"Payment amount ({request.Amount:N0} VND) is less than SEPay minimum ({SEPAY_MIN_AMOUNT:N0} VND).");
             }
 
             var createDate = DateTime.UtcNow;
             var vnTimeZone = TimeZoneInfo.FindSystemTimeZoneById("SE Asia Standard Time");
             var createDateVn = TimeZoneInfo.ConvertTimeFromUtc(createDate, vnTimeZone);
-            var expireDateVn = createDateVn.AddMinutes(15);
+            
+            // Transaction code format: ORD{orderId_8chars}{timestamp}
             var transactionCode = $"ORD{request.OrderId.ToString("N")[..8]}{createDateVn:yyyyMMddHHmmss}";
 
-            var vnpay = new VnPayLibrary();
-            vnpay.AddRequestData("vnp_Version", _vnPaySettings.Version);
-            vnpay.AddRequestData("vnp_Command", _vnPaySettings.Command);
-            vnpay.AddRequestData("vnp_TmnCode", _vnPaySettings.TmnCode);
-            vnpay.AddRequestData("vnp_Amount", ((long)(request.Amount * 100)).ToString());
-            vnpay.AddRequestData("vnp_CreateDate", createDateVn.ToString("yyyyMMddHHmmss"));
-            vnpay.AddRequestData("vnp_CurrCode", _vnPaySettings.CurrCode);
-            vnpay.AddRequestData("vnp_IpAddr", ipAddress);
-            vnpay.AddRequestData("vnp_Locale", request.Locale ?? _vnPaySettings.Locale);
-            vnpay.AddRequestData("vnp_OrderInfo", request.OrderInfo);
-            vnpay.AddRequestData("vnp_OrderType", "other");
-            vnpay.AddRequestData("vnp_ReturnUrl", _vnPaySettings.ReturnUrl);
-            vnpay.AddRequestData("vnp_TxnRef", transactionCode);
-            vnpay.AddRequestData("vnp_ExpireDate", expireDateVn.ToString("yyyyMMddHHmmss"));
+            var sepay = new SePayLibrary();
+            
+            // Add required parameters for SEPay
+            sepay.AddRequestData("merchant_code", _sePaySettings.MerchantCode);
+            sepay.AddRequestData("order_id", transactionCode);
+            sepay.AddRequestData("amount", ((long)request.Amount).ToString());
+            sepay.AddRequestData("currency", _sePaySettings.Currency);
+            sepay.AddRequestData("order_info", request.OrderInfo);
+            sepay.AddRequestData("return_url", _sePaySettings.ReturnUrl);
+            sepay.AddRequestData("callback_url", _sePaySettings.CallbackUrl);
+            sepay.AddRequestData("locale", request.Locale ?? _sePaySettings.Locale);
+            sepay.AddRequestData("created_at", createDateVn.ToString("yyyy-MM-dd HH:mm:ss"));
+            sepay.AddRequestData("version", _sePaySettings.Version);
 
+            // Optional bank code
             if (!string.IsNullOrEmpty(request.BankCode))
             {
-                vnpay.AddRequestData("vnp_BankCode", request.BankCode);
+                sepay.AddRequestData("bank_code", request.BankCode);
             }
 
-            var paymentUrl = vnpay.CreateRequestUrl(_vnPaySettings.PaymentUrl, _vnPaySettings.HashSecret);
+            var paymentUrl = sepay.CreateRequestUrl(
+                _sePaySettings.PaymentUrl, 
+                _sePaySettings.SecretKey,
+                _sePaySettings.SignatureType
+            );
 
+            // Create transaction record
             var transaction = new Transaction
             {
                 Amount = request.Amount,
                 Currency = "VND",
                 Status = TransactionStatus.PENDING,
                 TransactionTime = createDate,
-                PaymentGateway = "VNPAY",
-                VnpayTransactionCode = transactionCode,
+                PaymentGateway = "SEPAY",
+                VnpayTransactionCode = transactionCode, // Reuse this field for SEPay transaction code
                 TransactionInfo = request.OrderInfo
             };
 
+            // Handle deposit or invoice
             if (request.IsDeposit)
             {
                 var deposit = new Deposit
@@ -120,7 +127,7 @@ namespace EVMManagement.BLL.Services.Class
             await _unitOfWork.Transactions.AddAsync(transaction);
             await _unitOfWork.SaveChangesAsync();
 
-            return new VnPayPaymentResponse
+            return new PaymentResponse
             {
                 PaymentUrl = paymentUrl,
                 TransactionCode = transactionCode,
@@ -128,76 +135,77 @@ namespace EVMManagement.BLL.Services.Class
                 Amount = request.Amount,
                 OrderInfo = request.OrderInfo,
                 CreatedDate = createDate,
-                PaymentGateway = "VNPAY"
+                PaymentGateway = "SEPAY"
             };
         }
 
-        public async Task<VnPayCallbackResponse> ProcessCallbackAsync(Dictionary<string, string> vnpayData)
+        public async Task<PaymentCallbackResponse> ProcessCallbackAsync(Dictionary<string, string> callbackData)
         {
-            var vnpay = new VnPayLibrary();
-            foreach (var (key, value) in vnpayData)
-            {
-                if (!string.IsNullOrEmpty(value) && key.StartsWith("vnp_"))
-                {
-                    vnpay.AddResponseData(key, value);
-                }
-            }
+            var sepay = new SePayLibrary();
+            sepay.ParseResponseData(callbackData);
 
-            var vnpayTxnRef = vnpay.GetResponseData("vnp_TxnRef");
-            var vnpayTransactionNo = vnpay.GetResponseData("vnp_TransactionNo");
-            var vnpayResponseCode = vnpay.GetResponseData("vnp_ResponseCode");
-            var vnpaySecureHash = vnpayData.ContainsKey("vnp_SecureHash") ? vnpayData["vnp_SecureHash"] : "";
-            var vnpayAmount = Convert.ToInt64(vnpay.GetResponseData("vnp_Amount")) / 100;
-            var vnpayBankCode = vnpay.GetResponseData("vnp_BankCode");
-            var vnpayCardType = vnpay.GetResponseData("vnp_CardType");
-            var vnpayOrderInfo = vnpay.GetResponseData("vnp_OrderInfo");
-            var vnpayPayDate = vnpay.GetResponseData("vnp_PayDate");
+            var orderIdFromGateway = sepay.GetResponseData("order_id");
+            var gatewayTransactionNo = sepay.GetResponseData("transaction_id");
+            var responseCode = sepay.GetResponseData("status");
+            var signature = callbackData.ContainsKey("signature") ? callbackData["signature"] : "";
+            var amount = decimal.Parse(sepay.GetResponseData("amount"));
+            var bankCode = sepay.GetResponseData("bank_code");
+            var cardType = sepay.GetResponseData("card_type");
+            var orderInfo = sepay.GetResponseData("order_info");
+            var payDateStr = sepay.GetResponseData("paid_at");
 
-            var checkSignature = vnpay.ValidateSignature(vnpaySecureHash, _vnPaySettings.HashSecret);
-            if (!checkSignature)
+            // Validate signature
+            var isValidSignature = sepay.ValidateSignature(signature, _sePaySettings.SecretKey, _sePaySettings.SignatureType);
+            if (!isValidSignature)
             {
-                return new VnPayCallbackResponse
+                return new PaymentCallbackResponse
                 {
                     Success = false,
                     Message = "Invalid signature",
                     ResponseCode = "97",
-                    PaymentGateway = "VNPAY"
+                    PaymentGateway = "SEPAY"
                 };
             }
 
+            // Find transaction
             var transaction = _unitOfWork.Transactions.GetQueryable()
-                .FirstOrDefault(t => t.VnpayTransactionCode == vnpayTxnRef);
+                .FirstOrDefault(t => t.VnpayTransactionCode == orderIdFromGateway);
 
             if (transaction == null)
             {
-                return new VnPayCallbackResponse
+                return new PaymentCallbackResponse
                 {
                     Success = false,
                     Message = "Transaction not found",
                     ResponseCode = "01",
-                    TransactionCode = vnpayTxnRef,
-                    PaymentGateway = "VNPAY"
+                    TransactionCode = orderIdFromGateway,
+                    PaymentGateway = "SEPAY"
                 };
             }
 
-            transaction.VnpayTransactionNo = vnpayTransactionNo;
-            transaction.BankCode = vnpayBankCode;
-            transaction.CardType = vnpayCardType;
-            transaction.ResponseCode = vnpayResponseCode;
-            transaction.SecureHash = vnpaySecureHash;
+            // Update transaction
+            transaction.VnpayTransactionNo = gatewayTransactionNo; // Reuse field for SEPay transaction no
+            transaction.BankCode = bankCode;
+            transaction.CardType = cardType;
+            transaction.ResponseCode = responseCode;
+            transaction.SecureHash = signature;
             transaction.ModifiedDate = DateTime.UtcNow;
 
             DateTime payDate = DateTime.UtcNow;
-            if (!string.IsNullOrEmpty(vnpayPayDate) && vnpayPayDate.Length >= 14)
+            if (!string.IsNullOrEmpty(payDateStr))
             {
-                DateTime.TryParseExact(vnpayPayDate, "yyyyMMddHHmmss", CultureInfo.InvariantCulture, DateTimeStyles.None, out payDate);
+                DateTime.TryParse(payDateStr, out payDate);
             }
 
-            if (vnpayResponseCode == "00")
+            // Check if payment is successful (SEPay uses "success" or "00" for success)
+            bool isSuccess = responseCode?.ToLower() == "success" || responseCode == "00";
+
+            if (isSuccess)
             {
                 transaction.Status = TransactionStatus.SUCCESS;
                 transaction.TransactionTime = payDate;
 
+                // Update deposit status
                 if (transaction.DepositId.HasValue)
                 {
                     var deposit = await _unitOfWork.Deposits.GetByIdAsync(transaction.DepositId.Value);
@@ -218,6 +226,7 @@ namespace EVMManagement.BLL.Services.Class
                     }
                 }
 
+                // Update invoice status
                 if (transaction.InvoiceId.HasValue)
                 {
                     var invoice = await _unitOfWork.Invoices.GetByIdAsync(transaction.InvoiceId.Value);
@@ -245,6 +254,7 @@ namespace EVMManagement.BLL.Services.Class
             _unitOfWork.Transactions.Update(transaction);
             await _unitOfWork.SaveChangesAsync();
 
+            // Get order ID
             Guid? orderId = null;
             if (transaction.InvoiceId.HasValue)
             {
@@ -257,66 +267,62 @@ namespace EVMManagement.BLL.Services.Class
                 orderId = deposit?.OrderId;
             }
 
-            return new VnPayCallbackResponse
+            return new PaymentCallbackResponse
             {
-                Success = vnpayResponseCode == "00",
-                ResponseCode = vnpayResponseCode,
-                TransactionCode = vnpayTxnRef,
-                VnpayTransactionNo = vnpayTransactionNo,
-                Amount = vnpayAmount,
-                BankCode = vnpayBankCode,
-                CardType = vnpayCardType,
-                OrderInfo = vnpayOrderInfo,
+                Success = isSuccess,
+                ResponseCode = responseCode ?? "99",
+                TransactionCode = orderIdFromGateway,
+                GatewayTransactionNo = gatewayTransactionNo,
+                Amount = amount,
+                BankCode = bankCode,
+                CardType = cardType,
+                OrderInfo = orderInfo,
                 PayDate = payDate,
                 OrderId = orderId,
                 TransactionId = transaction.Id,
-                PaymentGateway = "VNPAY",
-                Message = vnpayResponseCode == "00" ? "Payment successful" : GetResponseMessage(vnpayResponseCode)
+                PaymentGateway = "SEPAY",
+                Message = isSuccess ? "Payment successful" : GetResponseMessage(responseCode)
             };
         }
 
-        public async Task<VnPayCallbackResponse> ProcessReturnUrlAsync(Dictionary<string, string> vnpayData)
+        public async Task<PaymentCallbackResponse> ProcessReturnUrlAsync(Dictionary<string, string> returnData)
         {
-            var vnpay = new VnPayLibrary();
-            foreach (var (key, value) in vnpayData)
-            {
-                if (!string.IsNullOrEmpty(value) && key.StartsWith("vnp_"))
-                {
-                    vnpay.AddResponseData(key, value);
-                }
-            }
+            var sepay = new SePayLibrary();
+            sepay.ParseResponseData(returnData);
 
-            var vnpayTxnRef = vnpay.GetResponseData("vnp_TxnRef");
-            var vnpayTransactionNo = vnpay.GetResponseData("vnp_TransactionNo");
-            var vnpayResponseCode = vnpay.GetResponseData("vnp_ResponseCode");
-            var vnpaySecureHash = vnpayData.ContainsKey("vnp_SecureHash") ? vnpayData["vnp_SecureHash"] : "";
-            var vnpayAmount = Convert.ToInt64(vnpay.GetResponseData("vnp_Amount")) / 100;
-            var vnpayBankCode = vnpay.GetResponseData("vnp_BankCode");
-            var vnpayCardType = vnpay.GetResponseData("vnp_CardType");
-            var vnpayOrderInfo = vnpay.GetResponseData("vnp_OrderInfo");
-            var vnpayPayDate = vnpay.GetResponseData("vnp_PayDate");
+            var orderIdFromGateway = sepay.GetResponseData("order_id");
+            var gatewayTransactionNo = sepay.GetResponseData("transaction_id");
+            var responseCode = sepay.GetResponseData("status");
+            var signature = returnData.ContainsKey("signature") ? returnData["signature"] : "";
+            var amount = decimal.Parse(sepay.GetResponseData("amount"));
+            var bankCode = sepay.GetResponseData("bank_code");
+            var cardType = sepay.GetResponseData("card_type");
+            var orderInfo = sepay.GetResponseData("order_info");
+            var payDateStr = sepay.GetResponseData("paid_at");
 
-            var checkSignature = vnpay.ValidateSignature(vnpaySecureHash, _vnPaySettings.HashSecret);
+            // Validate signature
+            var isValidSignature = sepay.ValidateSignature(signature, _sePaySettings.SecretKey, _sePaySettings.SignatureType);
 
             DateTime payDate = DateTime.UtcNow;
-            if (!string.IsNullOrEmpty(vnpayPayDate) && vnpayPayDate.Length >= 14)
+            if (!string.IsNullOrEmpty(payDateStr))
             {
-                DateTime.TryParseExact(vnpayPayDate, "yyyyMMddHHmmss", CultureInfo.InvariantCulture, DateTimeStyles.None, out payDate);
+                DateTime.TryParse(payDateStr, out payDate);
             }
 
             var transaction = _unitOfWork.Transactions.GetQueryable()
-                .FirstOrDefault(t => t.VnpayTransactionCode == vnpayTxnRef);
+                .FirstOrDefault(t => t.VnpayTransactionCode == orderIdFromGateway);
 
             Guid? orderId = null;
+            bool isSuccess = responseCode?.ToLower() == "success" || responseCode == "00";
 
-            // Update transaction, deposit, and order status if payment is successful
-            if (checkSignature && vnpayResponseCode == "00" && transaction != null)
+            // Update transaction if payment is successful and signature is valid
+            if (isValidSignature && isSuccess && transaction != null)
             {
-                transaction.VnpayTransactionNo = vnpayTransactionNo;
-                transaction.BankCode = vnpayBankCode;
-                transaction.CardType = vnpayCardType;
-                transaction.ResponseCode = vnpayResponseCode;
-                transaction.SecureHash = vnpaySecureHash;
+                transaction.VnpayTransactionNo = gatewayTransactionNo;
+                transaction.BankCode = bankCode;
+                transaction.CardType = cardType;
+                transaction.ResponseCode = responseCode;
+                transaction.SecureHash = signature;
                 transaction.Status = TransactionStatus.SUCCESS;
                 transaction.TransactionTime = payDate;
                 transaction.ModifiedDate = DateTime.UtcNow;
@@ -331,7 +337,6 @@ namespace EVMManagement.BLL.Services.Class
                         deposit.ModifiedDate = DateTime.UtcNow;
                         _unitOfWork.Deposits.Update(deposit);
 
-                        // Update Order status to IN_PROGRESS after successful deposit
                         var order = await _unitOfWork.Orders.GetByIdAsync(deposit.OrderId);
                         if (order != null && order.Status == OrderStatus.AWAITING_DEPOSIT)
                         {
@@ -381,41 +386,39 @@ namespace EVMManagement.BLL.Services.Class
                 }
             }
 
-            return new VnPayCallbackResponse
+            return new PaymentCallbackResponse
             {
-                Success = checkSignature && vnpayResponseCode == "00",
-                ResponseCode = vnpayResponseCode,
-                TransactionCode = vnpayTxnRef,
-                VnpayTransactionNo = vnpayTransactionNo,
-                Amount = vnpayAmount,
-                BankCode = vnpayBankCode,
-                CardType = vnpayCardType,
-                OrderInfo = vnpayOrderInfo,
+                Success = isValidSignature && isSuccess,
+                ResponseCode = responseCode ?? "99",
+                TransactionCode = orderIdFromGateway,
+                GatewayTransactionNo = gatewayTransactionNo,
+                Amount = amount,
+                BankCode = bankCode,
+                CardType = cardType,
+                OrderInfo = orderInfo,
                 PayDate = payDate,
                 OrderId = orderId,
                 TransactionId = transaction?.Id,
-                PaymentGateway = "VNPAY",
-                Message = !checkSignature ? "Invalid signature" : (vnpayResponseCode == "00" ? "Payment successful" : GetResponseMessage(vnpayResponseCode))
+                PaymentGateway = "SEPAY",
+                Message = !isValidSignature ? "Invalid signature" : (isSuccess ? "Payment successful" : GetResponseMessage(responseCode))
             };
         }
 
-        private string GetResponseMessage(string responseCode)
+        private string GetResponseMessage(string? responseCode)
         {
-            return responseCode switch
+            if (string.IsNullOrEmpty(responseCode))
+                return "Lỗi không xác định";
+
+            return responseCode.ToLower() switch
             {
-                "00" => "Giao dịch thành công",
-                "07" => "Trừ tiền thành công. Giao dịch bị nghi ngờ (liên quan tới lừa đảo, giao dịch bất thường)",
-                "09" => "Giao dịch không thành công do: Thẻ/Tài khoản của khách hàng chưa đăng ký dịch vụ InternetBanking tại ngân hàng",
-                "10" => "Giao dịch không thành công do: Khách hàng xác thực thông tin thẻ/tài khoản không đúng quá 3 lần",
-                "11" => "Giao dịch không thành công do: Đã hết hạn chờ thanh toán",
-                "12" => "Giao dịch không thành công do: Thẻ/Tài khoản của khách hàng bị khóa",
-                "13" => "Giao dịch không thành công do Quý khách nhập sai mật khẩu xác thực giao dịch (OTP)",
-                "24" => "Giao dịch không thành công do: Khách hàng hủy giao dịch",
-                "51" => "Giao dịch không thành công do: Tài khoản của quý khách không đủ số dư để thực hiện giao dịch",
-                "65" => "Giao dịch không thành công do: Tài khoản của Quý khách đã vượt quá hạn mức giao dịch trong ngày",
-                "75" => "Ngân hàng thanh toán đang bảo trì",
-                "79" => "Giao dịch không thành công do: KH nhập sai mật khẩu thanh toán quá số lần quy định",
-                "99" => "Các lỗi khác",
+                "success" or "00" => "Giao dịch thành công",
+                "pending" => "Giao dịch đang xử lý",
+                "failed" => "Giao dịch thất bại",
+                "canceled" => "Giao dịch đã bị hủy",
+                "expired" => "Giao dịch đã hết hạn",
+                "insufficient_balance" => "Số dư không đủ",
+                "invalid_card" => "Thẻ không hợp lệ",
+                "bank_error" => "Lỗi từ ngân hàng",
                 _ => "Lỗi không xác định"
             };
         }

@@ -28,6 +28,7 @@ namespace EVMManagement.API.Services
         public IStorageService StorageService { get; }
         public IDigitalSignatureService DigitalSignatureService { get; }
         public IVnPayService VnPayService { get; }
+        public ISePayService SePayService { get; }
         public IReportService ReportService { get; }
         public IDepositService DepositService { get; }
         public IHandoverRecordService HandoverRecordService { get; }
@@ -62,6 +63,7 @@ namespace EVMManagement.API.Services
             IStorageService storageService,
             IDigitalSignatureService digitalSignatureService,
             IVnPayService vnPayService,
+            ISePayService sePayService,
             IReportService reportService,
             IDepositService depositService,
             IHandoverRecordService handoverRecordService,
@@ -95,6 +97,7 @@ namespace EVMManagement.API.Services
             StorageService = storageService;
             DigitalSignatureService = digitalSignatureService;
             VnPayService = vnPayService;
+            SePayService = sePayService;
             ReportService = reportService;
             DepositService = depositService;
             HandoverRecordService = handoverRecordService;
