@@ -201,6 +201,9 @@ namespace EVMManagement.BLL.Services.Class
             if (filter.TransportId.HasValue)
                 query = query.Where(x => x.TransportId == filter.TransportId.Value);
 
+            if (filter.DealerId.HasValue)
+                query = query.Where(x => x.Order != null && x.Order.DealerId == filter.DealerId.Value);
+
             if (filter.IsAccepted.HasValue)
                 query = query.Where(x => x.IsAccepted == filter.IsAccepted.Value);
 
