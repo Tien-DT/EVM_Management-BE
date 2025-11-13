@@ -1,0 +1,31 @@
+API Notes - EVM Management System
+====================================
+
+API Endpoints Overview
+----------------------
+This document contains notes about the API structure and endpoints.
+
+Main Controllers:
+- AuthController: Authentication and authorization
+- DealersController: Dealer management
+- CustomersController: Customer management
+- ContractsController: Contract management
+- VehiclesController: Vehicle management
+- OrdersController: Order processing
+- InvoicesController: Invoice generation
+- PaymentsController: Payment processing
+
+API Versioning:
+- Current version: v1
+- Base route: /api/v1/[controller]
+
+Authentication:
+- JWT token based authentication
+- Role-based authorization (EVM_ADMIN, DEALER, etc.)
+
+Notes:
+- All endpoints require authentication unless specified
+- Use proper HTTP status codes
+- Follow RESTful conventions
+- OData support available for some entities
+
