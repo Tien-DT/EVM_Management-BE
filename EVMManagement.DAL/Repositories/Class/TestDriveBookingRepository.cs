@@ -29,7 +29,8 @@ namespace EVMManagement.DAL.Repositories.Class
 
         public IQueryable<TestDriveBooking> GetQueryableWithFilter(Guid? vehicleTimeSlotId, string? customerPhone, Guid? dealerStaffId, TestDriveBookingStatus? status, Guid? dealerId, DateTime? fromDate = null, DateTime? toDate = null)
         {
-            var query = GetQueryableWithIncludes();
+            var query = GetQueryableWithIncludes()
+                .Where(x => !x.IsDeleted);
 
             if (vehicleTimeSlotId.HasValue)
             {
