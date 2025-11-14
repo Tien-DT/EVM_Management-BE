@@ -408,11 +408,6 @@ namespace EVMManagement.BLL.Services.Class
                 throw new InvalidOperationException("Vận chuyển đã kết thúc, không thể thêm xe vào kho");
             }
 
-            if (transport.Status != TransportStatus.DELIVERED)
-            {
-                throw new InvalidOperationException($"Vận chuyển phải ở trạng thái DELIVERED để thêm xe vào kho (hiện tại: {transport.Status})");
-            }
-
             var warehouse = await _unitOfWork.Warehouses.GetQueryable()
                 .Include(w => w.Dealer)
                 .FirstOrDefaultAsync(w => w.Id == dto.WarehouseId && !w.IsDeleted);
