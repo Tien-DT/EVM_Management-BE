@@ -122,7 +122,7 @@ namespace EVMManagement.API.Controllers
             }
         }
 
-        [HttpPost("{id}/handover/confirm")]
+        [HttpPut("{id}/handover/confirm")]
         public async Task<IActionResult> ConfirmHandover(Guid id)
         {
             try
@@ -141,6 +141,34 @@ namespace EVMManagement.API.Controllers
             catch (Exception ex)
             {
                 return StatusCode(500, ApiResponse<TransportResponseDto>.CreateFail($"Xảy ra lỗi khi xác nhận bàn giao: {ex.Message}", null, 500));
+            }
+        }
+
+        [HttpPost("add-to-warehouse")]
+        public async Task<IActionResult> AddToWarehouse([FromBody] AddTransportToWarehouseDto dto)
+        {
+            if (!ModelState.IsValid)
+            {
+                var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
+                return BadRequest(ApiResponse<TransportResponseDto>.CreateFail("Dữ liệu không hợp lệ", errors, 400));
+            }
+
+            try
+            {
+                var result = await _services.TransportService.AddTransportToWarehouseAsync(dto);
+                return Ok(ApiResponse<TransportResponseDto>.CreateSuccess(result));
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(ApiResponse<TransportResponseDto>.CreateFail(ex.Message, null, 404));
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(ApiResponse<TransportResponseDto>.CreateFail(ex.Message, null, 400));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ApiResponse<TransportResponseDto>.CreateFail($"Xảy ra lỗi khi thêm xe vào kho: {ex.Message}", null, 500));
             }
         }
 

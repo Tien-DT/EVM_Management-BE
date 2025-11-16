@@ -21,6 +21,8 @@ namespace EVMManagement.DAL.Models.Enums
         REPORTED_PROCESSING,
         REPORTED_REJECTED,
         REPORTED_COMPLETED,
-        PAY_SUCCESS
+        PAY_SUCCESS,
+        HANDOVER_SUCCESS,
+        
     }
 }

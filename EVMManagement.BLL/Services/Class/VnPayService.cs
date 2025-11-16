@@ -34,6 +34,19 @@ namespace EVMManagement.BLL.Services.Class
                 throw new Exception("Order not found");
             }
 
+            // Validate amount
+            if (request.Amount <= 0)
+            {
+                throw new Exception($"Invalid payment amount: {request.Amount}. Amount must be greater than 0.");
+            }
+
+            // VNPay minimum amount is 10,000 VND
+            const decimal VNPAY_MIN_AMOUNT = 10000;
+            if (request.Amount < VNPAY_MIN_AMOUNT)
+            {
+                throw new Exception($"Payment amount ({request.Amount:N0} VND) is less than VNPay minimum ({VNPAY_MIN_AMOUNT:N0} VND). Order TotalAmount: {order.TotalAmount:N0}, FinalAmount: {order.FinalAmount:N0}");
+            }
+
             var createDate = DateTime.UtcNow;
             var vnTimeZone = TimeZoneInfo.FindSystemTimeZoneById("SE Asia Standard Time");
             var createDateVn = TimeZoneInfo.ConvertTimeFromUtc(createDate, vnTimeZone);
@@ -114,7 +127,8 @@ namespace EVMManagement.BLL.Services.Class
                 OrderId = request.OrderId,
                 Amount = request.Amount,
                 OrderInfo = request.OrderInfo,
-                CreatedDate = createDate
+                CreatedDate = createDate,
+                PaymentGateway = "VNPAY"
             };
         }
 
@@ -146,7 +160,8 @@ namespace EVMManagement.BLL.Services.Class
                 {
                     Success = false,
                     Message = "Invalid signature",
-                    ResponseCode = "97"
+                    ResponseCode = "97",
+                    PaymentGateway = "VNPAY"
                 };
             }
 
@@ -160,7 +175,8 @@ namespace EVMManagement.BLL.Services.Class
                     Success = false,
                     Message = "Transaction not found",
                     ResponseCode = "01",
-                    TransactionCode = vnpayTxnRef
+                    TransactionCode = vnpayTxnRef,
+                    PaymentGateway = "VNPAY"
                 };
             }
 
@@ -254,6 +270,7 @@ namespace EVMManagement.BLL.Services.Class
                 PayDate = payDate,
                 OrderId = orderId,
                 TransactionId = transaction.Id,
+                PaymentGateway = "VNPAY",
                 Message = vnpayResponseCode == "00" ? "Payment successful" : GetResponseMessage(vnpayResponseCode)
             };
         }
@@ -377,6 +394,7 @@ namespace EVMManagement.BLL.Services.Class
                 PayDate = payDate,
                 OrderId = orderId,
                 TransactionId = transaction?.Id,
+                PaymentGateway = "VNPAY",
                 Message = !checkSignature ? "Invalid signature" : (vnpayResponseCode == "00" ? "Payment successful" : GetResponseMessage(vnpayResponseCode))
             };
         }
