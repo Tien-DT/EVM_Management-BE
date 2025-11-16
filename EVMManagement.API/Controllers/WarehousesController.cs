@@ -128,6 +128,52 @@ namespace EVMManagement.API.Controllers
             return Ok(ApiResponse<PagedResult<WarehouseResponseDto>>.CreateSuccess(result));
         }
 
+        [HttpGet("{warehouseId}/vehicles-by-model")]
+        public async Task<IActionResult> GetVehiclesByModelInWarehouse(
+            Guid warehouseId,
+            [FromQuery] Guid modelId,
+            [FromQuery] VehiclePurpose? purpose = null,
+            [FromQuery] VehicleStatus? status = null,
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 10)
+        {
+            if (warehouseId == Guid.Empty)
+            {
+                return BadRequest(ApiResponse<string>.CreateFail("WarehouseId là bắt buộc.", null, 400));
+            }
+
+            if (modelId == Guid.Empty)
+            {
+                return BadRequest(ApiResponse<string>.CreateFail("ModelId là bắt buộc.", null, 400));
+            }
+
+            if (pageNumber < 1 || pageSize < 1)
+            {
+                return BadRequest(ApiResponse<string>.CreateFail("PageNumber and PageSize must be greater than 0", null, 400));
+            }
+
+            var result = await Services.WarehouseService.GetVehiclesByModelInWarehouseAsync(warehouseId, modelId, purpose, status, pageNumber, pageSize);
+
+            if (!result.Success)
+            {
+                var statusCode = result.ErrorCode ?? StatusCodes.Status400BadRequest;
+
+                if (statusCode == StatusCodes.Status404NotFound)
+                {
+                    return NotFound(result);
+                }
+
+                if (statusCode == StatusCodes.Status500InternalServerError)
+                {
+                    return StatusCode(StatusCodes.Status500InternalServerError, result);
+                }
+
+                return StatusCode(statusCode, result);
+            }
+
+            return Ok(result);
+        }
+
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(Guid id)
         {

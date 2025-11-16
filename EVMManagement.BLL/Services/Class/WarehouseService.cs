@@ -771,6 +771,58 @@ namespace EVMManagement.BLL.Services.Class
             }
         }
 
+        public async Task<ApiResponse<PagedResult<VehicleResponseDto>>> GetVehiclesByModelInWarehouseAsync(Guid warehouseId, Guid modelId, VehiclePurpose? purpose = null, VehicleStatus? status = null, int pageNumber = 1, int pageSize = 10)
+        {
+            try
+            {
+                if (pageNumber < 1 || pageSize < 1)
+                {
+                    return ApiResponse<PagedResult<VehicleResponseDto>>.CreateFail(
+                        "PageNumber và PageSize phải lớn hơn 0.", errorCode: 400);
+                }
+
+                // Verify warehouse exists
+                var warehouse = await _unitOfWork.Warehouses.GetByIdAsync(warehouseId);
+                if (warehouse == null || warehouse.IsDeleted)
+                {
+                    return ApiResponse<PagedResult<VehicleResponseDto>>.CreateFail(
+                        "Kho không tồn tại hoặc đã bị xóa.", errorCode: 404);
+                }
+
+                // Verify vehicle model exists
+                var model = await _unitOfWork.VehicleModels.GetByIdAsync(modelId);
+                if (model == null || model.IsDeleted)
+                {
+                    return ApiResponse<PagedResult<VehicleResponseDto>>.CreateFail(
+                        "Mẫu xe không tồn tại hoặc đã bị xóa.", errorCode: 404);
+                }
+
+                var query = _unitOfWork.Vehicles.GetVehiclesByModelInWarehouseAsync(warehouseId, modelId, purpose, status);
+
+                var totalCount = await query.CountAsync();
+
+                var vehicles = await query
+                    .Skip((pageNumber - 1) * pageSize)
+                    .Take(pageSize)
+                    .ToListAsync();
+
+                var items = _mapper.Map<List<VehicleResponseDto>>(vehicles);
+                var pagedResult = PagedResult<VehicleResponseDto>.Create(items, totalCount, pageNumber, pageSize);
+
+                var purposeText = purpose.HasValue ? $" ({purpose.Value})" : "";
+                var statusText = status.HasValue ? $" - {status.Value}" : "";
+                var message = $"Lấy danh sách xe {model.Name}{purposeText}{statusText} trong kho '{warehouse.Name}' thành công.";
+
+                return ApiResponse<PagedResult<VehicleResponseDto>>.CreateSuccess(pagedResult, message);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi lấy danh sách xe theo model trong warehouse. WarehouseId: {WarehouseId}, ModelId: {ModelId}", warehouseId, modelId);
+                return ApiResponse<PagedResult<VehicleResponseDto>>.CreateFail(
+                    "Đã xảy ra lỗi khi lấy danh sách xe.", errorCode: 500);
+            }
+        }
+
         public IQueryable<Warehouse> GetQueryableForOData()
         {
             return _unitOfWork.Warehouses.GetQueryable()
