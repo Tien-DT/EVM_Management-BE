@@ -34,9 +34,12 @@ namespace EVMManagement.DAL.Repositories.Class
         public IQueryable<VehicleModel> GetByDealerAsync(Guid dealerId)
         {
             return _dbSet
-                .Where(m => m.VehicleVariants.Any(v => v.Vehicles.Any(vh => 
-                    vh.Warehouse.DealerId == dealerId && 
-                    vh.Status == VehicleStatus.IN_STOCK)))
+                .Where(m => !m.IsDeleted && m.VehicleVariants.Any(v => 
+                    !v.IsDeleted && v.Vehicles.Any(vh => 
+                        !vh.IsDeleted &&
+                        vh.Warehouse.DealerId == dealerId && 
+                        vh.Status == VehicleStatus.IN_STOCK &&
+                        vh.Purpose == VehiclePurpose.TEST_DRIVE)))
                 .Distinct();
         }
 

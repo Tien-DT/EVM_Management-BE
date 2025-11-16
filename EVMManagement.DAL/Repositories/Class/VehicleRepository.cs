@@ -49,5 +49,28 @@ namespace EVMManagement.DAL.Repositories.Class
                             && !v.IsDeleted)
                 .ToListAsync();
         }
+
+        public IQueryable<Vehicle> GetVehiclesByModelInWarehouseAsync(Guid warehouseId, Guid modelId, VehiclePurpose? purpose = null, VehicleStatus? status = null)
+        {
+            var query = _dbSet
+                .Include(v => v.VehicleVariant)
+                    .ThenInclude(vv => vv.VehicleModel)
+                .Include(v => v.Warehouse)
+                .Where(v => !v.IsDeleted
+                            && v.WarehouseId == warehouseId
+                            && v.VehicleVariant.VehicleModel.Id == modelId);
+
+            if (purpose.HasValue)
+            {
+                query = query.Where(v => v.Purpose == purpose.Value);
+            }
+
+            if (status.HasValue)
+            {
+                query = query.Where(v => v.Status == status.Value);
+            }
+
+            return query.OrderByDescending(v => v.CreatedDate);
+        }
     }
 }

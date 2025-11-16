@@ -25,6 +25,7 @@ namespace EVMManagement.BLL.Services.Interface
         Task<ApiResponse<List<VehicleResponseDto>>> AddVehiclesToWarehouseAsync(AddVehiclesToWarehouseRequestDto dto, Guid addedByUserId);
         Task<ApiResponse<List<VehicleResponseDto>>> AddVehiclesToEvmWarehouseAsync(AddVehiclesToEvmWarehouseDto dto, Guid addedByUserId);
         Task<ApiResponse<List<VehicleResponseDto>>> AddVehiclesToDealerWarehouseAsync(AddVehiclesToDealerWarehouseDto dto, Guid addedByUserId);
+        Task<ApiResponse<PagedResult<VehicleResponseDto>>> GetVehiclesByModelInWarehouseAsync(Guid warehouseId, Guid modelId, VehiclePurpose? purpose = null, VehicleStatus? status = null, int pageNumber = 1, int pageSize = 10);
         IQueryable<Warehouse> GetQueryableForOData();
     }
 }
