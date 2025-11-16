@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
@@ -46,8 +46,12 @@ namespace EVMManagement.BLL.Services.Class
                 throw new UnauthorizedAccessException("Không thể xác định quyền của người dùng");
             }
 
-            var sessionId = request.SessionId ?? Guid.NewGuid().ToString();
-            var chatHistory = await GetChatHistoryAsync(sessionId);
+            if (!request.UserId.HasValue)
+            {
+                throw new UnauthorizedAccessException("Không thể xác định tài khoản của người dùng");
+            }
+
+            var chatHistory = await GetChatHistoryAsync(request.UserId.Value);
 
             chatHistory.Add(new GeminiMessage
             {
@@ -92,7 +96,7 @@ namespace EVMManagement.BLL.Services.Class
 
                 if (!httpResponse.IsSuccessStatusCode)
                 {
-                    throw new Exception($"Lỗi gọi Gemini API: {responseContent}");
+                    throw new Exception($"Gemini đang bị lỗi hoặc quá tải: {responseContent}");
                 }
 
                 var geminiResponse = JsonSerializer.Deserialize<GeminiResponse>(responseContent, new JsonSerializerOptions
@@ -102,7 +106,7 @@ namespace EVMManagement.BLL.Services.Class
 
                 if (geminiResponse?.Candidates == null || geminiResponse.Candidates.Count == 0)
                 {
-                    throw new Exception("Không nhận được phản hồi từ Gemini API");
+                    throw new Exception("Không nhận được phản hồi từ Gemini");
                 }
 
                 var candidate = geminiResponse.Candidates[0];
@@ -143,6 +147,7 @@ namespace EVMManagement.BLL.Services.Class
 
                             functionsCalled.Add(fc.Name);
                         }
+
                         var functionResult = await ExecuteFunctionAsync(fc?.Name ?? string.Empty, fc?.Args ?? new Dictionary<string, object>(), request.DealerId);
 
                         functionResponses.Add(new GeminiPart
@@ -180,13 +185,12 @@ namespace EVMManagement.BLL.Services.Class
                 finalResponse = "Xin lỗi, tôi không thể xử lý yêu cầu của bạn lúc này. Vui lòng thử lại.";
             }
 
-            await SaveChatHistoryAsync(sessionId, chatHistory);
+            await SaveChatHistoryAsync(request.UserId.Value, chatHistory);
 
             return new ChatResponseDto
             {
                 Response = finalResponse,
-                SessionId = sessionId,
-                FunctionsCalled = functionsCalled.Any() ? functionsCalled : null,
+                FunctionsCalled = functionsCalled.Any() ? functionsCalled.Distinct().ToList() : null,
                 Timestamp = DateTime.UtcNow
             };
         }
@@ -314,7 +318,7 @@ namespace EVMManagement.BLL.Services.Class
                                     "minDistance", new GeminiFunctionProperty
                                     {
                                         Type = "number",
-                                        Description = "Quãng đường tối thiểu 1 lần sạc (km)"
+                                        Description = "Quãng đường tối thiểu cho 1 lần sạc (km)"
                                     }
                                 },
                                 {
@@ -388,7 +392,7 @@ namespace EVMManagement.BLL.Services.Class
                     "compare_vehicle_variants", new GeminiFunctionDeclaration
                     {
                         Name = "compare_vehicle_variants",
-                        Description = "So sánh các phiên bản xe theo model. Dùng khi khách hàng muốn so sánh các phiên bản của cùng 1 mẫu xe.",
+                        Description = "So sánh các phiên bản xe theo model. Dùng khi khách hàng muốn so sánh các phiên bản của cùng một mẫu xe.",
                         Parameters = new GeminiFunctionParameters
                         {
                             Type = "object",
@@ -940,7 +944,7 @@ namespace EVMManagement.BLL.Services.Class
             }
             else if (priceRange == "medium")
             {
-                recommendations.Add("Phân khúc trung cấp (20-40 triệu): Cần cải thiện thiết kế thẩm mỹ, tăng tính năng an toàn và công nghệ.");
+                recommendations.Add("Phân khúc trung cấp (20-40 triệu): Cần cải thiện thiết kế thêm mạnh mẽ, tăng tính năng an toàn và công nghệ.");
                 recommendations.Add("Quãng đường 1 lần sạc nên từ 80-120km, tốc độ tối đa 60-80km/h.");
             }
             else if (priceRange == "high")
@@ -957,9 +961,9 @@ namespace EVMManagement.BLL.Services.Class
             return string.Join(" ", recommendations);
         }
 
-        private async Task<List<GeminiMessage>> GetChatHistoryAsync(string sessionId)
+        private async Task<List<GeminiMessage>> GetChatHistoryAsync(Guid userAccountId)
         {
-            var cacheKey = $"chat_history:{sessionId}";
+            var cacheKey = GetChatHistoryCacheKey(userAccountId);
             var cachedData = await _cache.GetStringAsync(cacheKey);
 
             if (string.IsNullOrEmpty(cachedData))
@@ -970,9 +974,9 @@ namespace EVMManagement.BLL.Services.Class
             return JsonSerializer.Deserialize<List<GeminiMessage>>(cachedData) ?? new List<GeminiMessage>();
         }
 
-        private async Task SaveChatHistoryAsync(string sessionId, List<GeminiMessage> history)
+        private async Task SaveChatHistoryAsync(Guid userAccountId, List<GeminiMessage> history)
         {
-            var cacheKey = $"chat_history:{sessionId}";
+            var cacheKey = GetChatHistoryCacheKey(userAccountId);
             var jsonData = JsonSerializer.Serialize(history);
 
             var options = new DistributedCacheEntryOptions
@@ -981,6 +985,11 @@ namespace EVMManagement.BLL.Services.Class
             };
 
             await _cache.SetStringAsync(cacheKey, jsonData, options);
+        }
+
+        private static string GetChatHistoryCacheKey(Guid userAccountId)
+        {
+            return $"chat_history:{userAccountId:D}";
         }
     }
 

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Linq;
 using System.Threading.Tasks;
 using EVMManagement.API.Services;
@@ -37,13 +37,22 @@ namespace EVMManagement.API.Controllers
                 if (!userRole.HasValue)
                 {
                     return Unauthorized(ApiResponse<ChatResponseDto>.CreateFail(
-                        "Không thể xác định quyền của bạn", 
-                        null, 
+                        "Không thể xác định quyền của bạn",
+                        null,
+                        401));
+                }
+
+                var accountId = GetCurrentAccountId();
+                if (!accountId.HasValue)
+                {
+                    return Unauthorized(ApiResponse<ChatResponseDto>.CreateFail(
+                        "Không thể xác định tài khoản của bạn",
+                        null,
                         401));
                 }
 
                 request.UserRole = userRole.Value;
-                request.UserId = GetCurrentAccountId();
+                request.UserId = accountId.Value;
 
                 if (userRole.Value == DAL.Models.Enums.AccountRole.DEALER_MANAGER || 
                     userRole.Value == DAL.Models.Enums.AccountRole.DEALER_STAFF)
@@ -68,7 +77,7 @@ namespace EVMManagement.API.Controllers
             catch (Exception ex)
             {
                 return StatusCode(500, ApiResponse<ChatResponseDto>.CreateFail(
-                    $"Lỗi xử lý yêu cầu: {ex.Message}", 
+                    $"Lỗi xử lý yêu cầu: {ex.Message}",
                     null, 
                     500));
             }
