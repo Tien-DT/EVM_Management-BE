@@ -95,6 +95,7 @@ namespace EVMManagement.API.Controllers
             return Ok(ApiResponse<MasterTimeSlotResponseDto>.CreateSuccess(item));
         }
 
+        /* Disabled - frontend not calling global active list
         [HttpGet("active")]
         [Authorize(Roles = "DEALER_MANAGER, DEALER_STAFF")]
         public async Task<IActionResult> GetActive([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
@@ -119,6 +120,7 @@ namespace EVMManagement.API.Controllers
             return Ok(ApiResponse<PagedResult<MasterTimeSlotResponseDto>>.CreateSuccess(activeResult));
         }
 
+        */
         [HttpPut("{id}")]
         [Authorize(Roles = "DEALER_MANAGER")]
         public async Task<IActionResult> Update(Guid id, [FromBody] MasterTimeSlotUpdateDto dto)
@@ -219,6 +221,7 @@ namespace EVMManagement.API.Controllers
         }
 
        
+        /* Disabled - frontend queries dealer slots via main endpoints
         [HttpGet("dealer/{dealerId}/active")]
         [Authorize(Roles = "DEALER_MANAGER, DEALER_STAFF")]
         public async Task<IActionResult> GetActiveByDealerId(Guid dealerId, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
@@ -231,6 +234,7 @@ namespace EVMManagement.API.Controllers
             var result = await Services.MasterTimeSlotService.GetActiveByDealerIdAsync(dealerId, pageNumber, pageSize);
             return Ok(ApiResponse<PagedResult<MasterTimeSlotResponseDto>>.CreateSuccess(result));
         }
+        */
     }
 }
 

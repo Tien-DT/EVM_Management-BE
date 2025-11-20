@@ -82,6 +82,7 @@ namespace EVMManagement.API.Controllers
         }
 
         // xóa dealer (chỉ EVM admin) - soft delete
+        /* Disabled - frontend uses DELETE instead of patching isDeleted
         [HttpPatch("{id}")]
         [Authorize(Roles = "EVM_ADMIN")]
         public async Task<IActionResult> UpdateIsDeleted(Guid id, [FromQuery] bool isDeleted)
@@ -90,6 +91,7 @@ namespace EVMManagement.API.Controllers
             if (updated == null) return NotFound(ApiResponse<DealerResponseDto>.CreateFail("Dealer not found", null, 404));
             return Ok(ApiResponse<DealerResponseDto>.CreateSuccess(updated));
         }
+        */
 
         // hard delete
         [HttpDelete("{id}")]

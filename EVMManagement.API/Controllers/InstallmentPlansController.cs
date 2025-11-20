@@ -22,6 +22,7 @@ namespace EVMManagement.API.Controllers
             _services = services;
         }
 
+        /* Disabled - frontend does not use installment plan endpoints
         [HttpGet]
         public async Task<IActionResult> GetPlans(
             [FromQuery] Guid? id,
@@ -91,5 +92,6 @@ namespace EVMManagement.API.Controllers
                 return StatusCode(500, ApiResponse<string>.CreateFail("Đã xảy ra lỗi khi tạo kế hoạch trả góp.", new List<string> { ex.Message }, 500));
             }
         }
+        */
     }
 }

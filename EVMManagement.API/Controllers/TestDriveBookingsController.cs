@@ -190,6 +190,7 @@ namespace EVMManagement.API.Controllers
             }
         }
 
+        /* Disabled - frontend uses DELETE instead of soft delete
         [HttpPatch("{id}/is-deleted")]
         public async Task<IActionResult> UpdateIsDeleted(Guid id, [FromQuery] bool isDeleted)
         {
@@ -197,6 +198,7 @@ namespace EVMManagement.API.Controllers
             if (updated == null) return NotFound(ApiResponse<TestDriveBookingResponseDto>.CreateFail("TestDriveBooking not found", null, 404));
             return Ok(ApiResponse<TestDriveBookingResponseDto>.CreateSuccess(updated));
         }
+        */
 
         [HttpGet("filter")]
         public async Task<IActionResult> GetByFilter(

@@ -35,6 +35,7 @@ namespace EVMManagement.API.Controllers
             return Ok(ApiResponse<PagedResult<VehicleResponseDto>>.CreateSuccess(result));
         }
 
+        /* Disabled - frontend not using vehicle details listing
         [HttpGet("details")]
         public async Task<IActionResult> GetAllWithDetails([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
         {
@@ -46,6 +47,7 @@ namespace EVMManagement.API.Controllers
             var result = await _services.VehicleService.GetAllWithDetailsAsync(pageNumber, pageSize);
             return Ok(ApiResponse<PagedResult<VehicleDetailResponseDto>>.CreateSuccess(result));
         }
+        */
 
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(Guid id)
@@ -55,6 +57,7 @@ namespace EVMManagement.API.Controllers
             return Ok(ApiResponse<VehicleResponseDto>.CreateSuccess(item));
         }
 
+        /* Disabled - frontend does not create vehicles directly
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] VehicleCreateDto dto)
         {
@@ -67,7 +70,9 @@ namespace EVMManagement.API.Controllers
             var created = await _services.VehicleService.CreateVehicleAsync(dto);
             return CreatedAtAction(nameof(GetById), new { id = created.Id }, ApiResponse<VehicleResponseDto>.CreateSuccess(created));
         }
+        */
 
+        /* Disabled - frontend not using vehicle mutation/search endpoints
         [HttpPut("{id}")]
         public async Task<IActionResult> Update(Guid id, [FromBody] VehicleUpdateDto dto)
         {
@@ -141,6 +146,7 @@ namespace EVMManagement.API.Controllers
             var result = await _services.VehicleService.CheckStockAvailabilityAsync(variantId, dealerId, quantity);
             return Ok(ApiResponse<StockCheckResponseDto>.CreateSuccess(result));
         }
+        */
 
         [HttpGet("dealer/{dealerId}/variant/{variantId}")]
         [Authorize(Roles = "DEALER_MANAGER,DEALER_STAFF")]

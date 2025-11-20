@@ -119,6 +119,7 @@ namespace EVMManagement.API.Controllers
             return StatusCode(statusCode, result);
         }
 
+        /* Disabled - not used by frontend
         [HttpPost("refresh-token")]
         [AllowAnonymous]
         public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequestDto request, CancellationToken cancellationToken)
@@ -142,6 +143,7 @@ namespace EVMManagement.API.Controllers
 
             return StatusCode(statusCode, result);
         }
+        */
 
         [HttpPost("forgot-password")]
         [AllowAnonymous]

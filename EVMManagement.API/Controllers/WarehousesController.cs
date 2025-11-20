@@ -75,6 +75,7 @@ namespace EVMManagement.API.Controllers
             return Ok(result);
         }
 
+        /* Disabled - frontend not using dealer-warehouse inventory endpoint
         [HttpGet("dealer-warehouse")]
         [Authorize(Roles = "DEALER_MANAGER, DEALER_STAFF")]
         public async Task<IActionResult> GetDealerWarehouseVehicles(
@@ -115,6 +116,7 @@ namespace EVMManagement.API.Controllers
 
             return Ok(result);
         }
+        */
 
         [HttpGet("dealer/{dealerId}")]
         public async Task<IActionResult> GetByDealerId(Guid dealerId, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
@@ -337,6 +339,7 @@ namespace EVMManagement.API.Controllers
             return Ok(result);
         }
 
+        /* Disabled - frontend does not use generic add-vehicles endpoint
         [HttpPost("add-vehicles")]
         [Authorize(Roles = "EVM_STAFF,EVM_ADMIN,DEALER_MANAGER")]
         public async Task<IActionResult> AddVehiclesToWarehouse([FromBody] AddVehiclesToWarehouseRequestDto dto)
@@ -374,6 +377,7 @@ namespace EVMManagement.API.Controllers
 
             return Ok(result);
         }
+        */
 
         [HttpPost("evm/add-vehicles")]
         [Authorize(Roles = "EVM_STAFF,EVM_ADMIN")]
@@ -413,6 +417,7 @@ namespace EVMManagement.API.Controllers
             return Ok(result);
         }
 
+        /* Disabled - frontend not using dealer add-vehicles endpoint
         [HttpPost("dealer/add-vehicles")]
         [Authorize(Roles = "EVM_STAFF,EVM_ADMIN,DEALER_MANAGER")]
         public async Task<IActionResult> AddVehiclesToDealerWarehouse([FromBody] AddVehiclesToDealerWarehouseDto dto)
@@ -450,5 +455,6 @@ namespace EVMManagement.API.Controllers
 
             return Ok(result);
         }
+        */
     }
 }

@@ -87,6 +87,7 @@ namespace EVMManagement.API.Controllers
             }
         }
 
+        /* Disabled - frontend not using promotion search endpoint
         [HttpGet("search")]
         public async Task<IActionResult> Search([FromQuery] string? q, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
         {
@@ -98,6 +99,7 @@ namespace EVMManagement.API.Controllers
             var results = await _services.PromotionService.SearchAsync(q, pageNumber, pageSize);
             return Ok(ApiResponse<PagedResult<PromotionResponseDto>>.CreateSuccess(results));
         }
+        */
 
         [HttpPut("{id}")]
         public async Task<IActionResult> Update(Guid id, [FromBody] PromotionUpdateDto dto)
@@ -121,6 +123,7 @@ namespace EVMManagement.API.Controllers
             }
         }
 
+        /* Disabled - frontend does not toggle promotion active status via API
         [HttpPatch("{id}/is-active")]
         public async Task<IActionResult> UpdateIsActive(Guid id, [FromQuery] bool isActive)
         {
@@ -128,7 +131,9 @@ namespace EVMManagement.API.Controllers
             if (updated == null) return NotFound(ApiResponse<PromotionResponseDto>.CreateFail("Promotion not found", null, 404));
             return Ok(ApiResponse<PromotionResponseDto>.CreateSuccess(updated));
         }
+        */
 
+        /* Disabled - frontend uses DELETE instead of soft delete
         [HttpPatch("{id}/is-deleted")]
         public async Task<IActionResult> UpdateIsDeleted(Guid id, [FromQuery] bool isDeleted)
         {
@@ -136,6 +141,7 @@ namespace EVMManagement.API.Controllers
             if (updated == null) return NotFound(ApiResponse<PromotionResponseDto>.CreateFail("Promotion not found", null, 404));
             return Ok(ApiResponse<PromotionResponseDto>.CreateSuccess(updated));
         }
+        */
 
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(Guid id)

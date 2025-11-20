@@ -21,6 +21,7 @@ namespace EVMManagement.API.Controllers
             _services = services;
         }
 
+        /* Disabled - frontend does not use invoice endpoints
         [HttpGet]
         public async Task<IActionResult> GetAll([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
         {
@@ -83,5 +84,6 @@ namespace EVMManagement.API.Controllers
             if (!deleted) return NotFound(ApiResponse<string>.CreateFail("Invoice not found", null, 404));
             return Ok(ApiResponse<string>.CreateSuccess("Deleted"));
         }
+        */
     }
 }

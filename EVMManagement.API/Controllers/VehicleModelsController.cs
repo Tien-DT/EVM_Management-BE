@@ -62,6 +62,7 @@ namespace EVMManagement.API.Controllers
             return Ok(ApiResponse<VehicleModelResponseDto>.CreateSuccess(result));
         }
 
+        /* Disabled - frontend not using ranking endpoint
         [HttpGet("by-ranking")]
         public async Task<IActionResult> GetByRanking([FromQuery] VehicleModelRanking ranking, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
         {
@@ -73,7 +74,7 @@ namespace EVMManagement.API.Controllers
             var result = await _services.VehicleModelService.GetByRankingAsync(ranking, pageNumber, pageSize);
             return Ok(ApiResponse<PagedResult<VehicleModelResponseDto>>.CreateSuccess(result));
         }
-
+        */
 
         [HttpPut("{id}")]
         public async Task<IActionResult> Update([FromRoute] Guid id, [FromBody] VehicleModelUpdateDto dto)
@@ -104,6 +105,7 @@ namespace EVMManagement.API.Controllers
             return Ok(ApiResponse<VehicleModelResponseDto>.CreateSuccess(deleted, "Đã xóa mềm mẫu xe."));
         }
 
+        /* Disabled - frontend not using vehicle model search endpoint
         [HttpGet("search")]
         public async Task<IActionResult> Search([FromQuery] string? q, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
         {
@@ -111,6 +113,7 @@ namespace EVMManagement.API.Controllers
             return Ok(ApiResponse<PagedResult<VehicleModelResponseDto>>.CreateSuccess(results));
 
         }
+        */
 
         [HttpGet("dealer/{dealerId}/models")]
         public async Task<IActionResult> GetByDealer(Guid dealerId, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)

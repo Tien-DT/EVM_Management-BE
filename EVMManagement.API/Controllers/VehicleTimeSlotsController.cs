@@ -24,6 +24,7 @@ namespace EVMManagement.API.Controllers
             _services = services;
         }
 
+        /* Disabled - frontend only uses bulk-assign
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] VehicleTimeSlotCreateDto dto)
         {
@@ -200,6 +201,8 @@ namespace EVMManagement.API.Controllers
             return Ok(ApiResponse<SlotVehiclesDto>.CreateSuccess(result));
         }
 
+        */
+
         [HttpPost("bulk-assign")]
         [Authorize(Roles = "DEALER_MANAGER")]
         public async Task<IActionResult> BulkAssignVehicles([FromBody] BulkAssignVehiclesDto dto)
@@ -244,6 +247,7 @@ namespace EVMManagement.API.Controllers
                 result, $"Successfully assigned {result.SuccessCount} vehicles to slot"));
         }
 
+        /* Disabled - remaining vehicle time slot endpoints unused by frontend
         [HttpGet("slots-by-date")]
         [Authorize(Roles = "DEALER_MANAGER,DEALER_STAFF")]
         public async Task<IActionResult> GetSlotsByDate(
@@ -278,7 +282,7 @@ namespace EVMManagement.API.Controllers
 
             return Ok(ApiResponse<List<DateSlotGroupDto>>.CreateSuccess(result));
         }
-      
+        */
     }
 }
 

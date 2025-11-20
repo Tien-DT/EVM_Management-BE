@@ -76,6 +76,7 @@ namespace EVMManagement.API.Controllers
             return Ok(ApiResponse<ContractResponse>.CreateSuccess(updated));
         }
 
+        /* Disabled - unused by frontend
         [HttpPatch("{id}")]
         public async Task<IActionResult> PartialUpdate(Guid id, [FromBody] ContractUpdateDto dto)
         {
@@ -89,6 +90,7 @@ namespace EVMManagement.API.Controllers
             if (updated == null) return NotFound(ApiResponse<ContractResponse>.CreateFail("Không tìm thấy hợp đồng", null, 404));
             return Ok(ApiResponse<ContractResponse>.CreateSuccess(updated));
         }
+        */
 
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(Guid id)

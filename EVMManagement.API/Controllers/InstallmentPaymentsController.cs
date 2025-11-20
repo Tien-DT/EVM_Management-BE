@@ -22,6 +22,7 @@ namespace EVMManagement.API.Controllers
             _services = services;
         }
 
+        /* Disabled - frontend does not use installment payment endpoints
         [HttpGet]
         public async Task<IActionResult> GetPayments(
             [FromQuery] Guid? id,
@@ -134,5 +135,6 @@ namespace EVMManagement.API.Controllers
 
             return Ok(ApiResponse<string>.CreateSuccess("Đã xóa kỳ thanh toán."));
         }
+        */
     }
 }

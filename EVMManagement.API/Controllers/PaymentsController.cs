@@ -119,6 +119,7 @@ namespace EVMManagement.API.Controllers
             }
         }
 
+        /* Disabled - frontend does not use SEPay callback endpoints
         [HttpGet("sepay/callback")]
         [HttpPost("sepay/callback")]
         public async Task<IActionResult> SePayCallback()
@@ -178,6 +179,8 @@ namespace EVMManagement.API.Controllers
                 return Ok(new { success = false, code = "99", message = ex.Message });
             }
         }
+
+        */
 
         [HttpGet("sepay/return")]
         public async Task<IActionResult> SePayReturn()

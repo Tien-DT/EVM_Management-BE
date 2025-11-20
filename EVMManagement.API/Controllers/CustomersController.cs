@@ -63,6 +63,7 @@ namespace EVMManagement.API.Controllers
             return Ok(ApiResponse<PagedResult<CustomerResponse>>.CreateSuccess(result));
         }
 
+        /* Disabled - frontend does not consume sales performance endpoint
         [HttpGet("managed-by/sales")]
         [Authorize]
         public async Task<IActionResult> GetSalesByManagedBy([FromQuery] DateTime? fromDate, [FromQuery] DateTime? toDate)
@@ -81,6 +82,7 @@ namespace EVMManagement.API.Controllers
             var summary = await Services.CustomerService.GetSalesSummaryByManagedAccountAsync(managedById.Value, fromDate, toDate);
             return Ok(ApiResponse<CustomerSalesSummaryResponse>.CreateSuccess(summary));
         }
+        */
 
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(Guid id)
@@ -181,6 +183,7 @@ namespace EVMManagement.API.Controllers
             }
         }
 
+        /* Disabled - frontend handles deletion via DELETE, not patch
         [HttpPatch("{id}")]
         public async Task<IActionResult> UpdateIsDeleted(Guid id, [FromQuery] bool isDeleted)
         {
@@ -188,6 +191,7 @@ namespace EVMManagement.API.Controllers
             if (updated == null) return NotFound(ApiResponse<CustomerResponse>.CreateFail("Customer not found", null, 404));
             return Ok(ApiResponse<CustomerResponse>.CreateSuccess(updated));
         }
+        */
 
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(Guid id)
