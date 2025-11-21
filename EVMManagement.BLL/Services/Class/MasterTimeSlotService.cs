@@ -146,7 +146,10 @@ namespace EVMManagement.BLL.Services.Class
             var entity = await _unitOfWork.MasterTimeSlots.GetByIdAsync(id);
             if (entity == null) return false;
 
-            _unitOfWork.MasterTimeSlots.Delete(entity);
+            entity.IsDeleted = true;
+            entity.DeletedDate = DateTime.UtcNow;
+            
+            _unitOfWork.MasterTimeSlots.Update(entity);
             await _unitOfWork.SaveChangesAsync();
 
             return true;
