@@ -104,7 +104,7 @@ namespace EVMManagement.API.Controllers
             if (updated == null) return NotFound(ApiResponse<OrderResponse>.CreateFail("Không tìm thấy đơn hàng", null, 404));
             return Ok(ApiResponse<OrderResponse>.CreateSuccess(updated));
         }
-        */
+        
 
         /* Disabled - frontend not using soft delete endpoint
         [HttpPatch("{id}")]
