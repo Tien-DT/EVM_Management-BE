@@ -72,6 +72,30 @@ namespace EVMManagement.API.Controllers
         }
         */
 
+        [HttpPatch("{id}")]
+        public async Task<IActionResult> Patch(Guid id, [FromBody] VehicleUpdateDto dto)
+        {
+            if (dto == null)
+            {
+                return BadRequest(ApiResponse<VehicleResponseDto>.CreateFail("Dữ liệu không hợp lệ", null, 400));
+            }
+
+            if (!ModelState.IsValid)
+            {
+                var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
+                return BadRequest(ApiResponse<VehicleResponseDto>.CreateFail("Dữ liệu không hợp lệ", errors, 400));
+            }
+
+            if (!HasVehicleUpdateValues(dto))
+            {
+                return BadRequest(ApiResponse<VehicleResponseDto>.CreateFail("Không có dữ liệu để cập nhật", null, 400));
+            }
+
+            var updated = await _services.VehicleService.UpdateAsync(id, dto);
+            if (updated == null) return NotFound(ApiResponse<VehicleResponseDto>.CreateFail("Không tìm thấy xe", null, 404));
+            return Ok(ApiResponse<VehicleResponseDto>.CreateSuccess(updated));
+        }
+
         /* Disabled - frontend not using vehicle mutation/search endpoints
         [HttpPut("{id}")]
         public async Task<IActionResult> Update(Guid id, [FromBody] VehicleUpdateDto dto)
@@ -175,6 +199,16 @@ namespace EVMManagement.API.Controllers
 
             var result = await _services.VehicleService.GetVehiclesByDealerAndVariantAsync(dealerId, variantId, pageNumber, pageSize);
             return Ok(ApiResponse<PagedResult<VehicleResponseDto>>.CreateSuccess(result));
+        }
+
+        private static bool HasVehicleUpdateValues(VehicleUpdateDto dto)
+        {
+            return dto.VariantId.HasValue
+                   || dto.WarehouseId.HasValue
+                   || !string.IsNullOrWhiteSpace(dto.Vin)
+                   || dto.Status.HasValue
+                   || dto.Purpose.HasValue
+                   || dto.ImageUrl != null;
         }
     }
 }

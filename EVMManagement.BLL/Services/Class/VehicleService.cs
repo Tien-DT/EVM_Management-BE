@@ -88,15 +88,18 @@ namespace EVMManagement.BLL.Services.Class
 
         public async Task<VehicleResponseDto?> UpdateAsync(Guid id, VehicleUpdateDto dto)
         {
+            if (dto == null) throw new ArgumentNullException(nameof(dto));
+
             var entity = await _unitOfWork.Vehicles.GetByIdAsync(id);
             if (entity == null) return null;
 
-            if (dto.VariantId.HasValue) entity.VariantId = dto.VariantId.Value;
-            if (dto.WarehouseId.HasValue) entity.WarehouseId = dto.WarehouseId.Value;
-            if (!string.IsNullOrWhiteSpace(dto.Vin)) entity.Vin = dto.Vin!;
-            if (dto.Status.HasValue) entity.Status = dto.Status.Value;
-            if (dto.Purpose.HasValue) entity.Purpose = dto.Purpose.Value;
-            if (dto.ImageUrl != null) entity.ImageUrl = dto.ImageUrl;
+            if (dto.Vin != null)
+            {
+                var normalizedVin = dto.Vin.Trim();
+                dto.Vin = string.IsNullOrWhiteSpace(normalizedVin) ? null : normalizedVin;
+            }
+
+            _mapper.Map(dto, entity);
 
             _unitOfWork.Vehicles.Update(entity);
             await _unitOfWork.SaveChangesAsync();
