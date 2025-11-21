@@ -48,6 +48,7 @@ namespace EVMManagement.API.Controllers
             return Ok(ApiResponse<PagedResult<TransportResponseDto>>.CreateSuccess(result));
         }
 
+        /* Disabled - frontend does not query transports by order directly
         [HttpGet("order/{orderId}")]
         public async Task<IActionResult> GetByOrder(Guid orderId, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
         {
@@ -59,6 +60,7 @@ namespace EVMManagement.API.Controllers
             var result = await _services.TransportService.GetByOrderAsync(orderId, pageNumber, pageSize);
             return Ok(ApiResponse<PagedResult<TransportResponseDto>>.CreateSuccess(result));
         }
+        */
 
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(Guid id)
@@ -100,6 +102,7 @@ namespace EVMManagement.API.Controllers
             }
         }
 
+        /* Disabled - frontend does not call transport cancel endpoint
         [HttpPost("{id}/cancel")]
         public async Task<IActionResult> Cancel(Guid id)
         {
@@ -121,6 +124,7 @@ namespace EVMManagement.API.Controllers
                 return StatusCode(500, ApiResponse<TransportResponseDto>.CreateFail($"Xảy ra lỗi khi hủy vận chuyển: {ex.Message}", null, 500));
             }
         }
+        */
 
         [HttpPut("{id}/handover/confirm")]
         public async Task<IActionResult> ConfirmHandover(Guid id)
@@ -205,6 +209,7 @@ namespace EVMManagement.API.Controllers
             }
         }
 
+        /* Disabled - frontend currently does not delete transports
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(Guid id)
         {
@@ -223,5 +228,6 @@ namespace EVMManagement.API.Controllers
                 return StatusCode(500, ApiResponse<string>.CreateFail($"Xảy ra lỗi khi xóa vận chuyển: {ex.Message}", null, 500));
             }
         }
+        */
     }
 }

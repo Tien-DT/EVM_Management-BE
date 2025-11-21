@@ -24,12 +24,14 @@ namespace EVMManagement.API.Controllers
             _services = services;
         }
 
+        /* Disabled - frontend does not query quotations by customer
         [HttpGet("customer/{customerId}")]
         public async Task<IActionResult> GetByCustomer(Guid customerId)
         {
             var items = await _services.QuotationService.GetByCustomerIdAsync(customerId);
             return Ok(ApiResponse<IList<QuotationResponseDto>>.CreateSuccess(items));
         }
+        */
 
         [HttpGet("dealer/{dealerId}")]
         public async Task<IActionResult> GetByDealer(Guid dealerId)

@@ -35,6 +35,7 @@ namespace EVMManagement.API.Controllers
             return Ok(ApiResponse<PagedResult<VehicleResponseDto>>.CreateSuccess(result));
         }
 
+        /* Disabled - frontend not using vehicle details listing
         [HttpGet("details")]
         public async Task<IActionResult> GetAllWithDetails([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
         {
@@ -46,6 +47,7 @@ namespace EVMManagement.API.Controllers
             var result = await _services.VehicleService.GetAllWithDetailsAsync(pageNumber, pageSize);
             return Ok(ApiResponse<PagedResult<VehicleDetailResponseDto>>.CreateSuccess(result));
         }
+        */
 
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(Guid id)
@@ -55,6 +57,7 @@ namespace EVMManagement.API.Controllers
             return Ok(ApiResponse<VehicleResponseDto>.CreateSuccess(item));
         }
 
+        /* Disabled - frontend does not create vehicles directly
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] VehicleCreateDto dto)
         {
@@ -67,7 +70,33 @@ namespace EVMManagement.API.Controllers
             var created = await _services.VehicleService.CreateVehicleAsync(dto);
             return CreatedAtAction(nameof(GetById), new { id = created.Id }, ApiResponse<VehicleResponseDto>.CreateSuccess(created));
         }
+        */
 
+        [HttpPatch("{id}")]
+        public async Task<IActionResult> Patch(Guid id, [FromBody] VehicleUpdateDto dto)
+        {
+            if (dto == null)
+            {
+                return BadRequest(ApiResponse<VehicleResponseDto>.CreateFail("Dữ liệu không hợp lệ", null, 400));
+            }
+
+            if (!ModelState.IsValid)
+            {
+                var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
+                return BadRequest(ApiResponse<VehicleResponseDto>.CreateFail("Dữ liệu không hợp lệ", errors, 400));
+            }
+
+            if (!HasVehicleUpdateValues(dto))
+            {
+                return BadRequest(ApiResponse<VehicleResponseDto>.CreateFail("Không có dữ liệu để cập nhật", null, 400));
+            }
+
+            var updated = await _services.VehicleService.UpdateAsync(id, dto);
+            if (updated == null) return NotFound(ApiResponse<VehicleResponseDto>.CreateFail("Không tìm thấy xe", null, 404));
+            return Ok(ApiResponse<VehicleResponseDto>.CreateSuccess(updated));
+        }
+
+        /* Disabled - frontend not using vehicle mutation/search endpoints
         [HttpPut("{id}")]
         public async Task<IActionResult> Update(Guid id, [FromBody] VehicleUpdateDto dto)
         {
@@ -141,6 +170,7 @@ namespace EVMManagement.API.Controllers
             var result = await _services.VehicleService.CheckStockAvailabilityAsync(variantId, dealerId, quantity);
             return Ok(ApiResponse<StockCheckResponseDto>.CreateSuccess(result));
         }
+        */
 
         [HttpGet("dealer/{dealerId}/variant/{variantId}")]
         [Authorize(Roles = "DEALER_MANAGER,DEALER_STAFF")]
@@ -169,6 +199,16 @@ namespace EVMManagement.API.Controllers
 
             var result = await _services.VehicleService.GetVehiclesByDealerAndVariantAsync(dealerId, variantId, pageNumber, pageSize);
             return Ok(ApiResponse<PagedResult<VehicleResponseDto>>.CreateSuccess(result));
+        }
+
+        private static bool HasVehicleUpdateValues(VehicleUpdateDto dto)
+        {
+            return dto.VariantId.HasValue
+                   || dto.WarehouseId.HasValue
+                   || !string.IsNullOrWhiteSpace(dto.Vin)
+                   || dto.Status.HasValue
+                   || dto.Purpose.HasValue
+                   || dto.ImageUrl != null;
         }
     }
 }

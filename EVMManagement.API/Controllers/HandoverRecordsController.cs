@@ -75,6 +75,7 @@ namespace EVMManagement.API.Controllers
             return Ok(ApiResponse<HandoverRecordResponseDto>.CreateSuccess(updated));
         }
 
+        /* Disabled - frontend not using filter endpoint
         [HttpGet("filter")]
         public async Task<IActionResult> Filter([FromQuery] HandoverRecordFilterDto filter)
         {
@@ -87,6 +88,7 @@ namespace EVMManagement.API.Controllers
             return Ok(ApiResponse<PagedResult<HandoverRecordResponseDto>>.CreateSuccess(result));
         }
 
+        */
         [HttpGet("lookup")]
         public async Task<IActionResult> Lookup([FromQuery] HandoverRecordFilterDto filter)
         {

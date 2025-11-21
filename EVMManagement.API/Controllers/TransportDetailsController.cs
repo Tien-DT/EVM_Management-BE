@@ -20,6 +20,7 @@ namespace EVMManagement.API.Controllers
         {
         }
 
+        /* Disabled - frontend does not query transport details list
         [HttpGet]
         public async Task<IActionResult> GetAll([FromQuery] TransportDetailFilterDto filter)
         {
@@ -33,7 +34,9 @@ namespace EVMManagement.API.Controllers
             var result = await Services.TransportDetailService.GetAllAsync(filter);
             return Ok(ApiResponse<PagedResult<TransportDetailResponseDto>>.CreateSuccess(result));
         }
+        */
 
+        /* Disabled - frontend does not fetch transport detail by id
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(Guid id)
         {
@@ -45,6 +48,7 @@ namespace EVMManagement.API.Controllers
 
             return Ok(ApiResponse<TransportDetailResponseDto>.CreateSuccess(detail));
         }
+        */
 
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] List<TransportDetailCreateDto> dtos)
@@ -83,6 +87,7 @@ namespace EVMManagement.API.Controllers
             }
         }
 
+        /* Disabled - frontend does not update/delete transport details directly
         [HttpPut("{id}")]
         public async Task<IActionResult> Update(Guid id, [FromBody] TransportDetailUpdateDto dto)
         {
@@ -146,6 +151,7 @@ namespace EVMManagement.API.Controllers
                 return StatusCode(500, ApiResponse<string>.CreateFail($"Xảy ra lỗi khi xóa chi tiết vận chuyển: {ex.Message}", null, 500));
             }
         }
+        */
     }
 }
 

@@ -70,6 +70,7 @@ namespace EVMManagement.API.Controllers
             return Ok(ApiResponse<VehicleVariantResponse>.CreateSuccess(updated));
         }
 
+        /* Disabled - frontend does not use soft delete endpoint for vehicle variants
         [HttpPatch("{id}")]
         public async Task<IActionResult> UpdateIsDeleted(Guid id, [FromQuery] bool isDeleted)
         {
@@ -77,6 +78,7 @@ namespace EVMManagement.API.Controllers
             if (updated == null) return NotFound(ApiResponse<VehicleVariantResponse>.CreateFail("VehicleVariant not found", null, 404));
             return Ok(ApiResponse<VehicleVariantResponse>.CreateSuccess(updated));
         }
+        */
 
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(Guid id)
@@ -98,6 +100,7 @@ namespace EVMManagement.API.Controllers
             return Ok(ApiResponse<PagedResult<VehicleVariantResponse>>.CreateSuccess(result));
         }
 
+        /* Disabled - frontend does not query variants by dealer only
         [HttpGet("by-dealer/{dealerId}")]
         public async Task<IActionResult> GetByDealerId(Guid dealerId, [FromQuery] VehiclePurpose? purpose, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
         {
@@ -109,6 +112,7 @@ namespace EVMManagement.API.Controllers
             var result = await _services.VehicleVariantService.GetByDealerIdAsync(dealerId, purpose, pageNumber, pageSize);
             return Ok(ApiResponse<PagedResult<VehicleVariantResponse>>.CreateSuccess(result));
         }
+        */
 
         [HttpGet("dealer/{dealerId}/models/{modelId}/variants")]
         public async Task<IActionResult> GetByDealerAndModel(Guid dealerId, Guid modelId, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)

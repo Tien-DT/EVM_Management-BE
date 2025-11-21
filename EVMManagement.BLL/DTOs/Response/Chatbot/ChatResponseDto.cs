@@ -7,8 +7,6 @@ namespace EVMManagement.BLL.DTOs.Response.Chatbot
     {
         public string Response { get; set; } = string.Empty;
 
-        public string SessionId { get; set; } = string.Empty;
-
         public List<string>? FunctionsCalled { get; set; }
 
         public DateTime Timestamp { get; set; } = DateTime.UtcNow;

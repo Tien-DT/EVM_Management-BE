@@ -104,7 +104,9 @@ namespace EVMManagement.API.Controllers
             if (updated == null) return NotFound(ApiResponse<OrderResponse>.CreateFail("Không tìm thấy đơn hàng", null, 404));
             return Ok(ApiResponse<OrderResponse>.CreateSuccess(updated));
         }
+        
 
+        /* Disabled - frontend not using soft delete endpoint
         [HttpPatch("{id}")]
         public async Task<IActionResult> UpdateIsDeleted(Guid id, [FromQuery] bool isDeleted)
         {
@@ -122,6 +124,7 @@ namespace EVMManagement.API.Controllers
         }
 
 
+        /* Disabled - frontend does not trigger cancel order endpoint
         [HttpPost("{id}/cancel")]
         public async Task<IActionResult> Cancel(Guid id)
         {
@@ -136,7 +139,9 @@ namespace EVMManagement.API.Controllers
                 return NotFound(ApiResponse<OrderResponse>.CreateFail(ex.Message, errors, 404));
             }
         }
+        */
 
+        /* Disabled - frontend does not complete orders via API
         [HttpPost("{orderId}/complete")]
         public async Task<IActionResult> Complete(Guid orderId)
         {
@@ -155,6 +160,8 @@ namespace EVMManagement.API.Controllers
                 return BadRequest(ApiResponse<OrderResponse>.CreateFail(ex.Message, null, 400));
             }
         }
+
+        */
 
         [HttpPost("{orderId}/deposits/preorder")]
         public async Task<IActionResult> CreatePreOrderDeposit(Guid orderId, [FromBody] PreOrderDepositRequestDto dto)
@@ -178,6 +185,7 @@ namespace EVMManagement.API.Controllers
             }
         }
 
+        /* Disabled - frontend does not call request-approval
         [HttpPost("{orderId}/request-approval")]
         public async Task<IActionResult> RequestDealerManagerApproval(Guid orderId, [FromBody] DealerManagerApprovalRequestDto dto)
         {
@@ -196,6 +204,7 @@ namespace EVMManagement.API.Controllers
 
             return Ok(ApiResponse<OrderFlowResponseDto>.CreateSuccess(result, result.Message));
         }
+        */
 
         [HttpPost("{orderId}/approve-by-manager")]
         public async Task<IActionResult> ApproveDealerOrderRequest(Guid orderId, [FromQuery] Guid approvedByUserId)
