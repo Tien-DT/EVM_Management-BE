@@ -56,6 +56,7 @@ namespace EVMManagement.DAL.Data
 
         public DbSet<DigitalSignature> DigitalSignatures { get; set; }
         public DbSet<Report> Reports { get; set; }
+        public DbSet<SystemConfiguration> SystemConfigurations { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -507,6 +508,12 @@ namespace EVMManagement.DAL.Data
                     .WithMany(t => t.Reports)
                     .HasForeignKey(e => e.TransportId)
                     .OnDelete(DeleteBehavior.SetNull);
+            });
+
+            modelBuilder.Entity<SystemConfiguration>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.HasIndex(e => e.Key).IsUnique();
             });
         }
     }

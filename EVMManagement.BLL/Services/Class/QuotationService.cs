@@ -66,8 +66,10 @@ namespace EVMManagement.BLL.Services.Class
                 quotation.QuotationDetails.Add(detail);
             }
 
+            var taxRate = await _unitOfWork.SystemConfigurations.GetTaxRateAsync();
+
             quotation.Subtotal = subtotal;
-            quotation.Tax = subtotal * 0.1m;
+            quotation.Tax = subtotal * taxRate;
             quotation.Total = subtotal + quotation.Tax;
 
             await _unitOfWork.Quotations.AddAsync(quotation);
@@ -173,7 +175,8 @@ namespace EVMManagement.BLL.Services.Class
                     return detail.UnitPrice * detail.Quantity * effectiveRate;
                 });
 
-                var tax = subtotal * 0.1m;
+                var taxRate = await _unitOfWork.SystemConfigurations.GetTaxRateAsync();
+                var tax = subtotal * taxRate;
                 var total = subtotal + tax;
 
                 quotation.Subtotal = subtotal;
@@ -304,8 +307,10 @@ namespace EVMManagement.BLL.Services.Class
                     }
                 }
 
+                var taxRate = await _unitOfWork.SystemConfigurations.GetTaxRateAsync();
+
                 entity.Subtotal = subtotal;
-                entity.Tax = subtotal * 0.1m;
+                entity.Tax = subtotal * taxRate;
                 entity.Total = subtotal + entity.Tax;
             }
 
